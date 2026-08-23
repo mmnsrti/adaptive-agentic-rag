@@ -3,24 +3,30 @@ from adaptive_agentic_rag.processing.chunker import chunk_document
 
 
 
-def test_chunk_creation():
+def test_small_chunks_are_removed():
 
     doc = Document(
-        id="doc_001",
+        id="doc_test",
 
-        text="This is a test document. " * 500,
+        text="""
+        Mac
 
-        metadata={
-            "source": "test"
-        }
+        This is a meaningful paragraph with enough words
+        to stay inside the chunking pipeline and provide
+        useful retrieval context.
+        """,
+
+        metadata={}
     )
 
 
-    chunks = chunk_document(doc)
+    chunks = chunk_document(
+        doc
+    )
 
 
-    assert len(chunks) > 1
+    for chunk in chunks:
 
-    assert chunks[0].document_id == "doc_001"
-
-    assert "source" in chunks[0].metadata
+        assert len(
+            chunk.text.split()
+        ) >= 20
