@@ -1,4 +1,5 @@
 import re
+from urllib.parse import urlsplit, urlunsplit
 
 
 def normalize_text_key(
@@ -7,19 +8,46 @@ def normalize_text_key(
 
     value = value.strip().casefold()
 
-    value = re.sub(
+    return re.sub(
         r"\s+",
         " ",
         value
     )
 
-    return value
+
+def normalize_url(
+    url: str
+) -> str:
+
+    url = url.strip()
+
+    parts = urlsplit(url)
+
+    path = parts.path.rstrip("/")
+
+    return urlunsplit(
+        (
+            parts.scheme.lower(),
+            parts.netloc.lower(),
+            path,
+            parts.query,
+            ""
+        )
+    )
 
 
 def make_document_key(
     source: str,
-    title: str
+    title: str,
+    url: str | None = None
 ) -> str:
+
+    if url and url.strip():
+
+        return (
+            "url::"
+            + normalize_url(url)
+        )
 
     source = normalize_text_key(
         source
@@ -29,7 +57,9 @@ def make_document_key(
         title
     )
 
-    return f"{source}::{title}"
+    return (
+        f"title::{source}::{title}"
+    )
 
 
 def get_relevant_document_keys(
@@ -38,8 +68,9 @@ def get_relevant_document_keys(
 
     return {
         make_document_key(
-            evidence["source"],
-            evidence["title"]
+            source=evidence["source"],
+            title=evidence["title"],
+            url=evidence.get("url")
         )
         for evidence in evidence_list
     }
@@ -53,11 +84,14 @@ def get_retrieved_document_keys(
 
     for result in results:
 
-        metadata = result["metadata"]
+        metadata = result[
+            "metadata"
+        ]
 
         key = make_document_key(
-            metadata["source"],
-            metadata["title"]
+            source=metadata["source"],
+            title=metadata["title"],
+            url=metadata.get("url")
         )
 
         keys.append(key)

@@ -88,9 +88,22 @@ def main():
         exist_ok=True
     )
 
+    if args.limit is None:
+
+        filename = (
+            "dense_baseline_full.json"
+        )
+
+    else:
+
+        filename = (
+            f"dense_smoke_{args.limit}.json"
+        )
+
+
     output_path = (
         output_dir
-        / "dense_baseline.json"
+        / filename
     )
 
     with open(

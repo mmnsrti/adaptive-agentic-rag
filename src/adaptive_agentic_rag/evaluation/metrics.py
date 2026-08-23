@@ -132,3 +132,55 @@ def ndcg_at_k(
         return 0.0
 
     return dcg / idcg
+def unique_documents_at_k(
+    retrieved_keys: list[str],
+    k: int
+) -> int:
+
+    return len(
+        set(
+            retrieved_keys[:k]
+        )
+    )
+
+
+def duplicate_rate_at_k(
+    retrieved_keys: list[str],
+    k: int
+) -> float:
+
+    retrieved = retrieved_keys[:k]
+
+    if not retrieved:
+        return 0.0
+
+    unique_count = len(
+        set(retrieved)
+    )
+
+    return 1.0 - (
+        unique_count
+        / len(retrieved)
+    )
+def first_complete_evidence_rank(
+    retrieved_keys: list[str],
+    relevant_keys: set[str]
+) -> int | None:
+
+    if not relevant_keys:
+        return None
+
+    found = set()
+
+    for rank, key in enumerate(
+        retrieved_keys,
+        start=1
+    ):
+
+        if key in relevant_keys:
+            found.add(key)
+
+        if relevant_keys.issubset(found):
+            return rank
+
+    return None

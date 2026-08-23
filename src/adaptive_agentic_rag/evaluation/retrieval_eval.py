@@ -11,10 +11,13 @@ from adaptive_agentic_rag.evaluation.metrics import (
     hit_at_k,
     complete_evidence_recall_at_k,
     reciprocal_rank,
-    ndcg_at_k
+    ndcg_at_k,
+    unique_documents_at_k,
+    duplicate_rate_at_k,
+    first_complete_evidence_rank
 )
 
-
+from collections import defaultdict
 DEFAULT_K_VALUES = [
     1,
     3,
@@ -88,7 +91,9 @@ def evaluate_dense_retriever(
             "hit": [],
             "complete_recall": [],
             "mrr": [],
-            "ndcg": []
+            "ndcg": [],
+            "unique_documents": [],
+            "duplicate_rate": []
         }
 
     per_query = []
@@ -170,6 +175,19 @@ def evaluate_dense_retriever(
                 relevant_keys,
                 k
             )
+            unique_documents = (
+                unique_documents_at_k(
+                    retrieved_keys,
+                    k
+                )
+            )
+
+            duplicate_rate = (
+                duplicate_rate_at_k(
+                    retrieved_keys,
+                    k
+                )
+            )                
 
             metrics[k]["recall"].append(
                 recall
@@ -190,15 +208,29 @@ def evaluate_dense_retriever(
             metrics[k]["ndcg"].append(
                 ndcg
             )
+            metrics[k]["unique_documents"].append(
+                unique_documents
+            )
 
+            metrics[k]["duplicate_rate"].append(
+                duplicate_rate
+            )
             query_metrics[str(k)] = {
                 "recall": recall,
                 "hit": hit,
                 "complete_recall":
                     complete_recall,
                 "mrr": mrr,
-                "ndcg": ndcg
+                "ndcg": ndcg,
+                "unique_documents": unique_documents,
+                "duplicate_rate": duplicate_rate
             }
+            complete_rank = (
+                first_complete_evidence_rank(
+                    retrieved_keys,
+                    relevant_keys
+                )
+            )            
 
         per_query.append(
             {
@@ -214,6 +246,8 @@ def evaluate_dense_retriever(
 
                 "metrics":
                     query_metrics,
+                "first_complete_evidence_rank":
+                    complete_rank,
 
                 "retrieved": [
                     {
@@ -288,7 +322,68 @@ def evaluate_dense_retriever(
         ] = mean(
             metrics[k]["ndcg"]
         )
+        summary_metrics[
+            f"unique_documents@{k}"
+        ] = mean(
+            metrics[k]["unique_documents"]
+        )
 
+
+        summary_metrics[
+            f"duplicate_rate@{k}"
+        ] = mean(
+            metrics[k]["duplicate_rate"]
+        )        
+    type_metrics = defaultdict(
+        lambda: defaultdict(list)
+    )
+
+
+    for item in per_query:
+
+        question_type = item[
+            "question_type"
+        ]
+
+        for k in k_values:
+
+            query_metric = item[
+                "metrics"
+            ][str(k)]
+
+            for metric_name in [
+                "recall",
+                "complete_recall",
+                "mrr",
+                "ndcg",
+                "duplicate_rate"
+            ]:
+
+                type_metrics[
+                    question_type
+                ][
+                    f"{metric_name}@{k}"
+                ].append(
+                    query_metric[
+                        metric_name
+                    ]
+                )
+    question_type_summary = {}
+
+
+    for question_type, values in (
+        type_metrics.items()
+    ):
+
+        question_type_summary[
+            question_type
+        ] = {
+            metric_name:
+                mean(metric_values)
+
+            for metric_name, metric_values
+            in values.items()
+        }
     return {
         "num_examples":
             len(dataset),
@@ -312,4 +407,7 @@ def evaluate_dense_retriever(
 
         "per_query":
             per_query
+        ,
+        "per_question_type":
+            question_type_summary
     }
