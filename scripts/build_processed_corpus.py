@@ -8,7 +8,9 @@ from adaptive_agentic_rag.data.multihop_adapter import (
 from adaptive_agentic_rag.processing.chunker import (
     chunk_document
 )
-
+from adaptive_agentic_rag.processing.cleaner import (
+    clean_document
+)
 
 def main():
 
@@ -40,8 +42,14 @@ def main():
 
     for document in documents:
 
-        chunks = chunk_document(
+
+        cleaned_document = clean_document(
             document
+        )
+
+
+        chunks = chunk_document(
+            cleaned_document
         )
 
         all_chunks.extend(chunks)
