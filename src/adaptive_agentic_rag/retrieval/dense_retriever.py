@@ -17,6 +17,7 @@ class DenseRetriever:
         vector_size=1024
     ):
 
+
         self.embedder = EmbeddingModel()
 
 
@@ -38,31 +39,42 @@ class DenseRetriever:
     ):
 
 
-        query_vector = (
+        query_embedding = (
+
             self.embedder
-            .encode([query])[0]
+            .encode(
+                [query]
+            )[0]
+
         )
 
 
-        results = self.store.client.search(
+        response = (
 
-            collection_name=
-                self.store.collection_name,
+            self.store.client
+            .query_points(
 
-            query_vector=
-                query_vector.tolist(),
+                collection_name=
+                    self.store.collection_name,
 
-            limit=
-                top_k
+                query=
+                    query_embedding.tolist(),
+
+                limit=
+                    top_k
+            )
         )
 
 
         return [
-            {
-                "score": result.score,
 
-                **result.payload
+            {
+                "score": point.score,
+
+                **point.payload
+
             }
 
-            for result in results
+            for point in response.points
+
         ]
