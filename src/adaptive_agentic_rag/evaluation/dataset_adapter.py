@@ -1,52 +1,65 @@
-from datasets import Dataset
+import re
 
 
+def normalize_text_key(
+    value: str
+) -> str:
 
-def normalize_evidence(
-    evidence_list: list[dict]
-) -> list[dict]:
+    value = value.strip().casefold()
 
-    normalized = []
+    value = re.sub(
+        r"\s+",
+        " ",
+        value
+    )
 
-
-    for evidence in evidence_list:
-
-        normalized.append(
-            {
-                "source":
-                    evidence["source"],
-
-                "title":
-                    evidence["title"],
-
-                "fact":
-                    evidence["fact"]
-            }
-        )
+    return value
 
 
-    return normalized
+def make_document_key(
+    source: str,
+    title: str
+) -> str:
+
+    source = normalize_text_key(
+        source
+    )
+
+    title = normalize_text_key(
+        title
+    )
+
+    return f"{source}::{title}"
 
 
-
-def get_evidence_keys(
+def get_relevant_document_keys(
     evidence_list: list[dict]
 ) -> set[str]:
 
-    keys = set()
-
-
-    for evidence in evidence_list:
-
-        key = (
-            evidence["source"]
-            +
-            "::"
-            +
+    return {
+        make_document_key(
+            evidence["source"],
             evidence["title"]
         )
+        for evidence in evidence_list
+    }
 
-        keys.add(key)
 
+def get_retrieved_document_keys(
+    results: list[dict]
+) -> list[str]:
+
+    keys = []
+
+    for result in results:
+
+        metadata = result["metadata"]
+
+        key = make_document_key(
+            metadata["source"],
+            metadata["title"]
+        )
+
+        keys.append(key)
 
     return keys
