@@ -6,8 +6,8 @@ from adaptive_agentic_rag.schemas import Document, Chunk
 
 def chunk_document(
     document: Document,
-    chunk_size: int = 500,
-    chunk_overlap: int = 50
+    chunk_size: int = 2000,
+    chunk_overlap: int = 200
 ) -> list[Chunk]:
 
 
