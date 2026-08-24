@@ -1,37 +1,53 @@
-import pickle
-from pathlib import Path
+from rank_bm25 import BM25Okapi
+
+import json
+
 
 
 class BM25Retriever:
 
+
     def __init__(
         self,
-        index_path="data/bm25/bm25_index.pkl"
+        corpus_path="data/processed/processed_corpus.json"
     ):
 
-        self.index_path = Path(index_path)
-
-        self._load()
-
-
-    def _tokenize(self, text):
-
-        return text.lower().split()
-
-
-    def _load(self):
 
         with open(
-            self.index_path,
-            "rb"
+            corpus_path,
+            encoding="utf-8"
         ) as f:
 
-            data = pickle.load(f)
+            self.documents = json.load(f)
 
 
-        self.bm25 = data["bm25"]
-        self.ids = data["ids"]
-        self.texts = data["texts"]
+
+        self.texts = [
+
+            doc["text"].split()
+
+            for doc in self.documents
+
+        ]
+
+
+
+        self.bm25 = BM25Okapi(
+            self.texts
+        )
+
+
+
+        self.doc_map = {
+
+            doc["id"]: doc
+
+            for doc in self.documents
+
+        }
+
+
+
 
 
     def search(
@@ -40,33 +56,62 @@ class BM25Retriever:
         top_k=20
     ):
 
-        tokens = self._tokenize(query)
-
 
         scores = self.bm25.get_scores(
-            tokens
+            query.split()
         )
 
 
-        ranked_indices = sorted(
-            range(len(scores)),
-            key=lambda i: scores[i],
+        ranked = sorted(
+
+            enumerate(scores),
+
+            key=lambda x:x[1],
+
             reverse=True
+
         )
+
 
 
         results = []
 
 
-        for idx in ranked_indices[:top_k]:
+
+        for index, score in ranked[:top_k]:
+
+
+            doc = self.documents[index]
+
+
 
             results.append(
+
                 {
-                    "id": self.ids[idx],
-                    "text": self.texts[idx],
-                    "score": float(scores[idx])
+
+                    "id":
+                        doc["id"],
+
+
+                    "document_id":
+                        doc["document_id"],
+
+
+                    "text":
+                        doc["text"],
+
+
+                    "metadata":
+                        doc["metadata"],
+
+
+                    "score":
+                        float(score)
+
                 }
+
             )
+
 
 
         return results
