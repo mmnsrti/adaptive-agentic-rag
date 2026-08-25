@@ -2,10 +2,7 @@ import numpy as np
 
 
 
-def cosine_similarity(
-    a,
-    b
-):
+def cosine_similarity(a,b):
 
     return np.dot(a,b)
 
@@ -16,7 +13,8 @@ def mmr_select(
     document_embeddings,
     documents,
     top_k=5,
-    lambda_param=0.7
+    lambda_param=0.7,
+    max_per_document=1
 ):
 
 
@@ -25,6 +23,10 @@ def mmr_select(
     candidates = list(
         range(len(documents))
     )
+
+
+    document_count = {}
+
 
 
     while len(selected) < top_k and candidates:
@@ -37,6 +39,22 @@ def mmr_select(
 
 
         for idx in candidates:
+
+
+            doc_id = documents[idx].get(
+                "document_id"
+            )
+
+
+            if doc_id is not None:
+
+                if document_count.get(
+                    doc_id,
+                    0
+                ) >= max_per_document:
+
+                    continue
+
 
 
             relevance = cosine_similarity(
@@ -66,22 +84,30 @@ def mmr_select(
 
 
 
-            score = (
+            mmr_score = (
 
                 lambda_param * relevance
 
                 -
 
-                (1-lambda_param) * diversity
+                (1-lambda_param)
+                * diversity
 
             )
 
 
-            if score > best_score:
 
-                best_score = score
+            if mmr_score > best_score:
+
+                best_score = mmr_score
 
                 best_candidate = idx
+
+
+
+        if best_candidate is None:
+
+            break
 
 
 
@@ -90,15 +116,34 @@ def mmr_select(
         )
 
 
+        doc_id = documents[
+            best_candidate
+        ].get(
+            "document_id"
+        )
+
+
+        if doc_id:
+
+            document_count[doc_id] = (
+                document_count.get(
+                    doc_id,
+                    0
+                )
+                + 1
+            )
+
+
         candidates.remove(
             best_candidate
         )
 
 
+
     return [
 
-        documents[idx]
+        documents[i]
 
-        for idx in selected
+        for i in selected
 
     ]
