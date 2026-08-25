@@ -102,3 +102,17 @@ class QdrantVectorStore:
 
             points=points
         )
+    def get_vectors(
+        self,
+        ids: list[str]
+    ):
+
+        points = self.client.retrieve(
+            collection_name=self.collection_name,
+            ids=ids,
+            with_payload=True,
+            with_vectors=True
+        )
+
+
+        return points

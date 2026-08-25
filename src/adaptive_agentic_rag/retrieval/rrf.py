@@ -27,13 +27,38 @@ def reciprocal_rank_fusion(
             doc_id = doc["id"]
 
 
+            #
+            # RRF score
+            #
             scores[doc_id] += (
                 1 /
                 (k + rank)
             )
 
 
-            documents[doc_id] = doc
+            #
+            # Keep best document object
+            #
+            if doc_id not in documents:
+
+                documents[doc_id] = doc.copy()
+
+
+            else:
+
+                #
+                # Dense result has vector
+                # BM25 usually doesn't
+                #
+                if (
+                    "vector" in doc
+                    and
+                    "vector" not in documents[doc_id]
+                ):
+
+                    documents[doc_id]["vector"] = (
+                        doc["vector"]
+                    )
 
 
 
@@ -43,7 +68,7 @@ def reciprocal_rank_fusion(
 
         scores.items(),
 
-        key=lambda x:x[1],
+        key=lambda x: x[1],
 
         reverse=True
 

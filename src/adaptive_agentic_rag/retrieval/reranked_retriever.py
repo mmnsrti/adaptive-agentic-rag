@@ -76,34 +76,69 @@ class RerankedRetriever:
             top_k=self.rerank_top_k
         )
 
+        #
+        # Ensure all documents have vectors
+        #
 
+        for item in reranked:
+
+            if "vector" not in item:
+
+                item["vector"] = (
+                    self.hybrid
+                    .dense
+                    .embedder
+                    .encode_documents(
+                        [
+                            item["text"]
+                        ]
+                    )[0]
+                )
 
         #
         # Step 3
         # Create embeddings
         # for MMR
         #
+        document_embeddings = []
 
-        texts = [
-
-            item["text"]
-
-            for item in reranked
-
-        ]
+        valid_documents = []
 
 
-        document_embeddings = (
+        for item in reranked:
 
-            self.hybrid
-            .dense
-            .embedder
-            .encode_documents(
-                texts
+
+            if "vector" not in item:
+
+
+                vector = (
+                    self.hybrid
+                    .dense
+                    .embedder
+                    .encode_documents(
+                        [
+                            item["text"]
+                        ]
+                    )[0]
+                )
+
+
+                item["vector"] = vector
+
+
+
+            document_embeddings.append(
+                item["vector"]
             )
 
-        )
 
+            valid_documents.append(
+                item
+            )
+
+
+
+        reranked = valid_documents
 
         query_embedding = (
 

@@ -65,21 +65,36 @@ class DenseRetriever:
             collection_name=self.store.collection_name,
             query=query_vector.tolist(),
             limit=top_k,
-            with_payload=True
+            with_payload=True,
+            with_vectors=True
         )
 
 
-        return [
+        results = []
 
-            {
+
+        for point in response.points:
+
+
+            item = {
+
                 "score": point.score,
+
                 **point.payload
+
             }
 
-            for point in response.points
 
-        ]
+            if point.vector is not None:
 
+                item["vector"] = point.vector
+
+
+            results.append(item)
+
+
+
+        return results
 
 
     def search(
