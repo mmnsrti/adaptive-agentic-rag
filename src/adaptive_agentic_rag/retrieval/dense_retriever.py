@@ -7,7 +7,6 @@ from adaptive_agentic_rag.vectorstore.qdrant_store import (
 )
 
 
-
 class DenseRetriever:
 
 
@@ -21,6 +20,9 @@ class DenseRetriever:
         self.store = QdrantVectorStore(
             collection_name=collection_name
         )
+
+        # Query embedding cache
+        self.query_cache = {}
 
 
 
@@ -39,62 +41,38 @@ class DenseRetriever:
 
 
 
-    def embed_documents(
-        self,
-        documents: list[str],
-        batch_size: int = 32,
-        show_progress_bar: bool = False
-    ):
-
-        return self.embedder.encode_documents(
-            documents,
-            batch_size=batch_size,
-            show_progress_bar=show_progress_bar
-        )
-
-
-
     def search_by_vector(
         self,
         query_vector,
         top_k: int = 5
     ):
 
-
         response = self.store.client.query_points(
+
             collection_name=self.store.collection_name,
+
             query=query_vector.tolist(),
+
             limit=top_k,
-            with_payload=True,
-            with_vectors=True
+
+            with_payload=True
+
         )
 
 
-        results = []
+        return [
 
-
-        for point in response.points:
-
-
-            item = {
-
+            {
                 "score": point.score,
 
                 **point.payload
 
             }
 
+            for point in response.points
 
-            if point.vector is not None:
+        ]
 
-                item["vector"] = point.vector
-
-
-            results.append(item)
-
-
-
-        return results
 
 
     def search(
@@ -104,14 +82,31 @@ class DenseRetriever:
     ):
 
 
-        query_vector = self.embedder.encode_queries(
-            [query]
-        )[0]
+        if query in self.query_cache:
+
+            query_vector = self.query_cache[query]
+
+
+        else:
+
+            query_vector = (
+                self.embedder
+                .encode_queries(
+                    [query]
+                )[0]
+            )
+
+
+            self.query_cache[query] = query_vector
+
 
 
         return self.search_by_vector(
+
             query_vector=query_vector,
+
             top_k=top_k
+
         )
 
 
