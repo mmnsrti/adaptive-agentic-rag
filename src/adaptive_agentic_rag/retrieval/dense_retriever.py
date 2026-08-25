@@ -7,7 +7,9 @@ from adaptive_agentic_rag.vectorstore.qdrant_store import (
 )
 
 
+
 class DenseRetriever:
+
 
     def __init__(
         self,
@@ -19,6 +21,8 @@ class DenseRetriever:
         self.store = QdrantVectorStore(
             collection_name=collection_name
         )
+
+
 
     def embed_queries(
         self,
@@ -33,11 +37,29 @@ class DenseRetriever:
             show_progress_bar=show_progress_bar
         )
 
+
+
+    def embed_documents(
+        self,
+        documents: list[str],
+        batch_size: int = 32,
+        show_progress_bar: bool = False
+    ):
+
+        return self.embedder.encode_documents(
+            documents,
+            batch_size=batch_size,
+            show_progress_bar=show_progress_bar
+        )
+
+
+
     def search_by_vector(
         self,
         query_vector,
         top_k: int = 5
     ):
+
 
         response = self.store.client.query_points(
             collection_name=self.store.collection_name,
@@ -46,13 +68,19 @@ class DenseRetriever:
             with_payload=True
         )
 
+
         return [
+
             {
                 "score": point.score,
                 **point.payload
             }
+
             for point in response.points
+
         ]
+
+
 
     def search(
         self,
@@ -60,14 +88,18 @@ class DenseRetriever:
         top_k: int = 5
     ):
 
+
         query_vector = self.embedder.encode_queries(
             [query]
         )[0]
+
 
         return self.search_by_vector(
             query_vector=query_vector,
             top_k=top_k
         )
+
+
 
     def close(self):
 

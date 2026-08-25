@@ -6,6 +6,10 @@ from adaptive_agentic_rag.retrieval.reranker import (
     BGEReranker
 )
 
+from adaptive_agentic_rag.retrieval.mmr import (
+    mmr_select
+)
+
 
 
 class RerankedRetriever:
@@ -14,7 +18,9 @@ class RerankedRetriever:
     def __init__(
         self,
         hybrid_top_k=20,
-        final_top_k=5
+        rerank_top_k=10,
+        final_top_k=5,
+        mmr_lambda=0.7
     ):
 
 
@@ -26,7 +32,11 @@ class RerankedRetriever:
         self.reranker = BGEReranker()
 
 
+        self.rerank_top_k = rerank_top_k
+
         self.final_top_k = final_top_k
+
+        self.mmr_lambda = mmr_lambda
 
 
 
@@ -48,11 +58,9 @@ class RerankedRetriever:
         # Hybrid Retrieval
         #
 
-        candidates = (
-            self.hybrid.search(
-                query,
-                top_k=20
-            )
+        candidates = self.hybrid.search(
+            query,
+            top_k=self.hybrid.final_top_k
         )
 
 
@@ -62,29 +70,90 @@ class RerankedRetriever:
         # Cross Encoder Reranking
         #
 
-        reranked = (
-            self.reranker.rerank(
-                query,
-                candidates,
-                top_k=top_k
-            )
+        reranked = self.reranker.rerank(
+            query,
+            candidates,
+            top_k=self.rerank_top_k
         )
 
 
 
         #
+        # Step 3
+        # Create embeddings
+        # for MMR
+        #
+
+        texts = [
+
+            item["text"]
+
+            for item in reranked
+
+        ]
+
+
+        document_embeddings = (
+
+            self.hybrid
+            .dense
+            .embedder
+            .encode_documents(
+                texts
+            )
+
+        )
+
+
+        query_embedding = (
+
+            self.hybrid
+            .dense
+            .embedder
+            .encode_queries(
+                [query]
+            )[0]
+
+        )
+
+
+
+        #
+        # Step 4
+        # MMR diversity selection
+        #
+
+        selected = mmr_select(
+
+            query_embedding=query_embedding,
+
+            document_embeddings=document_embeddings,
+
+            documents=reranked,
+
+            top_k=top_k,
+
+            lambda_param=self.mmr_lambda
+
+        )
+
+
+
+        #
+        # Step 5
         # Normalize score
         #
 
-        for item in reranked:
-
+        for item in selected:
 
             item["score"] = (
+
                 item["rerank_score"]
+
             )
 
 
-        return reranked
+        return selected
 
 
 
