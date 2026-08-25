@@ -20,7 +20,7 @@ class RerankedRetriever:
         hybrid_top_k=20,
         rerank_top_k=10,
         final_top_k=5,
-        mmr_lambda=0.7
+        mmr_lambda=0.85
     ):
 
 
