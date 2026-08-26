@@ -55,7 +55,9 @@ class DenseRetriever:
 
             limit=top_k,
 
-            with_payload=True
+            with_payload=True,
+            with_vectors=True
+
 
         )
 
@@ -65,15 +67,15 @@ class DenseRetriever:
             {
                 "score": point.score,
 
-                **point.payload
+                **point.payload,
+
+                "vector": point.vector
 
             }
 
             for point in response.points
 
         ]
-
-
 
     def search(
         self,

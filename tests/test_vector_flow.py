@@ -2,11 +2,15 @@ from adaptive_agentic_rag.retrieval.reranked_retriever import (
     RerankedRetriever
 )
 
+from adaptive_agentic_rag.retrieval.dense_retriever import DenseRetriever
+
+
+dense = DenseRetriever()
+
 
 retriever = RerankedRetriever(
-    hybrid_top_k=20,
-    rerank_top_k=10,
-    final_top_k=5
+    dense_retriever=dense,
+    hybrid_top_k=20
 )
 
 

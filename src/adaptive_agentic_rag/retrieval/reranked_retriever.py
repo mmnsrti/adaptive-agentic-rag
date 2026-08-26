@@ -1,3 +1,4 @@
+from adaptive_agentic_rag.retrieval import dense_retriever
 from adaptive_agentic_rag.retrieval.hybrid_retriever import (
     HybridRetriever
 )
@@ -17,14 +18,16 @@ class RerankedRetriever:
 
     def __init__(
         self,
+        dense_retriever,
         hybrid_top_k=20,
         rerank_top_k=10,
         final_top_k=5,
-        mmr_lambda=0.85
+        mmr_lambda=0.7
     ):
 
 
         self.hybrid = HybridRetriever(
+            dense_retriever=dense_retriever,
             final_top_k=hybrid_top_k
         )
 

@@ -20,11 +20,12 @@ class AdaptiveRetriever:
 
         self.router = QueryRouter()
 
-
         self.dense = DenseRetriever()
 
 
-        self.reranked = RerankedRetriever()
+        self.reranked = RerankedRetriever(
+            dense_retriever=self.dense
+        )
 
 
 

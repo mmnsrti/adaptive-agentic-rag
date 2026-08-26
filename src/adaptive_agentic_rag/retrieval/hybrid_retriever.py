@@ -17,13 +17,19 @@ class HybridRetriever:
 
     def __init__(
         self,
+        dense_retriever=None,
         dense_top_k=20,
         bm25_top_k=20,
         final_top_k=20
     ):
 
 
-        self.dense = DenseRetriever()
+        self.dense = (
+            dense_retriever
+            if dense_retriever
+            else DenseRetriever()
+        )
+
 
         self.bm25 = BM25Retriever()
 
@@ -33,7 +39,6 @@ class HybridRetriever:
         self.bm25_top_k = bm25_top_k
 
         self.final_top_k = final_top_k
-
 
 
 
@@ -88,27 +93,6 @@ class HybridRetriever:
             top_k=top_k
 
         )
-        for item in fused_results:
-
-            if "vector" not in item:
-
-                vector_result = (
-                    self.dense.search(
-                        query,
-                        top_k=50
-                    )
-                )
-
-
-                for dense_item in vector_result:
-
-                    if dense_item["id"] == item["id"]:
-
-                        item["vector"] = (
-                            dense_item["vector"]
-                        )
-
-                        break
 
 
 
