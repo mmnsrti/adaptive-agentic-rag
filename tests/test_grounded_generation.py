@@ -174,7 +174,15 @@ def main():
                 generation_result
 
             )
+            print(
+                "Citation repaired:",
+                generation_result.citation_repaired
+            )
 
+            print(
+                "Generation attempts:",
+                generation_result.generation_attempts
+            )
 
     finally:
 

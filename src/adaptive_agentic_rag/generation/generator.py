@@ -12,7 +12,8 @@ from adaptive_agentic_rag.generation.context_builder import (
 )
 
 from adaptive_agentic_rag.generation.prompts import (
-    build_grounded_messages
+    build_grounded_messages,
+    build_citation_repair_messages
 )
 
 from adaptive_agentic_rag.generation.citation import (
@@ -31,6 +32,12 @@ ABSTENTION_MESSAGE = (
 )
 
 
+GROUNDING_FAILURE_MESSAGE = (
+    "I couldn't produce a sufficiently "
+    "grounded answer from the provided evidence."
+)
+
+
 @dataclass
 class GenerationResult:
 
@@ -46,6 +53,10 @@ class GenerationResult:
 
     model_name: str | None
 
+    citation_repaired: bool
+
+    generation_attempts: int
+
 
 class GroundedGenerator:
 
@@ -56,9 +67,7 @@ class GroundedGenerator:
         device: str | None = None
     ):
 
-        self.model_name = (
-            model_name
-        )
+        self.model_name = model_name
 
 
         if device is None:
@@ -71,13 +80,6 @@ class GroundedGenerator:
 
 
         self.device = device
-
-
-        #
-        # Lazy loading:
-        #
-        # Generator model is NOT loaded here.
-        #
 
         self.tokenizer = None
 
@@ -93,7 +95,6 @@ class GroundedGenerator:
             and
             self.tokenizer is not None
         ):
-
             return
 
 
@@ -110,13 +111,11 @@ class GroundedGenerator:
         )
 
 
-        if self.device == "cuda":
-
-            dtype = torch.float16
-
-        else:
-
-            dtype = torch.float32
+        dtype = (
+            torch.float16
+            if self.device == "cuda"
+            else torch.float32
+        )
 
 
         self.model = (
@@ -124,7 +123,7 @@ class GroundedGenerator:
 
                 self.model_name,
 
-                torch_dtype=dtype
+                dtype=dtype
 
             )
         )
@@ -138,57 +137,11 @@ class GroundedGenerator:
         self.model.eval()
 
 
-    def generate(
+    def _generate_from_messages(
         self,
-        query: str,
-        context: BuiltContext,
-        evidence_sufficient: bool,
-        max_new_tokens: int = 300
-    ) -> GenerationResult:
-
-
-        #
-        # =====================================
-        # Do NOT generate without evidence
-        # =====================================
-        #
-
-        if not evidence_sufficient:
-
-            return GenerationResult(
-
-                answer=ABSTENTION_MESSAGE,
-
-                abstained=True,
-
-                cited_ids=[],
-
-                invalid_citation_ids=[],
-
-                citation_valid=True,
-
-                model_name=None
-
-            )
-
-
-        #
-        # Load model only when needed
-        #
-
-        self._load_model()
-
-
-        messages = (
-            build_grounded_messages(
-
-                query=query,
-
-                context=context
-
-            )
-        )
-
+        messages: list[dict],
+        max_new_tokens: int
+    ) -> str:
 
         prompt = (
             self.tokenizer.apply_chat_template(
@@ -203,14 +156,12 @@ class GroundedGenerator:
         )
 
 
-        inputs = (
-            self.tokenizer(
+        inputs = self.tokenizer(
 
-                prompt,
+            prompt,
 
-                return_tensors="pt"
+            return_tensors="pt"
 
-            )
         )
 
 
@@ -235,23 +186,21 @@ class GroundedGenerator:
 
         with torch.no_grad():
 
-            output = (
-                self.model.generate(
+            output = self.model.generate(
 
-                    **inputs,
+                **inputs,
 
-                    max_new_tokens=(
-                        max_new_tokens
-                    ),
+                max_new_tokens=(
+                    max_new_tokens
+                ),
 
-                    do_sample=False,
+                do_sample=False,
 
-                    pad_token_id=(
-                        self.tokenizer
-                        .eos_token_id
-                    )
-
+                pad_token_id=(
+                    self.tokenizer
+                    .eos_token_id
                 )
+
             )
 
 
@@ -264,7 +213,7 @@ class GroundedGenerator:
         )
 
 
-        answer = (
+        return (
             self.tokenizer.decode(
 
                 generated_tokens,
@@ -275,41 +224,216 @@ class GroundedGenerator:
             .strip()
         )
 
+    def generate(
+        self,
+        query: str,
+        context: BuiltContext,
+        evidence_sufficient: bool,
+        max_new_tokens: int = 160
+    ) -> GenerationResult:
 
-        citation_validation = (
-            validate_citations(
+        #
+        # ---------------------------------
+        # No sufficient evidence
+        # ---------------------------------
+        #
+
+        if not evidence_sufficient:
+
+            return GenerationResult(
+
+                answer=ABSTENTION_MESSAGE,
+
+                abstained=True,
+
+                cited_ids=[],
+
+                invalid_citation_ids=[],
+
+                citation_valid=True,
+
+                model_name=None,
+
+                citation_repaired=False,
+
+                generation_attempts=0
+            )
+
+
+        #
+        # ---------------------------------
+        # Load LLM
+        # ---------------------------------
+        #
+
+        self._load_model()
+
+
+        #
+        # =================================
+        # Attempt 1
+        # Normal grounded generation
+        # =================================
+        #
+
+        messages = build_grounded_messages(
+            query=query,
+            context=context
+        )
+
+
+        answer = self._generate_from_messages(
+            messages=messages,
+            max_new_tokens=max_new_tokens
+        )
+
+
+        print(
+            "\n===== RAW GENERATION ====="
+        )
+
+        print(
+            answer
+        )
+
+
+        validation = validate_citations(
+            answer=answer,
+            context=context
+        )
+
+
+        #
+        # Generation succeeded immediately
+        #
+
+        if validation.valid:
+
+            return GenerationResult(
 
                 answer=answer,
 
-                context=context
+                abstained=False,
 
+                cited_ids=validation.cited_ids,
+
+                invalid_citation_ids=(
+                    validation.invalid_ids
+                ),
+
+                citation_valid=True,
+
+                model_name=self.model_name,
+
+                citation_repaired=False,
+
+                generation_attempts=1
+            )
+
+
+        #
+        # =================================
+        # Attempt 2
+        # Citation repair
+        # =================================
+        #
+
+        repair_messages = (
+            build_citation_repair_messages(
+
+                query=query,
+
+                context=context,
+
+                draft_answer=answer
             )
         )
 
 
+        repaired_answer = (
+            self._generate_from_messages(
+
+                messages=repair_messages,
+
+                max_new_tokens=max_new_tokens
+            )
+        )
+
+
+        print(
+            "\n===== RAW REPAIR GENERATION ====="
+        )
+
+        print(
+            repaired_answer
+        )
+
+
+        repaired_validation = (
+            validate_citations(
+
+                answer=repaired_answer,
+
+                context=context
+            )
+        )
+
+
+        #
+        # Repair succeeded
+        #
+
+        if repaired_validation.valid:
+
+            return GenerationResult(
+
+                answer=repaired_answer,
+
+                abstained=False,
+
+                cited_ids=(
+                    repaired_validation.cited_ids
+                ),
+
+                invalid_citation_ids=(
+                    repaired_validation.invalid_ids
+                ),
+
+                citation_valid=True,
+
+                model_name=self.model_name,
+
+                citation_repaired=True,
+
+                generation_attempts=2
+            )
+
+
+        #
+        # ---------------------------------
+        # Both attempts failed
+        # ---------------------------------
+        #
+
         return GenerationResult(
 
-            answer=answer,
+            answer=GROUNDING_FAILURE_MESSAGE,
 
-            abstained=False,
+            abstained=True,
 
             cited_ids=(
-                citation_validation
-                .cited_ids
+                repaired_validation.cited_ids
             ),
 
             invalid_citation_ids=(
-                citation_validation
-                .invalid_ids
+                repaired_validation.invalid_ids
             ),
 
-            citation_valid=(
-                citation_validation
-                .valid
-            ),
+            citation_valid=False,
 
-            model_name=(
-                self.model_name
-            )
+            model_name=self.model_name,
 
+            citation_repaired=True,
+
+            generation_attempts=2
         )
