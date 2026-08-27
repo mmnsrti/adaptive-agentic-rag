@@ -19,6 +19,10 @@ from adaptive_agentic_rag.generation.claim_grounder import (
     ClaimGrounder
 )
 
+from adaptive_agentic_rag.generation.relevance_filter import (
+    ClaimRelevanceFilter
+)
+
 from adaptive_agentic_rag.generation.citation import (
     validate_citations
 )
@@ -36,7 +40,7 @@ ABSTENTION_MESSAGE = (
 
 
 GROUNDING_FAILURE_MESSAGE = (
-    "I couldn't find enough supported claims "
+    "I couldn't find enough supported and relevant claims "
     "in the retrieved evidence to answer reliably."
 )
 
@@ -58,9 +62,21 @@ class GenerationResult:
 
     model_name: str | None
 
+    #
+    # Claim grounding metrics
+    #
+
     supported_claims: int
 
     unsupported_claims: int
+
+    #
+    # Relevance filtering metrics
+    #
+
+    relevant_claims: int
+
+    filtered_irrelevant_claims: int
 
 
 class GroundedGenerator:
@@ -68,8 +84,10 @@ class GroundedGenerator:
 
     def __init__(
         self,
+        embedder,
         model_name: str = DEFAULT_MODEL,
-        device: str | None = None
+        device: str | None = None,
+        min_claim_relevance: float = 0.40
     ):
 
         self.model_name = model_name
@@ -88,7 +106,7 @@ class GroundedGenerator:
 
 
         #
-        # Lazy loading
+        # Lazy-loaded generator components
         #
 
         self.tokenizer = None
@@ -97,6 +115,28 @@ class GroundedGenerator:
 
         self.claim_grounder = None
 
+
+        #
+        # Reuse the embedding model
+        # already loaded by DenseRetriever
+        #
+
+        self.relevance_filter = (
+            ClaimRelevanceFilter(
+
+                embedder=embedder,
+
+                min_relevance_score=(
+                    min_claim_relevance
+                )
+
+            )
+        )
+
+
+    # =========================================================
+    # Load generator model
+    # =========================================================
 
     def _load_generator(
         self
@@ -150,6 +190,10 @@ class GroundedGenerator:
         self.model.eval()
 
 
+    # =========================================================
+    # Load NLI Claim Grounder
+    # =========================================================
+
     def _load_claim_grounder(
         self
     ):
@@ -165,6 +209,10 @@ class GroundedGenerator:
             )
         )
 
+
+    # =========================================================
+    # Generate raw LLM draft
+    # =========================================================
 
     def _generate_draft(
         self,
@@ -198,12 +246,14 @@ class GroundedGenerator:
         )
 
 
-        inputs = self.tokenizer(
+        inputs = (
+            self.tokenizer(
 
-            prompt,
+                prompt,
 
-            return_tensors="pt"
+                return_tensors="pt"
 
+            )
         )
 
 
@@ -267,26 +317,32 @@ class GroundedGenerator:
         )
 
 
+    # =========================================================
+    # Build final answer from:
+    #
+    # supported
+    # +
+    # relevant
+    #
+    # claims only
+    # =========================================================
+
     def _build_grounded_answer(
         self,
-        grounded_claims
+        relevant_claims
     ) -> str:
 
 
         lines = []
 
 
-        for claim in grounded_claims.claims:
-
-
-            if not claim.supported:
-
-                continue
-
+        for claim in relevant_claims:
 
             line = (
+
                 f"- {claim.claim} "
                 f"[{claim.citation_id}]"
+
             )
 
 
@@ -300,6 +356,10 @@ class GroundedGenerator:
         )
 
 
+    # =========================================================
+    # Main generation pipeline
+    # =========================================================
+
     def generate(
         self,
         query: str,
@@ -309,12 +369,14 @@ class GroundedGenerator:
     ) -> GenerationResult:
 
 
+        # =====================================================
+        # Gate 1
         #
-        # =====================================
-        # Gate 1:
-        # Evidence is already insufficient
-        # =====================================
+        # Evidence Grader already decided
+        # that evidence is insufficient.
         #
+        # Do NOT run the LLM.
+        # =====================================================
 
         if not evidence_sufficient:
 
@@ -336,16 +398,19 @@ class GroundedGenerator:
 
                 supported_claims=0,
 
-                unsupported_claims=0
+                unsupported_claims=0,
+
+                relevant_claims=0,
+
+                filtered_irrelevant_claims=0
 
             )
 
 
-        #
-        # =====================================
-        # Generate raw draft
-        # =====================================
-        #
+        # =====================================================
+        # Step 1
+        # Generate raw answer
+        # =====================================================
 
         self._load_generator()
 
@@ -374,11 +439,13 @@ class GroundedGenerator:
         )
 
 
+        # =====================================================
+        # Step 2
+        # Claim Grounding
         #
-        # =====================================
-        # Ground every claim
-        # =====================================
-        #
+        # Question:
+        # Is each generated claim supported by evidence?
+        # =====================================================
 
         self._load_claim_grounder()
 
@@ -394,12 +461,12 @@ class GroundedGenerator:
         )
 
 
+        # =====================================================
+        # Gate 2
         #
-        # =====================================
-        # Gate 2:
-        # No supported claims survived
-        # =====================================
-        #
+        # Nothing generated by the LLM
+        # was actually supported.
+        # =====================================================
 
         if (
             grounded_claims.supported_count
@@ -430,27 +497,172 @@ class GroundedGenerator:
                 unsupported_claims=(
                     grounded_claims
                     .unsupported_count
+                ),
+
+                relevant_claims=0,
+
+                filtered_irrelevant_claims=0
+
+            )
+
+
+        # =====================================================
+        # Step 3
+        # Claim-level relevance filtering
+        #
+        # A claim may be factually supported,
+        # but still irrelevant to the user's question.
+        # =====================================================
+
+        relevance_result = (
+            self.relevance_filter.filter(
+
+                query=query,
+
+                grounded_claims=(
+                    grounded_claims
+                )
+
+            )
+        )
+
+
+        # =====================================================
+        # Debug information
+        # =====================================================
+
+        print(
+            "\n===== CLAIM RELEVANCE ====="
+        )
+
+
+        print(
+            "Relevant claims:",
+            len(
+                relevance_result
+                .relevant_claims
+            )
+        )
+
+
+        print(
+            "Filtered irrelevant claims:",
+            len(
+                relevance_result
+                .filtered_claims
+            )
+        )
+
+
+        for claim in (
+            relevance_result
+            .relevant_claims
+        ):
+
+            print(
+
+                "KEEP:",
+
+                claim.relevance_score,
+
+                claim.claim
+
+            )
+
+
+        for claim in (
+            relevance_result
+            .filtered_claims
+        ):
+
+            print(
+
+                "FILTER:",
+
+                claim.relevance_score,
+
+                claim.claim
+
+            )
+
+
+        # =====================================================
+        # Gate 3
+        #
+        # Claims were supported,
+        # but none were sufficiently relevant
+        # to the original user question.
+        # =====================================================
+
+        if not relevance_result.relevant_claims:
+
+            return GenerationResult(
+
+                answer=(
+                    GROUNDING_FAILURE_MESSAGE
+                ),
+
+                raw_answer=raw_answer,
+
+                abstained=True,
+
+                cited_ids=[],
+
+                invalid_citation_ids=[],
+
+                citation_valid=False,
+
+                model_name=self.model_name,
+
+                supported_claims=(
+                    grounded_claims
+                    .supported_count
+                ),
+
+                unsupported_claims=(
+                    grounded_claims
+                    .unsupported_count
+                ),
+
+                relevant_claims=0,
+
+                filtered_irrelevant_claims=(
+                    len(
+                        relevance_result
+                        .filtered_claims
+                    )
                 )
 
             )
 
 
-        #
-        # =====================================
+        # =====================================================
+        # Step 4
         # Build final answer
-        # =====================================
         #
+        # Only:
+        #
+        # supported
+        # AND
+        # relevant
+        #
+        # claims survive.
+        # =====================================================
 
         final_answer = (
             self._build_grounded_answer(
-                grounded_claims
+
+                relevance_result
+                .relevant_claims
+
             )
         )
 
 
-        #
-        # Final safety validation
-        #
+        # =====================================================
+        # Step 5
+        # Final citation safety validation
+        # =====================================================
 
         citation_validation = (
             validate_citations(
@@ -462,6 +674,12 @@ class GroundedGenerator:
             )
         )
 
+
+        # =====================================================
+        # Gate 4
+        #
+        # Citation IDs are invalid.
+        # =====================================================
 
         if not citation_validation.valid:
 
@@ -497,16 +715,28 @@ class GroundedGenerator:
                 unsupported_claims=(
                     grounded_claims
                     .unsupported_count
+                ),
+
+                relevant_claims=(
+                    len(
+                        relevance_result
+                        .relevant_claims
+                    )
+                ),
+
+                filtered_irrelevant_claims=(
+                    len(
+                        relevance_result
+                        .filtered_claims
+                    )
                 )
 
             )
 
 
-        #
-        # =====================================
+        # =====================================================
         # Success
-        # =====================================
-        #
+        # =====================================================
 
         return GenerationResult(
 
@@ -538,6 +768,20 @@ class GroundedGenerator:
             unsupported_claims=(
                 grounded_claims
                 .unsupported_count
+            ),
+
+            relevant_claims=(
+                len(
+                    relevance_result
+                    .relevant_claims
+                )
+            ),
+
+            filtered_irrelevant_claims=(
+                len(
+                    relevance_result
+                    .filtered_claims
+                )
             )
 
         )

@@ -89,10 +89,16 @@ def main():
     )
 
 
-    generator = (
-        GroundedGenerator()
-    )
+    generator = GroundedGenerator(
 
+        embedder=(
+            controller
+            .retriever
+            .dense
+            .embedder
+        )
+
+    )
 
     queries = [
 
@@ -186,6 +192,15 @@ def main():
             print(
                 "Unsupported claims:",
                 generation_result.unsupported_claims
+            )
+            print(
+                "Relevant claims:",
+                generation_result.relevant_claims
+            )
+
+            print(
+                "Filtered irrelevant claims:",
+                generation_result.filtered_irrelevant_claims
             )
 
     finally:
