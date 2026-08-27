@@ -175,13 +175,17 @@ def main():
 
             )
             print(
-                "Citation repaired:",
-                generation_result.citation_repaired
+                "\n===== CLAIM GROUNDING ====="
             )
 
             print(
-                "Generation attempts:",
-                generation_result.generation_attempts
+                "Supported claims:",
+                generation_result.supported_claims
+            )
+
+            print(
+                "Unsupported claims:",
+                generation_result.unsupported_claims
             )
 
     finally:

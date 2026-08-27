@@ -12,8 +12,11 @@ from adaptive_agentic_rag.generation.context_builder import (
 )
 
 from adaptive_agentic_rag.generation.prompts import (
-    build_grounded_messages,
-    build_citation_repair_messages
+    build_grounded_messages
+)
+
+from adaptive_agentic_rag.generation.claim_grounder import (
+    ClaimGrounder
 )
 
 from adaptive_agentic_rag.generation.citation import (
@@ -33,8 +36,8 @@ ABSTENTION_MESSAGE = (
 
 
 GROUNDING_FAILURE_MESSAGE = (
-    "I couldn't produce a sufficiently "
-    "grounded answer from the provided evidence."
+    "I couldn't find enough supported claims "
+    "in the retrieved evidence to answer reliably."
 )
 
 
@@ -42,6 +45,8 @@ GROUNDING_FAILURE_MESSAGE = (
 class GenerationResult:
 
     answer: str
+
+    raw_answer: str | None
 
     abstained: bool
 
@@ -53,9 +58,9 @@ class GenerationResult:
 
     model_name: str | None
 
-    citation_repaired: bool
+    supported_claims: int
 
-    generation_attempts: int
+    unsupported_claims: int
 
 
 class GroundedGenerator:
@@ -81,12 +86,19 @@ class GroundedGenerator:
 
         self.device = device
 
+
+        #
+        # Lazy loading
+        #
+
         self.tokenizer = None
 
         self.model = None
 
+        self.claim_grounder = None
 
-    def _load_model(
+
+    def _load_generator(
         self
     ):
 
@@ -95,6 +107,7 @@ class GroundedGenerator:
             and
             self.tokenizer is not None
         ):
+
             return
 
 
@@ -137,11 +150,40 @@ class GroundedGenerator:
         self.model.eval()
 
 
-    def _generate_from_messages(
+    def _load_claim_grounder(
+        self
+    ):
+
+        if self.claim_grounder is not None:
+
+            return
+
+
+        self.claim_grounder = (
+            ClaimGrounder(
+                device=self.device
+            )
+        )
+
+
+    def _generate_draft(
         self,
-        messages: list[dict],
+        query: str,
+        context: BuiltContext,
         max_new_tokens: int
     ) -> str:
+
+
+        messages = (
+            build_grounded_messages(
+
+                query=query,
+
+                context=context
+
+            )
+        )
+
 
         prompt = (
             self.tokenizer.apply_chat_template(
@@ -186,30 +228,30 @@ class GroundedGenerator:
 
         with torch.no_grad():
 
-            output = self.model.generate(
+            output = (
+                self.model.generate(
 
-                **inputs,
+                    **inputs,
 
-                max_new_tokens=(
-                    max_new_tokens
-                ),
+                    max_new_tokens=(
+                        max_new_tokens
+                    ),
 
-                do_sample=False,
+                    do_sample=False,
 
-                pad_token_id=(
-                    self.tokenizer
-                    .eos_token_id
+                    pad_token_id=(
+                        self.tokenizer
+                        .eos_token_id
+                    )
+
                 )
-
             )
 
 
         generated_tokens = (
-
             output[0][
                 input_length:
             ]
-
         )
 
 
@@ -224,6 +266,40 @@ class GroundedGenerator:
             .strip()
         )
 
+
+    def _build_grounded_answer(
+        self,
+        grounded_claims
+    ) -> str:
+
+
+        lines = []
+
+
+        for claim in grounded_claims.claims:
+
+
+            if not claim.supported:
+
+                continue
+
+
+            line = (
+                f"- {claim.claim} "
+                f"[{claim.citation_id}]"
+            )
+
+
+            lines.append(
+                line
+            )
+
+
+        return "\n".join(
+            lines
+        )
+
+
     def generate(
         self,
         query: str,
@@ -232,10 +308,12 @@ class GroundedGenerator:
         max_new_tokens: int = 160
     ) -> GenerationResult:
 
+
         #
-        # ---------------------------------
-        # No sufficient evidence
-        # ---------------------------------
+        # =====================================
+        # Gate 1:
+        # Evidence is already insufficient
+        # =====================================
         #
 
         if not evidence_sufficient:
@@ -243,6 +321,8 @@ class GroundedGenerator:
             return GenerationResult(
 
                 answer=ABSTENTION_MESSAGE,
+
+                raw_answer=None,
 
                 abstained=True,
 
@@ -254,37 +334,34 @@ class GroundedGenerator:
 
                 model_name=None,
 
-                citation_repaired=False,
+                supported_claims=0,
 
-                generation_attempts=0
+                unsupported_claims=0
+
             )
 
 
         #
-        # ---------------------------------
-        # Load LLM
-        # ---------------------------------
+        # =====================================
+        # Generate raw draft
+        # =====================================
         #
 
-        self._load_model()
+        self._load_generator()
 
 
-        #
-        # =================================
-        # Attempt 1
-        # Normal grounded generation
-        # =================================
-        #
+        raw_answer = (
+            self._generate_draft(
 
-        messages = build_grounded_messages(
-            query=query,
-            context=context
-        )
+                query=query,
 
+                context=context,
 
-        answer = self._generate_from_messages(
-            messages=messages,
-            max_new_tokens=max_new_tokens
+                max_new_tokens=(
+                    max_new_tokens
+                )
+
+            )
         )
 
 
@@ -293,147 +370,174 @@ class GroundedGenerator:
         )
 
         print(
-            answer
-        )
-
-
-        validation = validate_citations(
-            answer=answer,
-            context=context
+            raw_answer
         )
 
 
         #
-        # Generation succeeded immediately
+        # =====================================
+        # Ground every claim
+        # =====================================
         #
 
-        if validation.valid:
-
-            return GenerationResult(
-
-                answer=answer,
-
-                abstained=False,
-
-                cited_ids=validation.cited_ids,
-
-                invalid_citation_ids=(
-                    validation.invalid_ids
-                ),
-
-                citation_valid=True,
-
-                model_name=self.model_name,
-
-                citation_repaired=False,
-
-                generation_attempts=1
-            )
+        self._load_claim_grounder()
 
 
-        #
-        # =================================
-        # Attempt 2
-        # Citation repair
-        # =================================
-        #
+        grounded_claims = (
+            self.claim_grounder.ground(
 
-        repair_messages = (
-            build_citation_repair_messages(
-
-                query=query,
-
-                context=context,
-
-                draft_answer=answer
-            )
-        )
-
-
-        repaired_answer = (
-            self._generate_from_messages(
-
-                messages=repair_messages,
-
-                max_new_tokens=max_new_tokens
-            )
-        )
-
-
-        print(
-            "\n===== RAW REPAIR GENERATION ====="
-        )
-
-        print(
-            repaired_answer
-        )
-
-
-        repaired_validation = (
-            validate_citations(
-
-                answer=repaired_answer,
+                answer=raw_answer,
 
                 context=context
+
             )
         )
 
 
         #
-        # Repair succeeded
+        # =====================================
+        # Gate 2:
+        # No supported claims survived
+        # =====================================
         #
 
-        if repaired_validation.valid:
+        if (
+            grounded_claims.supported_count
+            ==
+            0
+        ):
 
             return GenerationResult(
 
-                answer=repaired_answer,
-
-                abstained=False,
-
-                cited_ids=(
-                    repaired_validation.cited_ids
+                answer=(
+                    GROUNDING_FAILURE_MESSAGE
                 ),
 
-                invalid_citation_ids=(
-                    repaired_validation.invalid_ids
-                ),
+                raw_answer=raw_answer,
 
-                citation_valid=True,
+                abstained=True,
+
+                cited_ids=[],
+
+                invalid_citation_ids=[],
+
+                citation_valid=False,
 
                 model_name=self.model_name,
 
-                citation_repaired=True,
+                supported_claims=0,
 
-                generation_attempts=2
+                unsupported_claims=(
+                    grounded_claims
+                    .unsupported_count
+                )
+
             )
 
 
         #
-        # ---------------------------------
-        # Both attempts failed
-        # ---------------------------------
+        # =====================================
+        # Build final answer
+        # =====================================
+        #
+
+        final_answer = (
+            self._build_grounded_answer(
+                grounded_claims
+            )
+        )
+
+
+        #
+        # Final safety validation
+        #
+
+        citation_validation = (
+            validate_citations(
+
+                answer=final_answer,
+
+                context=context
+
+            )
+        )
+
+
+        if not citation_validation.valid:
+
+            return GenerationResult(
+
+                answer=(
+                    GROUNDING_FAILURE_MESSAGE
+                ),
+
+                raw_answer=raw_answer,
+
+                abstained=True,
+
+                cited_ids=(
+                    citation_validation
+                    .cited_ids
+                ),
+
+                invalid_citation_ids=(
+                    citation_validation
+                    .invalid_ids
+                ),
+
+                citation_valid=False,
+
+                model_name=self.model_name,
+
+                supported_claims=(
+                    grounded_claims
+                    .supported_count
+                ),
+
+                unsupported_claims=(
+                    grounded_claims
+                    .unsupported_count
+                )
+
+            )
+
+
+        #
+        # =====================================
+        # Success
+        # =====================================
         #
 
         return GenerationResult(
 
-            answer=GROUNDING_FAILURE_MESSAGE,
+            answer=final_answer,
 
-            abstained=True,
+            raw_answer=raw_answer,
+
+            abstained=False,
 
             cited_ids=(
-                repaired_validation.cited_ids
+                citation_validation
+                .cited_ids
             ),
 
             invalid_citation_ids=(
-                repaired_validation.invalid_ids
+                citation_validation
+                .invalid_ids
             ),
 
-            citation_valid=False,
+            citation_valid=True,
 
             model_name=self.model_name,
 
-            citation_repaired=True,
+            supported_claims=(
+                grounded_claims
+                .supported_count
+            ),
 
-            generation_attempts=2
+            unsupported_claims=(
+                grounded_claims
+                .unsupported_count
+            )
+
         )
