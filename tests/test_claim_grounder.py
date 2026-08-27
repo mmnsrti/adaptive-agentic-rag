@@ -139,8 +139,8 @@ def main():
 
 
         answer = """
-- Walmart does not price-match competitors.
-- Amazon Prime members receive free games and DLC throughout the year.
+- Walmart does not price-match competitors' products, limiting its ability to compete effectively in price wars.
+- Amazon Prime members receive free games and DLC throughout the year, enhancing their shopping experience.
 - Amazon gives 90 percent discounts every Friday.
 """.strip()
 

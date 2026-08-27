@@ -81,13 +81,12 @@ class GenerationResult:
 
 class GroundedGenerator:
 
-
     def __init__(
         self,
-        embedder,
+        reranker,
         model_name: str = DEFAULT_MODEL,
         device: str | None = None,
-        min_claim_relevance: float = 0.40
+        max_relevant_claims: int = 2
     ):
 
         self.model_name = model_name
@@ -124,10 +123,10 @@ class GroundedGenerator:
         self.relevance_filter = (
             ClaimRelevanceFilter(
 
-                embedder=embedder,
+                reranker=reranker,
 
-                min_relevance_score=(
-                    min_claim_relevance
+                max_relevant_claims=(
+                    max_relevant_claims
                 )
 
             )

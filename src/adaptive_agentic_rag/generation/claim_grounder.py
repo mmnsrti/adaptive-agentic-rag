@@ -10,6 +10,10 @@ from adaptive_agentic_rag.generation.context_builder import (
     BuiltContext
 )
 
+from adaptive_agentic_rag.generation.atomic_claim_extractor import (
+    AtomicClaimExtractor
+)
+
 
 NLI_MODEL_NAME = (
     "cross-encoder/nli-deberta-v3-small"
@@ -82,17 +86,33 @@ class ClaimGrounder:
         )
 
 
-    # -------------------------------------------------
-    # Extract claims from generated answer
-    # -------------------------------------------------
+        #
+        # Atomic claim extraction
+        #
+
+        self.atomic_extractor = (
+            AtomicClaimExtractor()
+        )
+
+
+    # =========================================================
+    # Extract atomic claims from generated answer
+    # =========================================================
 
     def extract_claims(
         self,
         answer: str
     ) -> list[str]:
 
-        claims = []
 
+        atomic_claims = []
+
+
+        #
+        # Qwen normally produces bullet points.
+        #
+        # We process each bullet independently first.
+        #
 
         for line in answer.splitlines():
 
@@ -100,11 +120,25 @@ class ClaimGrounder:
 
 
             if not line:
+
                 continue
 
 
             #
-            # Remove bullet markers
+            # Ignore common non-answer headings
+            #
+
+            if line.lower() in {
+                "answer:",
+                "response:",
+                "final answer:"
+            }:
+
+                continue
+
+
+            #
+            # Remove bullet marker
             #
 
             line = re.sub(
@@ -115,7 +149,8 @@ class ClaimGrounder:
 
 
             #
-            # Remove citations such as [1]
+            # Existing citations are irrelevant
+            # during claim verification.
             #
 
             line = re.sub(
@@ -128,24 +163,51 @@ class ClaimGrounder:
             line = line.strip()
 
 
-            if line:
+            if not line:
 
-                claims.append(
+                continue
+
+
+            #
+            # -----------------------------
+            # NEW:
+            # Atomic claim extraction
+            # -----------------------------
+            #
+
+            extraction = (
+                self.atomic_extractor.extract(
                     line
                 )
+            )
 
 
-        return claims
+            atomic_claims.extend(
+                extraction.claims
+            )
 
 
-    # -------------------------------------------------
-    # Split one chunk into sentences
-    # -------------------------------------------------
+        #
+        # Deduplicate while
+        # preserving order
+        #
+
+        return list(
+            dict.fromkeys(
+                atomic_claims
+            )
+        )
+
+
+    # =========================================================
+    # Split evidence chunk into sentences
+    # =========================================================
 
     def _split_sentences(
         self,
         text: str
     ) -> list[str]:
+
 
         text = re.sub(
             r"\s+",
@@ -155,6 +217,7 @@ class ClaimGrounder:
 
 
         if not text:
+
             return []
 
 
@@ -177,19 +240,24 @@ class ClaimGrounder:
         ]
 
 
-    # -------------------------------------------------
-    # Build evidence units
+    # =========================================================
+    # Build small evidence units
     #
-    # Each unit:
-    #   sentence
-    #   OR
-    #   sentence + next sentence
-    # -------------------------------------------------
+    # Instead of:
+    #
+    # claim ↔ 300-word chunk
+    #
+    # we compare:
+    #
+    # claim ↔ sentence
+    # claim ↔ two-sentence window
+    # =========================================================
 
     def _build_evidence_units(
         self,
         context: BuiltContext
     ) -> list[dict]:
+
 
         units = []
 
@@ -206,6 +274,7 @@ class ClaimGrounder:
             for index, sentence in enumerate(
                 sentences
             ):
+
 
                 #
                 # Single sentence
@@ -255,9 +324,9 @@ class ClaimGrounder:
         return units
 
 
-    # -------------------------------------------------
-    # Ground one claim
-    # -------------------------------------------------
+    # =========================================================
+    # Check ONE atomic claim against evidence
+    # =========================================================
 
     def _check_claim(
         self,
@@ -292,7 +361,9 @@ class ClaimGrounder:
 
 
         #
-        # premise = evidence
+        # NLI format:
+        #
+        # premise    = evidence
         # hypothesis = claim
         #
 
@@ -303,8 +374,7 @@ class ClaimGrounder:
                 claim
             )
 
-            for unit
-            in evidence_units
+            for unit in evidence_units
 
         ]
 
@@ -326,7 +396,11 @@ class ClaimGrounder:
 
 
         #
-        # entailment index = 1
+        # Label order:
+        #
+        # 0 = contradiction
+        # 1 = entailment
+        # 2 = neutral
         #
 
         entailment_scores = (
@@ -336,7 +410,7 @@ class ClaimGrounder:
 
         #
         # Find evidence unit with
-        # strongest entailment score
+        # strongest entailment probability
         #
 
         best_index = int(
@@ -398,7 +472,9 @@ class ClaimGrounder:
                 else None
             ),
 
-            label=predicted_label,
+            label=(
+                predicted_label
+            ),
 
             entailment_score=round(
 
@@ -424,9 +500,9 @@ class ClaimGrounder:
         )
 
 
-    # -------------------------------------------------
-    # Ground all claims
-    # -------------------------------------------------
+    # =========================================================
+    # Ground full generated answer
+    # =========================================================
 
     def ground(
         self,
@@ -434,6 +510,10 @@ class ClaimGrounder:
         context: BuiltContext
     ) -> GroundedClaims:
 
+
+        #
+        # This now returns ATOMIC claims
+        #
 
         claims = (
             self.extract_claims(
@@ -444,6 +524,11 @@ class ClaimGrounder:
 
         results = []
 
+
+        #
+        # Each atomic claim is fact-checked
+        # independently.
+        #
 
         for claim in claims:
 

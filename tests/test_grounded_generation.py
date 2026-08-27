@@ -91,12 +91,14 @@ def main():
 
     generator = GroundedGenerator(
 
-        embedder=(
+        reranker=(
             controller
             .retriever
-            .dense
-            .embedder
-        )
+            .reranked
+            .reranker
+        ),
+
+        max_relevant_claims=2
 
     )
 

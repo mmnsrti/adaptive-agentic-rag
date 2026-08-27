@@ -1,7 +1,5 @@
 from dataclasses import dataclass
 
-import numpy as np
-
 
 @dataclass
 class RelevantClaim:
@@ -28,14 +26,14 @@ class ClaimRelevanceFilter:
 
     def __init__(
         self,
-        embedder,
-        min_relevance_score: float = 0.40
+        reranker,
+        max_relevant_claims: int = 2
     ):
 
-        self.embedder = embedder
+        self.reranker = reranker
 
-        self.min_relevance_score = (
-            min_relevance_score
+        self.max_relevant_claims = (
+            max_relevant_claims
         )
 
 
@@ -71,35 +69,41 @@ class ClaimRelevanceFilter:
 
 
         #
-        # Query embedding
+        # Convert claims to the format
+        # expected by BGEReranker
         #
 
-        query_vector = (
-            self.embedder
-            .encode_queries(
-                [query]
-            )[0]
-        )
+        documents = []
+
+
+        for index, claim in enumerate(
+            supported_claims
+        ):
+
+            documents.append(
+                {
+                    "id": f"claim_{index}",
+
+                    "text": claim.claim,
+
+                    "claim": claim
+                }
+            )
 
 
         #
-        # Batch encode all claims
+        # Cross-encoder ranking
         #
 
-        claim_texts = [
+        ranked = (
+            self.reranker.rerank(
 
-            claim.claim
+                query=query,
 
-            for claim
-            in supported_claims
+                documents=documents,
 
-        ]
+                top_k=len(documents)
 
-
-        claim_vectors = (
-            self.embedder
-            .encode_documents(
-                claim_texts
             )
         )
 
@@ -109,40 +113,30 @@ class ClaimRelevanceFilter:
         filtered_claims = []
 
 
-        for claim, vector in zip(
-
-            supported_claims,
-
-            claim_vectors
-
+        for index, item in enumerate(
+            ranked
         ):
 
 
-            #
-            # Embeddings are normalized,
-            # so dot product = cosine similarity
-            #
-
-            score = float(
-
-                np.dot(
-                    query_vector,
-                    vector
-                )
-
+            original_claim = (
+                item["claim"]
             )
 
 
-            item = RelevantClaim(
+            result = RelevantClaim(
 
-                claim=claim.claim,
+                claim=(
+                    original_claim.claim
+                ),
 
                 citation_id=(
-                    claim.citation_id
+                    original_claim.citation_id
                 ),
 
                 relevance_score=round(
-                    score,
+                    float(
+                        item["rerank_score"]
+                    ),
                     4
                 )
 
@@ -150,44 +144,20 @@ class ClaimRelevanceFilter:
 
 
             if (
-                score
-                >=
-                self.min_relevance_score
+                index
+                <
+                self.max_relevant_claims
             ):
 
                 relevant_claims.append(
-                    item
+                    result
                 )
 
             else:
 
                 filtered_claims.append(
-                    item
+                    result
                 )
-
-
-        #
-        # Keep most relevant claims first
-        #
-
-        relevant_claims.sort(
-
-            key=lambda item:
-                item.relevance_score,
-
-            reverse=True
-
-        )
-
-
-        filtered_claims.sort(
-
-            key=lambda item:
-                item.relevance_score,
-
-            reverse=True
-
-        )
 
 
         return RelevanceFilterResult(
