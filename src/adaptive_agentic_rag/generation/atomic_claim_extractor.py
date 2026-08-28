@@ -89,16 +89,117 @@ class AtomicClaimExtractor:
             sentence
         )
 
-
-        return [
-
+        parts = [
             part.strip()
-
             for part in parts
-
             if part.strip()
-
         ]
+
+
+        if len(parts) <= 1:
+
+            return parts
+
+
+        cleaned_parts = []
+
+
+        #
+        # Clauses such as:
+        #
+        # however, it ...
+        # but it ...
+        # yet they ...
+        #
+        # depend on the previous clause and are
+        # not safe standalone atomic claims.
+        #
+
+        dependent_pattern = re.compile(
+            r"^(?:however|but|yet|nevertheless|nonetheless),?\s+"
+            r"(?:it|they|this|these|those|he|she)\b",
+            flags=re.IGNORECASE
+        )
+
+
+        #
+        # If the connector is followed by an explicit
+        # subject, we can keep the clause after removing
+        # the discourse connector:
+        #
+        # however, Walmart offers ...
+        # -> Walmart offers ...
+        #
+
+        connector_pattern = re.compile(
+            r"^(?:however|but|yet|nevertheless|nonetheless),?\s+",
+            flags=re.IGNORECASE
+        )
+
+
+        for index, part in enumerate(parts):
+
+            #
+            # First semicolon clause is already
+            # self-contained in the normal case.
+            #
+
+            if index == 0:
+
+                cleaned_parts.append(
+                    part
+                )
+
+                continue
+
+
+            #
+            # Drop context-dependent clauses.
+            #
+
+            if dependent_pattern.match(
+                part
+            ):
+
+                continue
+
+
+            #
+            # Remove unnecessary discourse connector
+            # from otherwise self-contained clauses.
+            #
+
+            part = connector_pattern.sub(
+                "",
+                part
+            ).strip()
+
+
+            if not part:
+
+                continue
+
+
+            #
+            # Cosmetic cleanup:
+            #
+            # users must ...
+            # -> Users must ...
+            #
+
+            part = (
+                part[0].upper()
+                +
+                part[1:]
+            )
+
+
+            cleaned_parts.append(
+                part
+            )
+
+
+        return cleaned_parts
 
 
     def _split_explanatory_clause(
