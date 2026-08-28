@@ -1,8 +1,6 @@
-from typing import Any
-
-from adaptive_agentic_rag.agents.query_router import (
-    QueryRouter
-)
+from adaptive_agentic_rag.agents.query_router import QueryRouter
+from adaptive_agentic_rag.agents.evidence_grader import EvidenceGrader
+from adaptive_agentic_rag.agents.query_rewriter import QueryRewriter
 
 from adaptive_agentic_rag.retrieval.adaptive_retriever import (
     AdaptiveRetriever
@@ -17,101 +15,81 @@ from adaptive_agentic_rag.orchestration.state import (
 )
 
 
-def _enum_value(
-    value: Any
-) -> Any:
-    """
-    Convert Enum values to plain strings
-    while leaving normal values unchanged.
-    """
-
-    return getattr(
-        value,
-        "value",
-        value
-    )
+ABSTENTION_MESSAGE = (
+    "I don't have enough evidence in the provided "
+    "sources to answer reliably."
+)
 
 
 class RAGNodes:
     """
-    Node implementations used by the LangGraph workflow.
+    LangGraph node implementations.
 
-    Important:
-    Models and services live here,
-    NOT inside AgentState.
+    This class owns shared application services such as
+    retrievers and graders.
+
+    AgentState only contains per-request data.
     """
 
     def __init__(self):
 
-        self.router = (
-            QueryRouter()
-        )
+        # --------------------------------------------------
+        # Shared services
+        # --------------------------------------------------
 
-        self.retriever = (
-            AdaptiveRetriever()
-        )
+        self.router = QueryRouter()
 
-        self.context_builder = (
-            ContextBuilder()
-        )
+        self.retriever = AdaptiveRetriever()
+
+        self.context_builder = ContextBuilder()
+
+        self.evidence_grader = EvidenceGrader()
+
+        self.query_rewriter = QueryRewriter()
 
 
-    # =====================================================
+    # ======================================================
     # Node 1
     # Query routing
-    # =====================================================
+    # ======================================================
 
     def route_query(
         self,
         state: AgentState
     ) -> dict:
 
-        query = (
-            state["current_query"]
+        query = state["current_query"]
+
+        decision = self.router.route(
+            query
         )
-
-
-        decision = (
-            self.router.route(
-                query
-            )
-        )
-
 
         return {
-
             "query_type":
-                _enum_value(
-                    decision.query_type
-                ),
+                decision["query_type"],
 
             "retrieval_strategy":
-                _enum_value(
-                    decision.retrieval_strategy
-                ),
+                decision["retrieval_strategy"],
 
             "use_reranker":
-                decision.use_reranker,
+                decision["rerank"],
 
             "use_mmr":
-                decision.use_mmr
+                decision["mmr"]
         }
 
 
-    # =====================================================
+    # ======================================================
     # Node 2
     # Retrieval
-    # =====================================================
+    # ======================================================
 
     def retrieve(
         self,
         state: AgentState
     ) -> dict:
 
-        query = (
-            state["current_query"]
-        )
-
+        query = state["current_query"]
 
         retrieval_output = (
             self.retriever.search(
@@ -119,13 +97,11 @@ class RAGNodes:
             )
         )
 
-
         results = (
             retrieval_output[
                 "results"
             ]
         )
-
 
         return {
             "retrieved_results":
@@ -133,10 +109,10 @@ class RAGNodes:
         }
 
 
-    # =====================================================
+    # ======================================================
     # Node 3
     # Context construction
-    # =====================================================
+    # ======================================================
 
     def build_context(
         self,
@@ -149,13 +125,11 @@ class RAGNodes:
             ]
         )
 
-
         context = (
             self.context_builder.build(
                 results
             )
         )
-
 
         return {
             "context":
@@ -163,9 +137,180 @@ class RAGNodes:
         }
 
 
-    # =====================================================
+    # ======================================================
+    # Node 4
+    # Evidence grading
+    # ======================================================
+
+    def grade_evidence(
+        self,
+        state: AgentState
+    ) -> dict:
+
+        original_query = (
+            state[
+                "original_query"
+            ]
+        )
+
+        context = (
+            state[
+                "context"
+            ]
+        )
+
+        query_type = (
+            state[
+                "query_type"
+            ]
+        )
+
+        if context is None:
+
+            raise ValueError(
+                "Cannot grade evidence "
+                "without a built context."
+            )
+
+        if query_type is None:
+
+            raise ValueError(
+                "Cannot grade evidence "
+                "without query_type."
+            )
+
+        grade = (
+            self.evidence_grader.grade(
+                query=original_query,
+                context=context,
+                query_type=query_type
+            )
+        )
+
+        return {
+            "evidence_sufficient":
+                grade.sufficient,
+
+            "evidence_score":
+                grade.evidence_score,
+
+            "evidence_reasons":
+                grade.reasons
+        }
+
+
+    # ======================================================
+    # Node 5
+    # Query rewriting
+    # ======================================================
+
+    def rewrite_query(
+        self,
+        state: AgentState
+    ) -> dict:
+
+        original_query = (
+            state[
+                "original_query"
+            ]
+        )
+
+        query_type = (
+            state[
+                "query_type"
+            ]
+        )
+
+        if query_type is None:
+
+            raise ValueError(
+                "Cannot rewrite query "
+                "without query_type."
+            )
+
+        #
+        # retry_count represents completed rewrites.
+        #
+        # First rewrite:
+        #
+        # retry_count = 0
+        # attempt = 1
+        #
+
+        attempt = (
+            state[
+                "retry_count"
+            ]
+            + 1
+        )
+
+        rewritten_query = (
+            self.query_rewriter.rewrite(
+                query=original_query,
+                query_type=query_type,
+                attempt=attempt
+            )
+        )
+
+        return {
+            "current_query":
+                rewritten_query,
+
+            "retry_count":
+                attempt,
+
+            "rewritten":
+                True,
+
+            #
+            # Reset round-specific state.
+            #
+            # The next retrieval round will
+            # fill these values again.
+            #
+
+            "retrieved_results":
+                [],
+
+            "context":
+                None,
+
+            "evidence_sufficient":
+                None,
+
+            "evidence_score":
+                None,
+
+            "evidence_reasons":
+                []
+        }
+
+
+    # ======================================================
+    # Node 6
+    # Abstention
+    # ======================================================
+
+    def abstain(
+        self,
+        state: AgentState
+    ) -> dict:
+
+        return {
+            "abstained":
+                True,
+
+            "raw_answer":
+                None,
+
+            "final_answer":
+                ABSTENTION_MESSAGE
+        }
+
+
+    # ======================================================
     # Resource cleanup
-    # =====================================================
+    # ======================================================
 
     def close(self):
 
@@ -175,9 +320,5 @@ class RAGNodes:
             None
         )
 
-
-        if callable(
-            close_method
-        ):
-
+        if callable(close_method):
             close_method()
