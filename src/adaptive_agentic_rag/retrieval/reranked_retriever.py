@@ -49,39 +49,67 @@ class RerankedRetriever:
         top_k=None
     ):
 
-
         if top_k is None:
 
             top_k = self.final_top_k
 
 
-
         #
-        # Step 1
-        # Hybrid Retrieval
+        # The caller may request more final results
+        # than the retriever's default rerank budget.
+        #
+        # Example:
+        #
+        # default rerank_top_k = 10
+        # caller top_k = 20
+        #
+        # We must rerank at least 20 candidates,
+        # otherwise MMR can never return 20 results.
         #
 
-        candidates = self.hybrid.search(
-            query,
-            top_k=self.hybrid.final_top_k
+        rerank_candidate_k = max(
+            self.rerank_top_k,
+            top_k * 2
         )
 
 
-
         #
+        # Hybrid retrieval must provide at least
+        # as many candidates as the reranker needs.
+        #
+
+        hybrid_candidate_k = max(
+            self.hybrid.final_top_k,
+            rerank_candidate_k
+        )
+
+
+        # =====================================================
+        # Step 1
+        # Hybrid Retrieval
+        # =====================================================
+
+        candidates = self.hybrid.search(
+            query,
+            top_k=hybrid_candidate_k
+        )
+
+
+        # =====================================================
         # Step 2
         # Cross Encoder Reranking
-        #
+        # =====================================================
 
         reranked = self.reranker.rerank(
             query,
             candidates,
-            top_k=self.rerank_top_k
+            top_k=rerank_candidate_k
         )
 
-        #
+
+        # =====================================================
         # Ensure all documents have vectors
-        #
+        # =====================================================
 
         for item in reranked:
 
@@ -98,11 +126,12 @@ class RerankedRetriever:
                     )[0]
                 )
 
-        #
+
+        # =====================================================
         # Step 3
-        # Create embeddings
-        # for MMR
-        #
+        # Build MMR inputs
+        # =====================================================
+
         document_embeddings = []
 
         valid_documents = []
@@ -110,9 +139,7 @@ class RerankedRetriever:
 
         for item in reranked:
 
-
             if "vector" not in item:
-
 
                 vector = (
                     self.hybrid
@@ -125,69 +152,54 @@ class RerankedRetriever:
                     )[0]
                 )
 
-
                 item["vector"] = vector
-
 
 
             document_embeddings.append(
                 item["vector"]
             )
 
-
             valid_documents.append(
                 item
             )
 
 
-
         reranked = valid_documents
 
-        query_embedding = (
 
+        query_embedding = (
             self.hybrid
             .dense
             .embedder
             .encode_queries(
                 [query]
             )[0]
-
         )
 
 
-
-        #
+        # =====================================================
         # Step 4
         # MMR diversity selection
-        #
+        # =====================================================
 
         selected = mmr_select(
-
             query_embedding=query_embedding,
-
             document_embeddings=document_embeddings,
-
             documents=reranked,
-
             top_k=top_k,
-
             lambda_param=self.mmr_lambda
-
         )
 
 
-
-        #
+        # =====================================================
         # Step 5
         # Normalize score
-        #
+        # =====================================================
 
         for item in selected:
 
             item["score"] = (
-
                 item["rerank_score"]
-
             )
 
 

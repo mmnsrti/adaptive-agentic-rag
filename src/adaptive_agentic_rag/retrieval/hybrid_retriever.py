@@ -49,55 +49,70 @@ class HybridRetriever:
         top_k=None
     ):
 
-
         if top_k is None:
-
             top_k = self.final_top_k
 
 
+        #
+        # The final fusion depth may be larger
+        # than the retriever's default candidate
+        # depths.
+        #
+        # Example:
+        #
+        # default dense_top_k = 20
+        # default bm25_top_k = 20
+        # requested top_k = 40
+        #
+        # Both upstream retrievers must be allowed
+        # to retrieve at least 40 candidates.
+        #
 
-        #
+        dense_candidate_k = max(
+            self.dense_top_k,
+            top_k
+        )
+
+        bm25_candidate_k = max(
+            self.bm25_top_k,
+            top_k
+        )
+
+
+        # =====================================================
         # Dense retrieval
-        #
+        # =====================================================
 
         dense_results = self.dense.search(
             query,
-            top_k=self.dense_top_k
+            top_k=dense_candidate_k
         )
 
 
-
-        #
+        # =====================================================
         # BM25 retrieval
-        #
+        # =====================================================
 
         bm25_results = self.bm25.search(
             query,
-            top_k=self.bm25_top_k
+            top_k=bm25_candidate_k
         )
 
 
-
-
-        #
+        # =====================================================
         # Reciprocal Rank Fusion
-        #
+        # =====================================================
 
         fused_results = reciprocal_rank_fusion(
-
             [
                 dense_results,
                 bm25_results
             ],
-
             top_k=top_k
-
         )
 
 
-
         return fused_results
-
 
 
 
