@@ -35,7 +35,17 @@ def main():
         (
             "Amazon Prime members receive free games and DLC throughout "
             "the year."
-        )
+        ),
+        (
+        "Walmart does not price-match competitors' products; "
+        "however, it provides price-matching on items purchased "
+        "from its own stores."
+    ),
+
+    (
+        "Amazon runs seasonal promotions; "
+        "however, Walmart offers different discount policies."
+    )
 
     ]
 

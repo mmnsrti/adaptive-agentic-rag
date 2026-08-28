@@ -15,28 +15,18 @@ from adaptive_agentic_rag.orchestration.nodes import (
 
 
 # ==========================================================
-# Conditional routing
+# Conditional routing after evidence grading
 # ==========================================================
 
 def route_after_evidence(
     state: AgentState
 ) -> str:
-    """
-    Decide what happens after evidence grading.
 
-    Possible routes:
-
-    sufficient
-        -> current retrieval has enough evidence
-
-    rewrite
-        -> evidence insufficient,
-           but retry budget remains
-
-    abstain
-        -> evidence insufficient,
-           retry budget exhausted
-    """
+    #
+    # Evidence sufficient:
+    #
+    # move to grounded generation.
+    #
 
     if (
         state[
@@ -44,14 +34,23 @@ def route_after_evidence(
         ]
         is True
     ):
-        return "sufficient"
 
+        return "generate"
+
+
+    #
+    # Evidence insufficient.
+    #
+    # Check whether self-correction
+    # still has retry budget.
+    #
 
     retry_count = (
         state[
             "retry_count"
         ]
     )
+
 
     max_retries = (
         state[
@@ -65,14 +64,20 @@ def route_after_evidence(
         <
         max_retries
     ):
+
         return "rewrite"
 
+
+    #
+    # No evidence and retry budget
+    # exhausted.
+    #
 
     return "abstain"
 
 
 # ==========================================================
-# Graph
+# Main Graph
 # ==========================================================
 
 class AdaptiveRAGGraph:
@@ -80,7 +85,7 @@ class AdaptiveRAGGraph:
     def __init__(self):
 
         # --------------------------------------------------
-        # Shared node dependencies
+        # Shared application services
         # --------------------------------------------------
 
         self.nodes = (
@@ -89,7 +94,7 @@ class AdaptiveRAGGraph:
 
 
         # --------------------------------------------------
-        # Graph builder
+        # Graph definition
         # --------------------------------------------------
 
         builder = (
@@ -100,7 +105,7 @@ class AdaptiveRAGGraph:
 
 
         # ==================================================
-        # Register nodes
+        # Nodes
         # ==================================================
 
         builder.add_node(
@@ -108,25 +113,36 @@ class AdaptiveRAGGraph:
             self.nodes.route_query
         )
 
+
         builder.add_node(
             "retrieve",
             self.nodes.retrieve
         )
+
 
         builder.add_node(
             "build_context",
             self.nodes.build_context
         )
 
+
         builder.add_node(
             "grade_evidence",
             self.nodes.grade_evidence
         )
 
+
         builder.add_node(
             "rewrite_query",
             self.nodes.rewrite_query
         )
+
+
+        builder.add_node(
+            "generate",
+            self.nodes.generate
+        )
+
 
         builder.add_node(
             "abstain",
@@ -134,8 +150,14 @@ class AdaptiveRAGGraph:
         )
 
 
+        builder.add_node(
+            "grade_answer",
+            self.nodes.grade_answer
+        )
+
+
         # ==================================================
-        # Normal edges
+        # Main forward path
         # ==================================================
 
         builder.add_edge(
@@ -143,15 +165,18 @@ class AdaptiveRAGGraph:
             "route_query"
         )
 
+
         builder.add_edge(
             "route_query",
             "retrieve"
         )
 
+
         builder.add_edge(
             "retrieve",
             "build_context"
         )
+
 
         builder.add_edge(
             "build_context",
@@ -160,17 +185,19 @@ class AdaptiveRAGGraph:
 
 
         # ==================================================
-        # Conditional edge
+        # Conditional evidence routing
         # ==================================================
 
         builder.add_conditional_edges(
+
             "grade_evidence",
 
             route_after_evidence,
 
             {
-                "sufficient":
-                    END,
+
+                "generate":
+                    "generate",
 
                 "rewrite":
                     "rewrite_query",
@@ -192,17 +219,34 @@ class AdaptiveRAGGraph:
 
 
         # ==================================================
-        # Abstention exit
+        # Both successful answers and abstentions
+        # must be graded.
         # ==================================================
 
         builder.add_edge(
+            "generate",
+            "grade_answer"
+        )
+
+
+        builder.add_edge(
             "abstain",
+            "grade_answer"
+        )
+
+
+        # ==================================================
+        # Final exit
+        # ==================================================
+
+        builder.add_edge(
+            "grade_answer",
             END
         )
 
 
         # ==================================================
-        # Compile graph
+        # Compile
         # ==================================================
 
         self.graph = (
@@ -211,7 +255,7 @@ class AdaptiveRAGGraph:
 
 
     # ======================================================
-    # Execute workflow
+    # Execute
     # ======================================================
 
     def run(
@@ -222,16 +266,20 @@ class AdaptiveRAGGraph:
 
         initial_state = (
             create_initial_state(
+
                 query=query,
+
                 max_retries=max_retries
             )
         )
+
 
         final_state = (
             self.graph.invoke(
                 initial_state
             )
         )
+
 
         return final_state
 

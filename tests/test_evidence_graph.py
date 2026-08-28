@@ -16,6 +16,10 @@ def print_state_summary(
     print(title)
 
 
+    # ==================================================
+    # Query
+    # ==================================================
+
     print(
         "\n===== QUERY ====="
     )
@@ -34,6 +38,10 @@ def print_state_summary(
         ]
     )
 
+
+    # ==================================================
+    # Routing
+    # ==================================================
 
     print(
         "\n===== ROUTING ====="
@@ -68,6 +76,10 @@ def print_state_summary(
     )
 
 
+    # ==================================================
+    # Retrieval
+    # ==================================================
+
     print(
         "\n===== RETRIEVAL ====="
     )
@@ -81,6 +93,10 @@ def print_state_summary(
         )
     )
 
+
+    # ==================================================
+    # Evidence
+    # ==================================================
 
     print(
         "\n===== EVIDENCE ====="
@@ -108,6 +124,10 @@ def print_state_summary(
     )
 
 
+    # ==================================================
+    # Self-correction
+    # ==================================================
+
     print(
         "\n===== SELF CORRECTION ====="
     )
@@ -134,8 +154,12 @@ def print_state_summary(
     )
 
 
+    # ==================================================
+    # Generation
+    # ==================================================
+
     print(
-        "\n===== FINAL ====="
+        "\n===== GENERATION ====="
     )
 
     print(
@@ -146,9 +170,93 @@ def print_state_summary(
     )
 
     print(
-        "Final answer:",
+        "Model:",
+        state[
+            "generation_model_name"
+        ]
+    )
+
+    print(
+        "Citation valid:",
+        state[
+            "citation_valid"
+        ]
+    )
+
+
+    print(
+        "\nFinal answer:"
+    )
+
+    print(
         state[
             "final_answer"
+        ]
+    )
+
+
+    # ==================================================
+    # Claims
+    # ==================================================
+
+    print(
+        "\n===== CLAIMS ====="
+    )
+    print(
+        "Supported:",
+        state[
+            "supported_claims"
+        ]
+    )
+
+    print(
+        "Unsupported:",
+        state[
+            "unsupported_claims"
+        ]
+    )
+
+    print(
+        "Relevant:",
+        state[
+            "relevant_claims"
+        ]
+    )
+
+    print(
+        "Filtered irrelevant:",
+        state[
+            "filtered_irrelevant_claims"
+        ]
+    )
+
+
+    # ==================================================
+    # Answer grading
+    # ==================================================
+
+    print(
+        "\n===== ANSWER GRADE ====="
+    )
+
+    print(
+        "Passed:",
+        state[
+            "answer_passed"
+        ]
+    )
+
+    print(
+        "Relevance score:",
+        state[
+            "answer_relevance_score"
+        ]
+    )
+
+    print(
+        "Reasons:",
+        state[
+            "answer_grade_reasons"
         ]
     )
 
@@ -164,26 +272,39 @@ def main():
 
         # ==================================================
         # CASE 1
-        # Evidence should already be sufficient
+        #
+        # Expected:
+        #
+        # sufficient evidence
+        # -> generation
+        # -> claim verification
+        # -> relevance
+        # -> citations
+        # -> answer grading
         # ==================================================
 
         query_1 = (
             "Compare Amazon and Walmart deals"
         )
 
+
         state_1 = (
             workflow.run(
+
                 query=query_1,
+
                 max_retries=1
             )
         )
 
 
         print_state_summary(
+
             title=(
                 "CASE 1 — "
-                "SUFFICIENT EVIDENCE"
+                "FULL GROUNDED ANSWER"
             ),
+
             state=state_1
         )
 
@@ -215,29 +336,56 @@ def main():
 
         assert (
             state_1[
+                "generation_result"
+            ]
+            is not None
+        )
+
+
+        assert (
+            state_1[
                 "abstained"
             ]
             is False
         )
 
 
-        #
-        # Generation is not connected
-        # to LangGraph yet.
-        #
-
         assert (
             state_1[
                 "final_answer"
             ]
-            is None
+            is not None
+        )
+
+
+        assert (
+            state_1[
+                "final_answer"
+            ].strip()
+            !=
+            ""
+        )
+
+
+        assert (
+            state_1[
+                "answer_grade"
+            ]
+            is not None
         )
 
 
         # ==================================================
         # CASE 2
-        # Evidence should remain insufficient,
-        # even after one rewrite.
+        #
+        # Expected:
+        #
+        # insufficient
+        # -> rewrite
+        # -> retrieve again
+        # -> still insufficient
+        # -> abstain
+        # -> answer grader
         # ==================================================
 
         query_2 = (
@@ -248,17 +396,21 @@ def main():
 
         state_2 = (
             workflow.run(
+
                 query=query_2,
+
                 max_retries=1
             )
         )
 
 
         print_state_summary(
+
             title=(
                 "CASE 2 — "
-                "REWRITE + ABSTENTION"
+                "SELF-CORRECTION + ABSTENTION"
             ),
+
             state=state_2
         )
 
@@ -301,6 +453,14 @@ def main():
 
         assert (
             state_2[
+                "generation_result"
+            ]
+            is not None
+        )
+
+
+        assert (
+            state_2[
                 "abstained"
             ]
             is True
@@ -315,13 +475,21 @@ def main():
         )
 
 
+        assert (
+            state_2[
+                "answer_grade"
+            ]
+            is not None
+        )
+
+
         print(
             "\n"
             "================================"
         )
 
         print(
-            "Evidence graph execution: OK"
+            "END-TO-END LANGGRAPH: OK"
         )
 
 

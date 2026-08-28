@@ -76,6 +76,10 @@ class AgentState(TypedDict):
     # Generation
     # --------------------------------------------------
 
+    generation_result: Any | None
+
+    generation_model_name: str | None
+
     raw_answer: str | None
 
     final_answer: str | None
@@ -87,14 +91,13 @@ class AgentState(TypedDict):
     # Claim verification
     # --------------------------------------------------
 
-    supported_claims: list[Any]
+    supported_claims: int
 
-    unsupported_claims: list[Any]
+    unsupported_claims: int
 
-    relevant_claims: list[Any]
+    relevant_claims: int
 
-    filtered_irrelevant_claims: list[Any]
-
+    filtered_irrelevant_claims: int
 
     # --------------------------------------------------
     # Citation validation
@@ -107,9 +110,13 @@ class AgentState(TypedDict):
     # Final answer grading
     # --------------------------------------------------
 
+    answer_grade: Any | None
+
     answer_passed: bool | None
 
     answer_relevance_score: float | None
+
+    answer_grade_reasons: list[str]
 
 
     # --------------------------------------------------
@@ -117,6 +124,8 @@ class AgentState(TypedDict):
     # --------------------------------------------------
 
     error: str | None
+
+
 def create_initial_state(
     query: str,
     max_retries: int = 1
@@ -152,25 +161,33 @@ def create_initial_state(
 
         rewritten=False,
 
+        generation_result=None,
+
+        generation_model_name=None,
+
         raw_answer=None,
 
         final_answer=None,
 
         abstained=False,
 
-        supported_claims=[],
+        supported_claims=0,
 
-        unsupported_claims=[],
+        unsupported_claims=0,
 
-        relevant_claims=[],
+        relevant_claims=0,
 
-        filtered_irrelevant_claims=[],
+        filtered_irrelevant_claims=0,
 
         citation_valid=None,
+
+        answer_grade=None,
 
         answer_passed=None,
 
         answer_relevance_score=None,
 
+        answer_grade_reasons=[],
+
         error=None
-    )    
+    )
