@@ -1,4 +1,5 @@
 {
+  "dataset": "evaluation\\datasets\\router_dev_control_180.json",
   "summary": {
     "total": 180,
     "query_type_accuracy": 0.6722222222222223,
@@ -6,6 +7,9 @@
     "rerank_accuracy": 1.0,
     "mmr_accuracy": 1.0,
     "exact_decision_accuracy": 0.6722222222222223,
+    "simple_route_precision": 1.0,
+    "simple_route_recall": 1.0,
+    "hard_to_dense_error_rate": 0.0,
     "route_distribution": {
       "simple|dense|rerank=False|mmr=False": 60,
       "multihop|hybrid|rerank=True|mmr=True": 115,

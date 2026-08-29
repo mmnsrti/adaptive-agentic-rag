@@ -1,3 +1,4 @@
+import argparse
 import json
 
 from collections import Counter, defaultdict
@@ -8,23 +9,51 @@ from adaptive_agentic_rag.agents.query_router import (
 )
 
 
-DATASET_PATH = Path(
+DEFAULT_DATASET_PATH = Path(
     "evaluation/datasets/router_dev_control_180.json"
 )
 
-OUTPUT_PATH = Path(
+DEFAULT_OUTPUT_PATH = Path(
     "evaluation/results/router_dev.json"
 )
+
+
+# ============================================================
+# CLI
+# ============================================================
+
+def parse_args():
+
+    parser = argparse.ArgumentParser()
+
+
+    parser.add_argument(
+        "--dataset",
+        type=Path,
+        default=DEFAULT_DATASET_PATH
+    )
+
+
+    parser.add_argument(
+        "--output",
+        type=Path,
+        default=DEFAULT_OUTPUT_PATH
+    )
+
+
+    return parser.parse_args()
 
 
 # ============================================================
 # Load
 # ============================================================
 
-def load_examples():
+def load_examples(
+    path: Path
+):
 
     with open(
-        DATASET_PATH,
+        path,
         "r",
         encoding="utf-8"
     ) as file:
@@ -35,32 +64,29 @@ def load_examples():
 
 
 # ============================================================
-# Main evaluation
+# Evaluation
 # ============================================================
 
 def main():
 
-    examples = (
-        load_examples()
+    args = parse_args()
+
+
+    examples = load_examples(
+        args.dataset
     )
 
 
-    router = (
-        QueryRouter()
-    )
+    router = QueryRouter()
 
 
     predictions = []
 
 
     query_type_correct = 0
-
     strategy_correct = 0
-
     rerank_correct = 0
-
     mmr_correct = 0
-
     exact_correct = 0
 
 
@@ -72,71 +98,62 @@ def main():
     route_distribution = Counter()
 
 
+    #
+    # Strategy-level diagnostics
+    #
+
+    gold_simple_count = 0
+
+    predicted_dense_count = 0
+
+    correct_simple_dense = 0
+
+    hard_count = 0
+
+    hard_sent_to_dense = 0
+
+
     for example in examples:
 
-        decision = (
-            router.route(
-                example[
-                    "question"
-                ]
-            )
-        )
-
-
-        predicted_type = (
-            decision[
-                "query_type"
-            ]
-        )
-
-
-        predicted_strategy = (
-            decision[
-                "retrieval_strategy"
-            ]
-        )
-
-
-        predicted_rerank = (
-            decision[
-                "rerank"
-            ]
-        )
-
-
-        predicted_mmr = (
-            decision[
-                "mmr"
-            ]
-        )
-
-
-        gold_type = (
+        decision = router.route(
             example[
-                "gold_query_type"
+                "question"
             ]
         )
 
 
-        gold_strategy = (
-            example[
-                "gold_retrieval_strategy"
-            ]
-        )
+        predicted_type = decision[
+            "query_type"
+        ]
+
+        predicted_strategy = decision[
+            "retrieval_strategy"
+        ]
+
+        predicted_rerank = decision[
+            "rerank"
+        ]
+
+        predicted_mmr = decision[
+            "mmr"
+        ]
 
 
-        gold_rerank = (
-            example[
-                "gold_rerank"
-            ]
-        )
+        gold_type = example[
+            "gold_query_type"
+        ]
 
+        gold_strategy = example[
+            "gold_retrieval_strategy"
+        ]
 
-        gold_mmr = (
-            example[
-                "gold_mmr"
-            ]
-        )
+        gold_rerank = example[
+            "gold_rerank"
+        ]
+
+        gold_mmr = example[
+            "gold_mmr"
+        ]
 
 
         type_ok = (
@@ -169,12 +186,9 @@ def main():
 
         exact_ok = (
             type_ok
-            and
-            strategy_ok
-            and
-            rerank_ok
-            and
-            mmr_ok
+            and strategy_ok
+            and rerank_ok
+            and mmr_ok
         )
 
 
@@ -217,6 +231,47 @@ def main():
         route_distribution[
             route_key
         ] += 1
+
+
+        # ----------------------------------------------------
+        # Simple-route diagnostics
+        # ----------------------------------------------------
+
+        if gold_type == "simple":
+
+            gold_simple_count += 1
+
+
+            if (
+                predicted_strategy
+                ==
+                "dense"
+            ):
+
+                correct_simple_dense += 1
+
+
+        else:
+
+            hard_count += 1
+
+
+            if (
+                predicted_strategy
+                ==
+                "dense"
+            ):
+
+                hard_sent_to_dense += 1
+
+
+        if (
+            predicted_strategy
+            ==
+            "dense"
+        ):
+
+            predicted_dense_count += 1
 
 
         predictions.append(
@@ -265,7 +320,38 @@ def main():
     )
 
 
+    simple_route_recall = (
+        correct_simple_dense
+        /
+        gold_simple_count
+
+        if gold_simple_count
+        else 0.0
+    )
+
+
+    simple_route_precision = (
+        correct_simple_dense
+        /
+        predicted_dense_count
+
+        if predicted_dense_count
+        else 0.0
+    )
+
+
+    hard_to_dense_error_rate = (
+        hard_sent_to_dense
+        /
+        hard_count
+
+        if hard_count
+        else 0.0
+    )
+
+
     summary = {
+
         "total":
             total,
 
@@ -304,6 +390,15 @@ def main():
                 total
             ),
 
+        "simple_route_precision":
+            simple_route_precision,
+
+        "simple_route_recall":
+            simple_route_recall,
+
+        "hard_to_dense_error_rate":
+            hard_to_dense_error_rate,
+
         "route_distribution":
             dict(
                 route_distribution
@@ -312,33 +407,33 @@ def main():
         "confusion_matrix":
             {
                 gold:
-                    dict(
-                        predictions_
-                    )
+                    dict(row)
 
-                for (
-                    gold,
-                    predictions_
-                )
+                for gold, row
                 in confusion.items()
             }
     }
 
 
-    OUTPUT_PATH.parent.mkdir(
+    args.output.parent.mkdir(
         parents=True,
         exist_ok=True
     )
 
 
     with open(
-        OUTPUT_PATH,
+        args.output,
         "w",
         encoding="utf-8"
     ) as file:
 
         json.dump(
             {
+                "dataset":
+                    str(
+                        args.dataset
+                    ),
+
                 "summary":
                     summary,
 
@@ -353,6 +448,12 @@ def main():
 
     print(
         "\n===== ROUTER EVALUATION ====="
+    )
+
+
+    print(
+        "Dataset:",
+        args.dataset
     )
 
 
@@ -385,32 +486,48 @@ def main():
 
 
     print(
-        "Rerank accuracy:",
-        round(
-            summary[
-                "rerank_accuracy"
-            ],
-            4
-        )
-    )
-
-
-    print(
-        "MMR accuracy:",
-        round(
-            summary[
-                "mmr_accuracy"
-            ],
-            4
-        )
-    )
-
-
-    print(
         "Exact decision accuracy:",
         round(
             summary[
                 "exact_decision_accuracy"
+            ],
+            4
+        )
+    )
+
+
+    print(
+        "\n===== ROUTING SAFETY ====="
+    )
+
+
+    print(
+        "Simple-route precision:",
+        round(
+            summary[
+                "simple_route_precision"
+            ],
+            4
+        )
+    )
+
+
+    print(
+        "Simple-route recall:",
+        round(
+            summary[
+                "simple_route_recall"
+            ],
+            4
+        )
+    )
+
+
+    print(
+        "Hard → Dense error rate:",
+        round(
+            summary[
+                "hard_to_dense_error_rate"
             ],
             4
         )
@@ -454,7 +571,7 @@ def main():
 
     print(
         "\nSaved:",
-        OUTPUT_PATH
+        args.output
     )
 
 
