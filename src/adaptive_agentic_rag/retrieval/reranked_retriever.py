@@ -11,7 +11,9 @@ from adaptive_agentic_rag.retrieval.mmr import (
     mmr_select
 )
 
-
+from adaptive_agentic_rag.retrieval.multi_query_retriever import (
+    MultiQueryRetriever
+)
 
 class RerankedRetriever:
 
@@ -25,12 +27,16 @@ class RerankedRetriever:
         mmr_lambda=0.7
     ):
 
-
         self.hybrid = HybridRetriever(
             dense_retriever=dense_retriever,
             final_top_k=hybrid_top_k
         )
 
+        self.multi_query = (
+            MultiQueryRetriever(
+                hybrid_retriever=self.hybrid
+            )
+        )
 
         self.reranker = BGEReranker()
 
@@ -89,11 +95,33 @@ class RerankedRetriever:
         # Hybrid Retrieval
         # =====================================================
 
-        candidates = self.hybrid.search(
-            query,
-            top_k=hybrid_candidate_k
+        #
+        # Multi-query candidate generation.
+        #
+        # Hybrid retrieval is performed over the
+        # original query plus a few deterministic
+        # facets.
+        #
+        # Cross-encoder reranking still happens
+        # only once below.
+        #
+
+        multi_query_candidate_k = max(
+            hybrid_candidate_k * 2,
+            40
         )
 
+
+        candidates = (
+            self.multi_query.search(
+
+                query,
+
+                top_k=(
+                    multi_query_candidate_k
+                )
+            )
+        )
 
         # =====================================================
         # Step 2

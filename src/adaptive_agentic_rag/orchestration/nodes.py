@@ -409,7 +409,19 @@ class RAGNodes:
 
         context = (
             self.context_builder.build(
-                results
+
+                results,
+
+                query=(
+                    state.get(
+                        "original_query"
+                    )
+                    or
+                    state.get(
+                        "current_query",
+                        ""
+                    )
+                )
             )
         )
 

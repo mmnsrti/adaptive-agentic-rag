@@ -1,85 +1,590 @@
+import re
+
 from dataclasses import dataclass
 
 
+# ============================================================
+# Lightweight lexical filtering
+# ============================================================
+
+STOPWORDS = {
+    "a",
+    "an",
+    "and",
+    "are",
+    "as",
+    "at",
+    "be",
+    "been",
+    "being",
+    "by",
+    "did",
+    "do",
+    "does",
+    "for",
+    "from",
+    "had",
+    "has",
+    "have",
+    "how",
+    "i",
+    "if",
+    "in",
+    "into",
+    "is",
+    "it",
+    "its",
+    "of",
+    "on",
+    "or",
+    "that",
+    "the",
+    "their",
+    "them",
+    "there",
+    "these",
+    "they",
+    "this",
+    "those",
+    "to",
+    "was",
+    "were",
+    "what",
+    "when",
+    "where",
+    "which",
+    "while",
+    "who",
+    "why",
+    "will",
+    "with",
+    "would",
+}
+
+
+# ============================================================
+# Data structures
+# ============================================================
+
 @dataclass
 class ContextItem:
+
     citation_id: int
+
     chunk_id: str
+
     document_id: str
+
     title: str
+
     source: str
+
     url: str | None
+
     text: str
+
     score: float
 
 
 @dataclass
 class BuiltContext:
+
     text: str
+
     items: list[ContextItem]
+
     total_words: int
 
+
+# ============================================================
+# Context builder
+# ============================================================
 
 class ContextBuilder:
 
     def __init__(
         self,
         max_words: int = 1800,
-        max_chunks: int = 8,
-        max_chunks_per_document: int = 2
+        max_chunks: int = 10,
+        max_chunks_per_document: int = 2,
+        max_words_per_chunk: int = 240,
+        min_words_per_chunk: int = 80
     ):
 
         self.max_words = max_words
+
         self.max_chunks = max_chunks
+
         self.max_chunks_per_document = (
             max_chunks_per_document
         )
 
+        self.max_words_per_chunk = (
+            max_words_per_chunk
+        )
 
-    def build(
+        self.min_words_per_chunk = (
+            min_words_per_chunk
+        )
+
+
+    # ========================================================
+    # Tokenization
+    # ========================================================
+
+    def _tokenize(
         self,
-        results: list[dict]
-    ) -> BuiltContext:
+        text: str
+    ) -> set[str]:
 
-        if not results:
+        tokens = re.findall(
+            r"\b[a-zA-Z0-9]+\b",
+            text.lower()
+        )
 
-            return BuiltContext(
-                text="",
-                items=[],
-                total_words=0
+
+        return {
+
+            token
+
+            for token in tokens
+
+            if (
+                len(token) > 1
+                and
+                token not in STOPWORDS
+            )
+        }
+
+
+    # ========================================================
+    # Sentence splitting
+    # ========================================================
+
+    def _split_sentences(
+        self,
+        text: str
+    ) -> list[str]:
+
+        text = (
+            text
+            .replace("\r\n", "\n")
+            .strip()
+        )
+
+
+        if not text:
+
+            return []
+
+
+        #
+        # Split both normal prose and bullet-heavy documents.
+        #
+
+        raw_parts = re.split(
+            r"(?<=[.!?])\s+|\n+",
+            text
+        )
+
+
+        sentences = []
+
+
+        for part in raw_parts:
+
+            part = (
+                part
+                .strip()
+                .lstrip("-•* ")
+                .strip()
             )
 
 
-        selected_items = []
+            if part:
 
-        document_counts = {}
-
-        total_words = 0
-
-
-        for result in results:
-
-            if len(selected_items) >= self.max_chunks:
-                break
+                sentences.append(
+                    part
+                )
 
 
-            document_id = result[
-                "document_id"
-            ]
+        return sentences
 
 
-            current_document_count = (
-                document_counts.get(
-                    document_id,
-                    0
+    # ========================================================
+    # Sentence relevance
+    # ========================================================
+
+    def _sentence_score(
+        self,
+        sentence: str,
+        query_terms: set[str],
+        position: int
+    ) -> float:
+
+        sentence_terms = (
+            self._tokenize(
+                sentence
+            )
+        )
+
+
+        if not sentence_terms:
+
+            return 0.0
+
+
+        overlap = (
+            query_terms
+            &
+            sentence_terms
+        )
+
+
+        overlap_count = len(
+            overlap
+        )
+
+
+        if not query_terms:
+
+            query_coverage = 0.0
+
+        else:
+
+            query_coverage = (
+                overlap_count
+                /
+                len(
+                    query_terms
                 )
             )
 
 
-            if (
-                current_document_count
-                >= self.max_chunks_per_document
-            ):
+        sentence_density = (
+            overlap_count
+            /
+            len(
+                sentence_terms
+            )
+        )
+
+
+        #
+        # Small position bonus:
+        #
+        # Earlier sentences are often useful,
+        # but lexical relevance remains dominant.
+        #
+
+        position_bonus = (
+            0.05
+            /
+            (
+                position
+                +
+                1
+            )
+        )
+
+
+        return (
+
+            2.0
+            *
+            query_coverage
+
+            +
+
+            sentence_density
+
+            +
+
+            position_bonus
+        )
+
+
+    # ========================================================
+    # Compact one retrieved chunk
+    # ========================================================
+
+    def _compact_text(
+        self,
+        text: str,
+        query: str,
+        word_budget: int
+    ) -> str:
+
+        text = text.strip()
+
+
+        if not text:
+
+            return ""
+
+
+        words = text.split()
+
+
+        if len(words) <= word_budget:
+
+            return text
+
+
+        sentences = (
+            self._split_sentences(
+                text
+            )
+        )
+
+
+        if not sentences:
+
+            return " ".join(
+                words[
+                    :word_budget
+                ]
+            )
+
+
+        query_terms = (
+            self._tokenize(
+                query
+            )
+        )
+
+
+        #
+        # If there is no usable query signal,
+        # fall back to deterministic truncation.
+        #
+
+        if not query_terms:
+
+            return " ".join(
+                words[
+                    :word_budget
+                ]
+            )
+
+
+        scored_sentences = []
+
+
+        for position, sentence in enumerate(
+            sentences
+        ):
+
+            scored_sentences.append(
+                (
+                    self._sentence_score(
+                        sentence=sentence,
+                        query_terms=query_terms,
+                        position=position
+                    ),
+
+                    position,
+
+                    sentence
+                )
+            )
+
+
+        #
+        # Highest relevance first.
+        #
+        # Position is the tie-breaker.
+        #
+
+        ranked_sentences = sorted(
+
+            scored_sentences,
+
+            key=lambda item: (
+                -item[0],
+                item[1]
+            )
+        )
+
+
+        selected = []
+
+        used_words = 0
+
+
+        for score, position, sentence in (
+            ranked_sentences
+        ):
+
+            sentence_words = (
+                sentence.split()
+            )
+
+
+            if not sentence_words:
+
+                continue
+
+
+            remaining = (
+                word_budget
+                -
+                used_words
+            )
+
+
+            if remaining <= 0:
+
+                break
+
+
+            if len(sentence_words) <= remaining:
+
+                selected.append(
+                    (
+                        position,
+                        sentence
+                    )
+                )
+
+                used_words += len(
+                    sentence_words
+                )
+
+
+            elif not selected:
+
+                #
+                # Guarantee that at least one relevant
+                # segment survives even for very long
+                # sentences.
+                #
+
+                selected.append(
+                    (
+                        position,
+
+                        " ".join(
+                            sentence_words[
+                                :remaining
+                            ]
+                        )
+                    )
+                )
+
+                used_words += remaining
+
+
+        if not selected:
+
+            return " ".join(
+                words[
+                    :word_budget
+                ]
+            )
+
+
+        #
+        # Restore source ordering so the context
+        # remains readable and coherent.
+        #
+
+        selected.sort(
+            key=lambda item: item[0]
+        )
+
+
+        compacted = " ".join(
+
+            sentence
+
+            for _, sentence
+            in selected
+        )
+
+
+        #
+        # Final hard safety check.
+        #
+
+        compacted_words = (
+            compacted.split()
+        )
+
+
+        if (
+            len(compacted_words)
+            >
+            word_budget
+        ):
+
+            compacted = " ".join(
+                compacted_words[
+                    :word_budget
+                ]
+            )
+
+
+        return compacted.strip()
+
+
+    # ========================================================
+    # Candidate selection
+    # ========================================================
+
+    def _select_candidates(
+        self,
+        results: list[dict]
+    ) -> list[dict]:
+
+        if not results:
+
+            return []
+
+
+        selected = []
+
+        selected_ids = set()
+
+        document_counts = {}
+
+
+        # ----------------------------------------------------
+        # Pass 1:
+        # maximize document diversity.
+        # ----------------------------------------------------
+
+        seen_documents = set()
+
+
+        for result in results:
+
+            if len(selected) >= self.max_chunks:
+
+                break
+
+
+            chunk_id = result.get(
+                "id"
+            )
+
+            document_id = result.get(
+                "document_id"
+            )
+
+
+            if not chunk_id or not document_id:
+
+                continue
+
+
+            if chunk_id in selected_ids:
+
+                continue
+
+
+            if document_id in seen_documents:
+
                 continue
 
 
@@ -93,48 +598,259 @@ class ContextBuilder:
 
 
             if not text:
+
                 continue
 
 
-            words = text.split()
+            selected.append(
+                result
+            )
+
+            selected_ids.add(
+                chunk_id
+            )
+
+            seen_documents.add(
+                document_id
+            )
+
+            document_counts[
+                document_id
+            ] = 1
+
+
+        # ----------------------------------------------------
+        # Pass 2:
+        # if slots remain, allow additional chunks from
+        # already-selected documents up to the configured cap.
+        # ----------------------------------------------------
+
+        if len(selected) < self.max_chunks:
+
+            for result in results:
+
+                if len(selected) >= self.max_chunks:
+
+                    break
+
+
+                chunk_id = result.get(
+                    "id"
+                )
+
+                document_id = result.get(
+                    "document_id"
+                )
+
+
+                if not chunk_id or not document_id:
+
+                    continue
+
+
+                if chunk_id in selected_ids:
+
+                    continue
+
+
+                current_count = (
+                    document_counts.get(
+                        document_id,
+                        0
+                    )
+                )
+
+
+                if (
+                    current_count
+                    >=
+                    self.max_chunks_per_document
+                ):
+
+                    continue
+
+
+                text = (
+                    result.get(
+                        "text",
+                        ""
+                    )
+                    .strip()
+                )
+
+
+                if not text:
+
+                    continue
+
+
+                selected.append(
+                    result
+                )
+
+                selected_ids.add(
+                    chunk_id
+                )
+
+                document_counts[
+                    document_id
+                ] = (
+                    current_count
+                    +
+                    1
+                )
+
+
+        return selected
+
+
+    # ========================================================
+    # Build final context
+    # ========================================================
+
+    def build(
+        self,
+        results: list[dict],
+        query: str = ""
+    ) -> BuiltContext:
+
+        if not results:
+
+            return BuiltContext(
+                text="",
+                items=[],
+                total_words=0
+            )
+
+
+        candidates = (
+            self._select_candidates(
+                results
+            )
+        )
+
+
+        if not candidates:
+
+            return BuiltContext(
+                text="",
+                items=[],
+                total_words=0
+            )
+
+
+        #
+        # Fair-share budget.
+        #
+        # With 10 candidates and 1800 words:
+        #
+        # ~180 words per evidence item.
+        #
+
+        fair_share = max(
+
+            self.min_words_per_chunk,
+
+            self.max_words
+            //
+            len(
+                candidates
+            )
+        )
+
+
+        per_chunk_budget = min(
+
+            fair_share,
+
+            self.max_words_per_chunk
+        )
+
+
+        selected_items = []
+
+        total_words = 0
+
+
+        for result in candidates:
+
+            if len(selected_items) >= self.max_chunks:
+
+                break
+
 
             remaining_words = (
                 self.max_words
-                - total_words
+                -
+                total_words
             )
 
 
             if remaining_words <= 0:
+
                 break
 
 
-            if len(words) > remaining_words:
+            item_budget = min(
+                per_chunk_budget,
+                remaining_words
+            )
 
-                text = " ".join(
-                    words[:remaining_words]
+
+            if item_budget <= 0:
+
+                break
+
+
+            original_text = (
+                result.get(
+                    "text",
+                    ""
                 )
+                .strip()
+            )
 
-                words = text.split()
+
+            compacted_text = (
+                self._compact_text(
+                    text=original_text,
+                    query=query,
+                    word_budget=item_budget
+                )
+            )
 
 
-            metadata = result.get(
-                "metadata",
-                {}
+            if not compacted_text:
+
+                continue
+
+
+            metadata = (
+                result.get(
+                    "metadata",
+                    {}
+                )
+                or {}
             )
 
 
             item = ContextItem(
 
                 citation_id=(
-                    len(selected_items)
-                    + 1
+                    len(
+                        selected_items
+                    )
+                    +
+                    1
                 ),
 
                 chunk_id=result[
                     "id"
                 ],
 
-                document_id=document_id,
+                document_id=result[
+                    "document_id"
+                ],
 
                 title=metadata.get(
                     "title",
@@ -150,7 +866,7 @@ class ContextBuilder:
                     "url"
                 ),
 
-                text=text,
+                text=compacted_text,
 
                 score=float(
                     result.get(
@@ -166,18 +882,14 @@ class ContextBuilder:
             )
 
 
-            document_counts[
-                document_id
-            ] = (
-                current_document_count
-                + 1
-            )
-
-
             total_words += len(
-                words
+                compacted_text.split()
             )
 
+
+        # ====================================================
+        # Render citation-aware context
+        # ====================================================
 
         context_parts = []
 
@@ -192,8 +904,13 @@ class ContextBuilder:
 
             if item.source:
 
+                #
+                # ASCII separator intentionally used here
+                # to avoid Windows encoding corruption.
+                #
+
                 header += (
-                    f" — {item.source}"
+                    f" - {item.source}"
                 )
 
 
@@ -213,7 +930,11 @@ class ContextBuilder:
 
 
         return BuiltContext(
+
             text=context_text,
+
             items=selected_items,
+
             total_words=total_words
+
         )
