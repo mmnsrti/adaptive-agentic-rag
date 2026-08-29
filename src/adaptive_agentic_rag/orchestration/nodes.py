@@ -370,7 +370,8 @@ class RAGNodes:
 
         retrieval_output = (
             self.retriever.search(
-                query
+                query,
+                top_k=10
             )
         )
 

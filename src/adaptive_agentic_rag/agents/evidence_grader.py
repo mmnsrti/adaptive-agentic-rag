@@ -161,6 +161,20 @@ class EvidenceGrader:
         required_documents,
         required_chunks,
         minimum_query_coverage
+
+        Evidence sufficiency currently uses two
+        safety levels:
+
+        SIMPLE:
+            single-document lookup
+
+        HARD:
+            multihop / complex questions
+
+        MULTIHOP and COMPLEX intentionally share
+        the same evidence policy because fine-grained
+        query-type classification is not reliable
+        enough to change the abstention boundary.
         """
 
         if query_type == "simple":
@@ -172,7 +186,10 @@ class EvidenceGrader:
             )
 
 
-        if query_type == "multihop":
+        if query_type in {
+            "multihop",
+            "complex"
+        }:
 
             return (
                 2,
@@ -181,21 +198,15 @@ class EvidenceGrader:
             )
 
 
-        if query_type == "complex":
-
-            return (
-                3,
-                3,
-                0.50
-            )
-
+        #
+        # Conservative fallback.
+        #
 
         return (
-            1,
-            1,
-            0.50
+            2,
+            2,
+            0.60
         )
-
 
     def grade(
         self,

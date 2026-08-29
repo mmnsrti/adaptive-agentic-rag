@@ -1,259 +1,232 @@
 import re
 
-class QueryRouter:
+
+class QueryRewriter:
 
     def __init__(self):
-
-        # ====================================================
-        # High-confidence simple lookup intents
-        # ====================================================
-
-        self.simple_patterns = [
-
-            re.compile(
-                r"^who\s+(wrote|authored)\b",
-                re.IGNORECASE
-            ),
-
-            re.compile(
-                r"^when\s+was\b.*\bpublished\b",
-                re.IGNORECASE
-            ),
-
-            re.compile(
-                r"^which\s+(source|publication|website)\b.*\bpublished\b",
-                re.IGNORECASE
-            ),
-        ]
+        pass
 
 
-        # ====================================================
-        # Complex / comparison / aggregation intents
-        # ====================================================
-
-        self.complex_patterns = [
-
-            re.compile(
-                r"\bcompare\b",
-                re.IGNORECASE
-            ),
-
-            re.compile(
-                r"\bcomparison\b",
-                re.IGNORECASE
-            ),
-
-            re.compile(
-                r"\bdifference(s)?\b",
-                re.IGNORECASE
-            ),
-
-            re.compile(
-                r"\bversus\b",
-                re.IGNORECASE
-            ),
-
-            re.compile(
-                r"\bvs\.?\b",
-                re.IGNORECASE
-            ),
-
-            re.compile(
-                r"\bsummarize\b",
-                re.IGNORECASE
-            ),
-
-            re.compile(
-                r"\banaly[sz]e\b",
-                re.IGNORECASE
-            ),
-
-            re.compile(
-                r"\bmultiple\b",
-                re.IGNORECASE
-            ),
-
-            re.compile(
-                r"\bseveral\b",
-                re.IGNORECASE
-            ),
-
-            re.compile(
-                r"\bwhich one\b",
-                re.IGNORECASE
-            ),
-        ]
-
-
-        # ====================================================
-        # Multi-hop / reasoning intents
-        # ====================================================
-
-        self.multihop_patterns = [
-
-            re.compile(
-                r"\bwhy\b",
-                re.IGNORECASE
-            ),
-
-            re.compile(
-                r"\bexplain\b",
-                re.IGNORECASE
-            ),
-
-            re.compile(
-                r"\bhow does\b",
-                re.IGNORECASE
-            ),
-
-            re.compile(
-                r"\brelationship\b",
-                re.IGNORECASE
-            ),
-
-            re.compile(
-                r"\bbetween\b",
-                re.IGNORECASE
-            ),
-        ]
-
-
-    def _intent_text(
+    def _normalize(
         self,
         query: str
     ) -> str:
 
-        text = query.strip()
-
-
-        # Remove quoted titles/entities so words inside
-        # an article title do not determine query complexity.
-
-        text = re.sub(
-            r'"[^"]*"',
-            '""',
-            text
-        )
-
-        text = re.sub(
-            r'“[^”]*”',
-            '""',
-            text
-        )
-
-
         return " ".join(
-            text.split()
+            query.strip().split()
         )
 
 
-    def classify(
+    def _rewrite_comparison(
         self,
         query: str
-    ) -> QueryType:
+    ) -> str:
 
-        intent_text = self._intent_text(
+        text = self._normalize(
             query
         )
 
-
-        # ----------------------------------------------------
-        # Simple lookup
-        # ----------------------------------------------------
-
-        for pattern in self.simple_patterns:
-
-            if pattern.search(
-                intent_text
-            ):
-
-                return QueryType.SIMPLE
-
-
-        # ----------------------------------------------------
-        # Complex / comparison
-        # ----------------------------------------------------
-
-        for pattern in self.complex_patterns:
-
-            if pattern.search(
-                intent_text
-            ):
-
-                return QueryType.COMPLEX
-
-
-        # ----------------------------------------------------
-        # Multi-hop reasoning
-        # ----------------------------------------------------
-
-        for pattern in self.multihop_patterns:
-
-            if pattern.search(
-                intent_text
-            ):
-
-                return QueryType.MULTIHOP
-
-
-        # ----------------------------------------------------
-        # Long free-form query
         #
-        # Quoted titles have already been removed.
-        # ----------------------------------------------------
+        # Example:
+        #
+        # Compare Amazon and AcmeMart loyalty cashback
+        # shipping deals
+        #
+        # ->
+        #
+        # Amazon and AcmeMart loyalty cashback
+        # shipping deals comparison
+        #
 
-        if len(
-            intent_text.split()
-        ) > 18:
+        text = re.sub(
+            r"^\s*compare\s+",
+            "",
+            text,
+            flags=re.IGNORECASE
+        )
 
-            return QueryType.MULTIHOP
+        text = re.sub(
+            r"^\s*comparison\s+(of|between)\s+",
+            "",
+            text,
+            flags=re.IGNORECASE
+        )
+
+        if not re.search(
+            r"\bcomparison\b",
+            text,
+            flags=re.IGNORECASE
+        ):
+
+            text = (
+                text.rstrip(" ?.")
+                +
+                " comparison"
+            )
+
+        return self._normalize(
+            text
+        )
 
 
-        return QueryType.SIMPLE
-
-
-    def route(
+    def _rewrite_reasoning(
         self,
         query: str
-    ):
+    ) -> str:
 
-        query_type = self.classify(
+        text = self._normalize(
+            query
+        )
+
+        #
+        # Keep the entities and important terms,
+        # but make the retrieval intent more explicit.
+        #
+
+        if re.match(
+            r"^\s*why\b",
+            text,
+            flags=re.IGNORECASE
+        ):
+
+            text = re.sub(
+                r"^\s*why\b",
+                "",
+                text,
+                count=1,
+                flags=re.IGNORECASE
+            )
+
+            return self._normalize(
+                f"{text} reasons explanation"
+            )
+
+
+        if re.match(
+            r"^\s*how\b",
+            text,
+            flags=re.IGNORECASE
+        ):
+
+            return self._normalize(
+                f"{text} explanation"
+            )
+
+
+        return self._normalize(
+            f"{text} supporting evidence"
+        )
+
+
+    def _rewrite_complex(
+        self,
+        query: str
+    ) -> str:
+
+        text = self._normalize(
+            query
+        )
+
+        if re.search(
+            r"\bcompare\b|\bcomparison\b|\bversus\b|\bvs\.?\b",
+            text,
+            flags=re.IGNORECASE
+        ):
+
+            return self._rewrite_comparison(
+                text
+            )
+
+
+        return self._normalize(
+            f"{text} relevant facts evidence"
+        )
+
+
+    def rewrite(
+        self,
+        query: str,
+        query_type: str,
+        attempt: int = 1
+    ) -> str:
+
+        text = self._normalize(
             query
         )
 
 
-        if query_type == QueryType.SIMPLE:
+        if not text:
 
-            return {
-
-                "query_type":
-                    query_type.value,
-
-                "retrieval_strategy":
-                    "dense",
-
-                "rerank":
-                    False,
-
-                "mmr":
-                    False
-            }
+            return text
 
 
-        # MULTIHOP and COMPLEX currently share
-        # the heavy retrieval path.
+        query_type = (
+            query_type
+            or ""
+        ).strip().lower()
 
-        return {
 
-            "query_type":
-                query_type.value,
+        #
+        # Comparison queries are common in our
+        # MultiHopRAG workload. Detect them even
+        # when the router labels them multihop.
+        #
 
-            "retrieval_strategy":
-                "hybrid",
+        if re.search(
+            r"^\s*compare\b|\bcomparison\b|\bversus\b|\bvs\.?\b",
+            text,
+            flags=re.IGNORECASE
+        ):
 
-            "rerank":
-                True,
+            rewritten = (
+                self._rewrite_comparison(
+                    text
+                )
+            )
 
-            "mmr":
-                True
-        }
+
+        elif query_type == "complex":
+
+            rewritten = (
+                self._rewrite_complex(
+                    text
+                )
+            )
+
+
+        elif query_type == "multihop":
+
+            rewritten = (
+                self._rewrite_reasoning(
+                    text
+                )
+            )
+
+
+        else:
+
+            #
+            # Simple queries usually do not need
+            # aggressive rewriting.
+            #
+
+            rewritten = text
+
+
+        #
+        # A later retry may add a small retrieval hint,
+        # while keeping the original entities intact.
+        #
+
+        if (
+            attempt > 1
+            and
+            rewritten == text
+        ):
+
+            rewritten = self._normalize(
+                f"{rewritten} relevant information"
+            )
+
+
+        return rewritten

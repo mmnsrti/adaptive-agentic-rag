@@ -1,0 +1,838 @@
+{
+  "source": "evaluation\\results\\end_to_end\\smoke_10.json",
+  "summary": {
+    "total": 10,
+    "answerable": 8,
+    "answered_answerable": 5,
+    "null_examples": 2,
+    "exact_match": 0.0,
+    "gold_answer_containment": 0.25,
+    "token_f1": 0.032563025210084036,
+    "answered_only_gold_containment": 0.4,
+    "answered_only_token_f1": 0.052100840336134456,
+    "citation_gold_document_precision": 0.2,
+    "citation_gold_document_recall": 0.06666666666666667,
+    "answerable_abstention_stages": {
+      "evidence_gate": 2,
+      "generation_or_grounding": 1
+    }
+  },
+  "records": [
+    {
+      "id": "eval_002f2257b5bc",
+      "question": "After the report by CBSSports.com on October 12, 2023, indicating a rumored romance between Taylor Swift and Travis Kelce, and the subsequent report by The Independent - Life and Style on December 6, 2023, discussing Taylor Swift's openness about her relationship with Travis Kelce, was there a change in the reporting of the nature of their relationship?",
+      "gold_answer": "Yes",
+      "gold_question_type": "temporal_query",
+      "is_answerable": true,
+      "gold_evidence_document_ids": [
+        "doc_0059",
+        "doc_0128",
+        "doc_0046"
+      ],
+      "latency_ms": 21244.085800000903,
+      "predicted_query_type": "multihop",
+      "retrieval_strategy": "hybrid",
+      "use_reranker": true,
+      "use_mmr": true,
+      "original_query": "After the report by CBSSports.com on October 12, 2023, indicating a rumored romance between Taylor Swift and Travis Kelce, and the subsequent report by The Independent - Life and Style on December 6, 2023, discussing Taylor Swift's openness about her relationship with Travis Kelce, was there a change in the reporting of the nature of their relationship?",
+      "current_query": "After the report by CBSSports.com on October 12, 2023, indicating a rumored romance between Taylor Swift and Travis Kelce, and the subsequent report by The Independent - Life and Style on December 6, 2023, discussing Taylor Swift's openness about her relationship with Travis Kelce, was there a change in the reporting of the nature of their relationship?",
+      "retry_count": 0,
+      "rewritten": false,
+      "retrieved_count": 5,
+      "evidence_sufficient": true,
+      "evidence_score": 0.8103,
+      "evidence_reasons": [
+        "Evidence appears sufficient."
+      ],
+      "abstained": false,
+      "generation_model_name": "Qwen/Qwen2.5-1.5B-Instruct",
+      "raw_answer": "- Taylor Swift revealed her secret start to her relationship with Travis Kelce in an interview with Time.\n- The reported romance between Taylor Swift and Travis Kelce became public knowledge through multiple sources, including CBSSports.com and The Independent - Life and Style.\n- There was a significant increase in Kelce's jersey sales, podcast popularity, and Instagram follower count after Swift's attendance at Kelce's games.\n- Fans speculated about the romantic connection between the pair based on their frequent appearances together at sporting events and Swift's involvement in Kelce's personal life.\n- Kelce initially denied any romantic interest in Swift, stating he deleted inappropriate tweets before going viral.",
+      "final_answer": "- Fans speculated about the romantic connection between the pair based on their frequent appearances together at sporting events. [3]\n- Taylor Swift revealed her secret start to her relationship with Travis Kelce in an interview with Time. [1]",
+      "supported_claims": 5,
+      "unsupported_claims": 2,
+      "relevant_claims": 2,
+      "filtered_irrelevant_claims": 3,
+      "citation_valid": true,
+      "answer_passed": true,
+      "answer_relevance_score": 0.7645,
+      "answer_grade_reasons": [
+        "Final answer passed baseline quality checks."
+      ],
+      "retrieved_document_ids": [
+        "doc_0295",
+        "doc_0059",
+        "doc_0174",
+        "doc_0045",
+        "doc_0311"
+      ],
+      "context_citations": [
+        {
+          "citation_id": 1,
+          "document_id": "doc_0295"
+        },
+        {
+          "citation_id": 2,
+          "document_id": "doc_0059"
+        },
+        {
+          "citation_id": 3,
+          "document_id": "doc_0174"
+        },
+        {
+          "citation_id": 4,
+          "document_id": "doc_0045"
+        },
+        {
+          "citation_id": 5,
+          "document_id": "doc_0311"
+        }
+      ],
+      "abstention_stage": null,
+      "graph_error": null,
+      "exact_match": 0.0,
+      "gold_contained": 0.0,
+      "token_f1": 0.0,
+      "citation_evaluation": {
+        "cited_ids": [
+          1,
+          3
+        ],
+        "cited_document_ids": [
+          "doc_0174",
+          "doc_0295"
+        ],
+        "gold_document_precision": 0.0,
+        "gold_document_recall": 0.0
+      }
+    },
+    {
+      "id": "eval_00d16f93f9b3",
+      "question": "After the TechCrunch report on Sam Altman backing a teen's AI startup published on October 7, 2023, compared to the TechCrunch report suggesting Sam Altman was not being fully truthful with the board published on November 18, 2023, was there a change in the portrayal of Sam Altman's professional conduct?",
+      "gold_answer": "Yes",
+      "gold_question_type": "temporal_query",
+      "is_answerable": true,
+      "gold_evidence_document_ids": [
+        "doc_0332",
+        "doc_0011",
+        "doc_0333"
+      ],
+      "latency_ms": 38383.71779999943,
+      "predicted_query_type": "multihop",
+      "retrieval_strategy": "hybrid",
+      "use_reranker": true,
+      "use_mmr": true,
+      "original_query": "After the TechCrunch report on Sam Altman backing a teen's AI startup published on October 7, 2023, compared to the TechCrunch report suggesting Sam Altman was not being fully truthful with the board published on November 18, 2023, was there a change in the portrayal of Sam Altman's professional conduct?",
+      "current_query": "After the TechCrunch report on Sam Altman backing a teen's AI startup published on October 7, 2023, compared to the TechCrunch report suggesting Sam Altman was not being fully truthful with the board published on November 18, 2023, was there a change in the portrayal of Sam Altman's professional conduct?",
+      "retry_count": 0,
+      "rewritten": false,
+      "retrieved_count": 5,
+      "evidence_sufficient": true,
+      "evidence_score": 0.78,
+      "evidence_reasons": [
+        "Evidence appears sufficient."
+      ],
+      "abstained": false,
+      "generation_model_name": "Qwen/Qwen2.5-1.5B-Instruct",
+      "raw_answer": "- There was a significant change in the portrayal of Sam Altman's professional conduct following the TechCrunch reports.\n- The initial report suggested Altman was not being fully truthful with the board.\n- The subsequent report indicated Altman was fired from his position at OpenAI.\n- Altman's firing led to increased pressure from investors and board members to reinstate him.\n- The board eventually agreed to reverse course, allowing Altman and Brockman to return, though with significant governance changes.\n- Altman expressed regret for his actions and plans to speak further about the future of OpenAI.",
+      "final_answer": "- The initial report suggested Altman was not being fully truthful with the board. [4]\n- Altman's firing led to increased pressure from investors and board members to reinstate him. [1]",
+      "supported_claims": 5,
+      "unsupported_claims": 1,
+      "relevant_claims": 2,
+      "filtered_irrelevant_claims": 3,
+      "citation_valid": true,
+      "answer_passed": true,
+      "answer_relevance_score": 0.6336,
+      "answer_grade_reasons": [
+        "Final answer passed baseline quality checks."
+      ],
+      "retrieved_document_ids": [
+        "doc_0415",
+        "doc_0011",
+        "doc_0333",
+        "doc_0516",
+        "doc_0332"
+      ],
+      "context_citations": [
+        {
+          "citation_id": 1,
+          "document_id": "doc_0415"
+        },
+        {
+          "citation_id": 2,
+          "document_id": "doc_0011"
+        },
+        {
+          "citation_id": 3,
+          "document_id": "doc_0333"
+        },
+        {
+          "citation_id": 4,
+          "document_id": "doc_0516"
+        },
+        {
+          "citation_id": 5,
+          "document_id": "doc_0332"
+        }
+      ],
+      "abstention_stage": null,
+      "graph_error": null,
+      "exact_match": 0.0,
+      "gold_contained": 0.0,
+      "token_f1": 0.0,
+      "citation_evaluation": {
+        "cited_ids": [
+          1,
+          4
+        ],
+        "cited_document_ids": [
+          "doc_0415",
+          "doc_0516"
+        ],
+        "gold_document_precision": 0.0,
+        "gold_document_recall": 0.0
+      }
+    },
+    {
+      "id": "eval_02b3973ad85f",
+      "question": "Which company, covered by Engadget and Polygon, is set to release an updated gaming hardware with over 300 improvements on November 16, emphasizing a singular performance target for developers?",
+      "gold_answer": "Valve",
+      "gold_question_type": "inference_query",
+      "is_answerable": true,
+      "gold_evidence_document_ids": [
+        "doc_0524",
+        "doc_0354",
+        "doc_0169"
+      ],
+      "latency_ms": 36295.857299999625,
+      "predicted_query_type": "multihop",
+      "retrieval_strategy": "hybrid",
+      "use_reranker": true,
+      "use_mmr": true,
+      "original_query": "Which company, covered by Engadget and Polygon, is set to release an updated gaming hardware with over 300 improvements on November 16, emphasizing a singular performance target for developers?",
+      "current_query": "Which company, covered by Engadget and Polygon, is set to release an updated gaming hardware with over 300 improvements on November 16, emphasizing a singular performance target for developers?",
+      "retry_count": 0,
+      "rewritten": false,
+      "retrieved_count": 5,
+      "evidence_sufficient": true,
+      "evidence_score": 0.8553,
+      "evidence_reasons": [
+        "Evidence appears sufficient.",
+        "Potentially weak evidence citations: [2, 3, 5]"
+      ],
+      "abstained": false,
+      "generation_model_name": "Qwen/Qwen2.5-1.5B-Instruct",
+      "raw_answer": "- Valve plans for successive generations of handhelds, indicating ongoing development efforts beyond the current Steam Deck.\n- The Steam Deck OLED arrives on November 16th with significant improvements including an OLED display and enhanced performance targeting developers.\n- The Steam Deck offers various configurations ranging from the standard LCD model to a limited edition with a translucent shell, catering to different preferences and budgets.\n- The Steam Deck aims to provide developers with consistent performance across multiple models, ensuring compatibility and ease of use regardless of the specific configuration chosen.",
+      "final_answer": "- Valve plans for successive generations of handhelds, indicating ongoing development efforts beyond the current Steam Deck. [1]",
+      "supported_claims": 1,
+      "unsupported_claims": 3,
+      "relevant_claims": 1,
+      "filtered_irrelevant_claims": 0,
+      "citation_valid": true,
+      "answer_passed": false,
+      "answer_relevance_score": 0.4553,
+      "answer_grade_reasons": [
+        "Too many generated claims were unsupported: 0.25 < 0.50"
+      ],
+      "retrieved_document_ids": [
+        "doc_0524",
+        "doc_0592",
+        "doc_0213",
+        "doc_0526",
+        "doc_0308"
+      ],
+      "context_citations": [
+        {
+          "citation_id": 1,
+          "document_id": "doc_0524"
+        },
+        {
+          "citation_id": 2,
+          "document_id": "doc_0592"
+        },
+        {
+          "citation_id": 3,
+          "document_id": "doc_0213"
+        },
+        {
+          "citation_id": 4,
+          "document_id": "doc_0526"
+        },
+        {
+          "citation_id": 5,
+          "document_id": "doc_0308"
+        }
+      ],
+      "abstention_stage": null,
+      "graph_error": null,
+      "exact_match": 0.0,
+      "gold_contained": 1.0,
+      "token_f1": 0.11764705882352941,
+      "citation_evaluation": {
+        "cited_ids": [
+          1
+        ],
+        "cited_document_ids": [
+          "doc_0524"
+        ],
+        "gold_document_precision": 1.0,
+        "gold_document_recall": 0.3333333333333333
+      }
+    },
+    {
+      "id": "eval_02f51dafcc4a",
+      "question": "Which company, covered by both TechCrunch and The Verge, is known for its superior architecture in generative AI models, secures default search engine positions through deals with major tech firms, and is involved in legal disputes potentially affecting phones, app stores, and news publishers' revenues?",
+      "gold_answer": "Google",
+      "gold_question_type": "inference_query",
+      "is_answerable": true,
+      "gold_evidence_document_ids": [
+        "doc_0126",
+        "doc_0014",
+        "doc_0355",
+        "doc_0033"
+      ],
+      "latency_ms": 54402.18230000028,
+      "predicted_query_type": "multihop",
+      "retrieval_strategy": "hybrid",
+      "use_reranker": true,
+      "use_mmr": true,
+      "original_query": "Which company, covered by both TechCrunch and The Verge, is known for its superior architecture in generative AI models, secures default search engine positions through deals with major tech firms, and is involved in legal disputes potentially affecting phones, app stores, and news publishers' revenues?",
+      "current_query": "Which company, covered by both TechCrunch and The Verge, is known for its superior architecture in generative AI models, secures default search engine positions through deals with major tech firms, and is involved in legal disputes potentially affecting phones, app stores, and news publishers' revenues?",
+      "retry_count": 0,
+      "rewritten": false,
+      "retrieved_count": 5,
+      "evidence_sufficient": true,
+      "evidence_score": 0.8,
+      "evidence_reasons": [
+        "Evidence appears sufficient.",
+        "Potentially weak evidence citations: [3]"
+      ],
+      "abstained": false,
+      "generation_model_name": "Qwen/Qwen2.5-1.5B-Instruct",
+      "raw_answer": "- **TechCrunch**: \n    - Rumors suggest OpenAI may be considering developing its own AI chips.\n    - Google’s recent filing with the US Copyright Office outlines its stance on artificial intelligence and copyright.\n\n- **The Verge**:\n    - Google secured default search engine positions through deals with major tech firms.\n    - Legal disputes involving phone manufacturers, app stores, and news publishers' revenues are potentially affected.\n\n- **TechCrunch**:\n    - News publisher Helena World Chronicle filed a class action antitrust suit against Google, accusing the company of anticompetitive behavior in violation of U.S. antitrust laws.\n    - Google’s Search Generative Experience (SGE) and Bard AI chatbot are cited as contributing to the issue.",
+      "final_answer": "- Google secured default search engine positions through deals with major tech firms. [5]\n- *TechCrunch**:. [4]",
+      "supported_claims": 7,
+      "unsupported_claims": 3,
+      "relevant_claims": 2,
+      "filtered_irrelevant_claims": 5,
+      "citation_valid": true,
+      "answer_passed": true,
+      "answer_relevance_score": 0.6045,
+      "answer_grade_reasons": [
+        "Final answer passed baseline quality checks."
+      ],
+      "retrieved_document_ids": [
+        "doc_0033",
+        "doc_0043",
+        "doc_0381",
+        "doc_0075",
+        "doc_0237"
+      ],
+      "context_citations": [
+        {
+          "citation_id": 1,
+          "document_id": "doc_0033"
+        },
+        {
+          "citation_id": 2,
+          "document_id": "doc_0043"
+        },
+        {
+          "citation_id": 3,
+          "document_id": "doc_0381"
+        },
+        {
+          "citation_id": 4,
+          "document_id": "doc_0075"
+        },
+        {
+          "citation_id": 5,
+          "document_id": "doc_0237"
+        }
+      ],
+      "abstention_stage": null,
+      "graph_error": null,
+      "exact_match": 0.0,
+      "gold_contained": 1.0,
+      "token_f1": 0.14285714285714288,
+      "citation_evaluation": {
+        "cited_ids": [
+          4,
+          5
+        ],
+        "cited_document_ids": [
+          "doc_0075",
+          "doc_0237"
+        ],
+        "gold_document_precision": 0.0,
+        "gold_document_recall": 0.0
+      }
+    },
+    {
+      "id": "eval_04b92669fb3e",
+      "question": "Who is the individual whose trial involves contrasting legal narratives presented to a jury, as reported by Fortune, was previously likened to a prominent investor but not by TechCrunch, admitted to being aware of a significant financial discrepancy after a judge's intervention according to The Verge, and is accused of intentional fraud for personal gain as per allegations mentioned in a second TechCrunch article?",
+      "gold_answer": "Sam Bankman-Fried",
+      "gold_question_type": "inference_query",
+      "is_answerable": true,
+      "gold_evidence_document_ids": [
+        "doc_0031",
+        "doc_0010",
+        "doc_0083",
+        "doc_0011"
+      ],
+      "latency_ms": 14591.387399999803,
+      "predicted_query_type": "multihop",
+      "retrieval_strategy": "hybrid",
+      "use_reranker": true,
+      "use_mmr": true,
+      "original_query": "Who is the individual whose trial involves contrasting legal narratives presented to a jury, as reported by Fortune, was previously likened to a prominent investor but not by TechCrunch, admitted to being aware of a significant financial discrepancy after a judge's intervention according to The Verge, and is accused of intentional fraud for personal gain as per allegations mentioned in a second TechCrunch article?",
+      "current_query": "Who is the individual whose trial involves contrasting legal narratives presented to a jury, as reported by Fortune, was previously likened to a prominent investor but not by TechCrunch, admitted to being aware of a significant financial discrepancy after a judge's intervention according to The Verge, and is accused of intentional fraud for personal gain as per allegations mentioned in a second TechCrunch article? supporting evidence",
+      "retry_count": 1,
+      "rewritten": true,
+      "retrieved_count": 5,
+      "evidence_sufficient": false,
+      "evidence_score": 0.673,
+      "evidence_reasons": [
+        "Query term coverage is too low: 0.41 < 0.60",
+        "Potentially weak evidence citations: [1, 2, 3, 4, 5]"
+      ],
+      "abstained": true,
+      "generation_model_name": null,
+      "raw_answer": null,
+      "final_answer": "I don't have enough evidence in the provided sources to answer reliably.",
+      "supported_claims": 0,
+      "unsupported_claims": 0,
+      "relevant_claims": 0,
+      "filtered_irrelevant_claims": 0,
+      "citation_valid": true,
+      "answer_passed": true,
+      "answer_relevance_score": null,
+      "answer_grade_reasons": [
+        "Correctly abstained when evidence was insufficient."
+      ],
+      "retrieved_document_ids": [
+        "doc_0030",
+        "doc_0009",
+        "doc_0053",
+        "doc_0031",
+        "doc_0226"
+      ],
+      "context_citations": [
+        {
+          "citation_id": 1,
+          "document_id": "doc_0030"
+        },
+        {
+          "citation_id": 2,
+          "document_id": "doc_0009"
+        },
+        {
+          "citation_id": 3,
+          "document_id": "doc_0053"
+        },
+        {
+          "citation_id": 4,
+          "document_id": "doc_0031"
+        },
+        {
+          "citation_id": 5,
+          "document_id": "doc_0226"
+        }
+      ],
+      "abstention_stage": "evidence_gate",
+      "graph_error": null,
+      "exact_match": 0.0,
+      "gold_contained": 0.0,
+      "token_f1": 0.0,
+      "citation_evaluation": {
+        "cited_ids": [],
+        "cited_document_ids": [],
+        "gold_document_precision": null,
+        "gold_document_recall": 0.0
+      }
+    },
+    {
+      "id": "eval_0514d6cef13b",
+      "question": "Considering the information from a BBC article detailing Indrani Roy's philanthropic efforts and a Forbes article discussing Indrani Roy's investments in technology startups, which sector, represented by a single letter, has Indrani Roy shown a significant interest in according to both sources?",
+      "gold_answer": "Insufficient information.",
+      "gold_question_type": "null_query",
+      "is_answerable": false,
+      "gold_evidence_document_ids": [],
+      "latency_ms": 13673.882999999478,
+      "predicted_query_type": "multihop",
+      "retrieval_strategy": "hybrid",
+      "use_reranker": true,
+      "use_mmr": true,
+      "original_query": "Considering the information from a BBC article detailing Indrani Roy's philanthropic efforts and a Forbes article discussing Indrani Roy's investments in technology startups, which sector, represented by a single letter, has Indrani Roy shown a significant interest in according to both sources?",
+      "current_query": "Considering the information from a BBC article detailing Indrani Roy's philanthropic efforts and a Forbes article discussing Indrani Roy's investments in technology startups, which sector, represented by a single letter, has Indrani Roy shown a significant interest in according to both sources? supporting evidence",
+      "retry_count": 1,
+      "rewritten": true,
+      "retrieved_count": 5,
+      "evidence_sufficient": false,
+      "evidence_score": 0.6562,
+      "evidence_reasons": [
+        "Query term coverage is too low: 0.38 < 0.60",
+        "Potentially weak evidence citations: [1, 2, 4, 5]"
+      ],
+      "abstained": true,
+      "generation_model_name": null,
+      "raw_answer": null,
+      "final_answer": "I don't have enough evidence in the provided sources to answer reliably.",
+      "supported_claims": 0,
+      "unsupported_claims": 0,
+      "relevant_claims": 0,
+      "filtered_irrelevant_claims": 0,
+      "citation_valid": true,
+      "answer_passed": true,
+      "answer_relevance_score": null,
+      "answer_grade_reasons": [
+        "Correctly abstained when evidence was insufficient."
+      ],
+      "retrieved_document_ids": [
+        "doc_0075",
+        "doc_0514",
+        "doc_0448",
+        "doc_0532",
+        "doc_0011"
+      ],
+      "context_citations": [
+        {
+          "citation_id": 1,
+          "document_id": "doc_0075"
+        },
+        {
+          "citation_id": 2,
+          "document_id": "doc_0514"
+        },
+        {
+          "citation_id": 3,
+          "document_id": "doc_0448"
+        },
+        {
+          "citation_id": 4,
+          "document_id": "doc_0532"
+        },
+        {
+          "citation_id": 5,
+          "document_id": "doc_0011"
+        }
+      ],
+      "abstention_stage": "evidence_gate",
+      "graph_error": null
+    },
+    {
+      "id": "eval_074e268b606c",
+      "question": "Considering the economic forecasts from a Bloomberg article and the diplomatic developments reported by The Korea Herald, which South Korean minister, identified by their initial, is at the center of negotiating trade agreements that could potentially influence the country's GDP growth projections for the next fiscal year?",
+      "gold_answer": "Insufficient information.",
+      "gold_question_type": "null_query",
+      "is_answerable": false,
+      "gold_evidence_document_ids": [],
+      "latency_ms": 12805.316999998468,
+      "predicted_query_type": "multihop",
+      "retrieval_strategy": "hybrid",
+      "use_reranker": true,
+      "use_mmr": true,
+      "original_query": "Considering the economic forecasts from a Bloomberg article and the diplomatic developments reported by The Korea Herald, which South Korean minister, identified by their initial, is at the center of negotiating trade agreements that could potentially influence the country's GDP growth projections for the next fiscal year?",
+      "current_query": "Considering the economic forecasts from a Bloomberg article and the diplomatic developments reported by The Korea Herald, which South Korean minister, identified by their initial, is at the center of negotiating trade agreements that could potentially influence the country's GDP growth projections for the next fiscal year? supporting evidence",
+      "retry_count": 1,
+      "rewritten": true,
+      "retrieved_count": 5,
+      "evidence_sufficient": false,
+      "evidence_score": 0.7067,
+      "evidence_reasons": [
+        "Query term coverage is too low: 0.47 < 0.60",
+        "Potentially weak evidence citations: [1, 2, 5]"
+      ],
+      "abstained": true,
+      "generation_model_name": null,
+      "raw_answer": null,
+      "final_answer": "I don't have enough evidence in the provided sources to answer reliably.",
+      "supported_claims": 0,
+      "unsupported_claims": 0,
+      "relevant_claims": 0,
+      "filtered_irrelevant_claims": 0,
+      "citation_valid": true,
+      "answer_passed": true,
+      "answer_relevance_score": null,
+      "answer_grade_reasons": [
+        "Correctly abstained when evidence was insufficient."
+      ],
+      "retrieved_document_ids": [
+        "doc_0125",
+        "doc_0532",
+        "doc_0306",
+        "doc_0298",
+        "doc_0503"
+      ],
+      "context_citations": [
+        {
+          "citation_id": 1,
+          "document_id": "doc_0125"
+        },
+        {
+          "citation_id": 2,
+          "document_id": "doc_0532"
+        },
+        {
+          "citation_id": 3,
+          "document_id": "doc_0306"
+        },
+        {
+          "citation_id": 4,
+          "document_id": "doc_0298"
+        },
+        {
+          "citation_id": 5,
+          "document_id": "doc_0503"
+        }
+      ],
+      "abstention_stage": "evidence_gate",
+      "graph_error": null
+    },
+    {
+      "id": "eval_090554e34f30",
+      "question": "Does the 'Sporting News' article identify Scott McTominay as Manchester United's top scorer for the season, while the 'TalkSport' article suggests Erling Haaland has the chance to become the overall top scorer in 2023, indicating a difference in the scope of their scoring achievements?",
+      "gold_answer": "Yes",
+      "gold_question_type": "comparison_query",
+      "is_answerable": true,
+      "gold_evidence_document_ids": [
+        "doc_0129",
+        "doc_0277"
+      ],
+      "latency_ms": 12157.145600001968,
+      "predicted_query_type": "complex",
+      "retrieval_strategy": "hybrid",
+      "use_reranker": true,
+      "use_mmr": true,
+      "original_query": "Does the 'Sporting News' article identify Scott McTominay as Manchester United's top scorer for the season, while the 'TalkSport' article suggests Erling Haaland has the chance to become the overall top scorer in 2023, indicating a difference in the scope of their scoring achievements?",
+      "current_query": "Does the 'Sporting News' article identify Scott McTominay as Manchester United's top scorer for the season, while the 'TalkSport' article suggests Erling Haaland has the chance to become the overall top scorer in 2023, indicating a difference in the scope of their scoring achievements? relevant facts evidence",
+      "retry_count": 1,
+      "rewritten": true,
+      "retrieved_count": 5,
+      "evidence_sufficient": false,
+      "evidence_score": 0.7759,
+      "evidence_reasons": [
+        "Query term coverage is too low: 0.59 < 0.60",
+        "Potentially weak evidence citations: [5]"
+      ],
+      "abstained": true,
+      "generation_model_name": null,
+      "raw_answer": null,
+      "final_answer": "I don't have enough evidence in the provided sources to answer reliably.",
+      "supported_claims": 0,
+      "unsupported_claims": 0,
+      "relevant_claims": 0,
+      "filtered_irrelevant_claims": 0,
+      "citation_valid": true,
+      "answer_passed": true,
+      "answer_relevance_score": null,
+      "answer_grade_reasons": [
+        "Correctly abstained when evidence was insufficient."
+      ],
+      "retrieved_document_ids": [
+        "doc_0129",
+        "doc_0277",
+        "doc_0571",
+        "doc_0400",
+        "doc_0242"
+      ],
+      "context_citations": [
+        {
+          "citation_id": 1,
+          "document_id": "doc_0129"
+        },
+        {
+          "citation_id": 2,
+          "document_id": "doc_0277"
+        },
+        {
+          "citation_id": 3,
+          "document_id": "doc_0571"
+        },
+        {
+          "citation_id": 4,
+          "document_id": "doc_0400"
+        },
+        {
+          "citation_id": 5,
+          "document_id": "doc_0242"
+        }
+      ],
+      "abstention_stage": "evidence_gate",
+      "graph_error": null,
+      "exact_match": 0.0,
+      "gold_contained": 0.0,
+      "token_f1": 0.0,
+      "citation_evaluation": {
+        "cited_ids": [],
+        "cited_document_ids": [],
+        "gold_document_precision": null,
+        "gold_document_recall": 0.0
+      }
+    },
+    {
+      "id": "eval_0e73e16e3d82",
+      "question": "Does the TechCrunch article on the antitrust suit against Google claim that Google's behavior towards news publishers is anticompetitive, while the other TechCrunch article suggests that Google has no plans to implement additional measures on YouTube, indicating a difference in Google's approach to news publishers and content regulation on YouTube?",
+      "gold_answer": "Yes",
+      "gold_question_type": "comparison_query",
+      "is_answerable": true,
+      "gold_evidence_document_ids": [
+        "doc_0033",
+        "doc_0248"
+      ],
+      "latency_ms": 29227.109800001926,
+      "predicted_query_type": "complex",
+      "retrieval_strategy": "hybrid",
+      "use_reranker": true,
+      "use_mmr": true,
+      "original_query": "Does the TechCrunch article on the antitrust suit against Google claim that Google's behavior towards news publishers is anticompetitive, while the other TechCrunch article suggests that Google has no plans to implement additional measures on YouTube, indicating a difference in Google's approach to news publishers and content regulation on YouTube?",
+      "current_query": "Does the TechCrunch article on the antitrust suit against Google claim that Google's behavior towards news publishers is anticompetitive, while the other TechCrunch article suggests that Google has no plans to implement additional measures on YouTube, indicating a difference in Google's approach to news publishers and content regulation on YouTube?",
+      "retry_count": 0,
+      "rewritten": false,
+      "retrieved_count": 5,
+      "evidence_sufficient": true,
+      "evidence_score": 0.837,
+      "evidence_reasons": [
+        "Evidence appears sufficient."
+      ],
+      "abstained": true,
+      "generation_model_name": "Qwen/Qwen2.5-1.5B-Instruct",
+      "raw_answer": "- The TechCrunch article on the antitrust suit against Google claims that Google's behavior towards news publishers is anticompetitive, citing new AI technologies like Google's Search Generative Experience (SGE) and Bard AI chatbot as worsening the problem.\n- The TechCrunch article on the antitrust suit against Google suggests that Google has no plans to implement additional measures on YouTube, indicating a difference in Google's approach to news publishers and content regulation on YouTube.",
+      "final_answer": "I couldn't find enough supported and relevant claims in the retrieved evidence to answer reliably.",
+      "supported_claims": 0,
+      "unsupported_claims": 2,
+      "relevant_claims": 0,
+      "filtered_irrelevant_claims": 0,
+      "citation_valid": false,
+      "answer_passed": false,
+      "answer_relevance_score": null,
+      "answer_grade_reasons": [
+        "Generation abstained even though evidence was considered sufficient."
+      ],
+      "retrieved_document_ids": [
+        "doc_0033",
+        "doc_0015",
+        "doc_0237",
+        "doc_0042",
+        "doc_0248"
+      ],
+      "context_citations": [
+        {
+          "citation_id": 1,
+          "document_id": "doc_0033"
+        },
+        {
+          "citation_id": 2,
+          "document_id": "doc_0015"
+        },
+        {
+          "citation_id": 3,
+          "document_id": "doc_0237"
+        },
+        {
+          "citation_id": 4,
+          "document_id": "doc_0042"
+        },
+        {
+          "citation_id": 5,
+          "document_id": "doc_0248"
+        }
+      ],
+      "abstention_stage": "generation_or_grounding",
+      "graph_error": null,
+      "exact_match": 0.0,
+      "gold_contained": 0.0,
+      "token_f1": 0.0,
+      "citation_evaluation": {
+        "cited_ids": [],
+        "cited_document_ids": [],
+        "gold_document_precision": null,
+        "gold_document_recall": 0.0
+      }
+    },
+    {
+      "id": "eval_10505620ffbb",
+      "question": "Does the TechCrunch article suggest that Google's behavior towards news publishers is anticompetitive, while The Verge focuses on Google's role in the Epic v. Google trial without making a similar claim about anticompetitive actions?",
+      "gold_answer": "Yes",
+      "gold_question_type": "comparison_query",
+      "is_answerable": true,
+      "gold_evidence_document_ids": [
+        "doc_0299",
+        "doc_0011",
+        "doc_0033"
+      ],
+      "latency_ms": 43820.15110000066,
+      "predicted_query_type": "multihop",
+      "retrieval_strategy": "hybrid",
+      "use_reranker": true,
+      "use_mmr": true,
+      "original_query": "Does the TechCrunch article suggest that Google's behavior towards news publishers is anticompetitive, while The Verge focuses on Google's role in the Epic v. Google trial without making a similar claim about anticompetitive actions?",
+      "current_query": "Does the TechCrunch article suggest that Google's behavior towards news publishers is anticompetitive, while The Verge focuses on Google's role in the Epic v. Google trial without making a similar claim about anticompetitive actions?",
+      "retry_count": 0,
+      "rewritten": false,
+      "retrieved_count": 5,
+      "evidence_sufficient": true,
+      "evidence_score": 0.8167,
+      "evidence_reasons": [
+        "Evidence appears sufficient."
+      ],
+      "abstained": false,
+      "generation_model_name": "Qwen/Qwen2.5-1.5B-Instruct",
+      "raw_answer": "- TechCrunch suggests that Google's behavior towards news publishers involves anticompetitive practices, accusing Google of siphoning off content, readers, and ad revenue through AI technologies such as Search Generative Experience (SGE) and Bard AI chatbot.\n- The Verge focuses on Google's role in the Epic v. Google trial, highlighting potential anticompetitive agreements between Google and device manufacturers and developers regarding the Android app store and payment processing solutions for content inside Android apps.\n- TechCrunch mentions that Google has engaged in various forms of anticompetitive behavior, including spending billions on being the default search engine across platforms and attempting to take control of the iPhone's search function.\n- The Verge notes that Google has deleted potentially incriminating messages to prevent them from going to",
+      "final_answer": "- Google trial, highlighting potential anticompetitive agreements between Google and device manufacturers and developers regarding the Android app store and payment processing solutions for content inside Android apps. [3]",
+      "supported_claims": 1,
+      "unsupported_claims": 4,
+      "relevant_claims": 1,
+      "filtered_irrelevant_claims": 0,
+      "citation_valid": true,
+      "answer_passed": false,
+      "answer_relevance_score": 0.6218,
+      "answer_grade_reasons": [
+        "Too many generated claims were unsupported: 0.20 < 0.50"
+      ],
+      "retrieved_document_ids": [
+        "doc_0033",
+        "doc_0042",
+        "doc_0355",
+        "doc_0237",
+        "doc_0015"
+      ],
+      "context_citations": [
+        {
+          "citation_id": 1,
+          "document_id": "doc_0033"
+        },
+        {
+          "citation_id": 2,
+          "document_id": "doc_0042"
+        },
+        {
+          "citation_id": 3,
+          "document_id": "doc_0355"
+        },
+        {
+          "citation_id": 4,
+          "document_id": "doc_0237"
+        },
+        {
+          "citation_id": 5,
+          "document_id": "doc_0015"
+        }
+      ],
+      "abstention_stage": null,
+      "graph_error": null,
+      "exact_match": 0.0,
+      "gold_contained": 0.0,
+      "token_f1": 0.0,
+      "citation_evaluation": {
+        "cited_ids": [
+          3
+        ],
+        "cited_document_ids": [
+          "doc_0355"
+        ],
+        "gold_document_precision": 0.0,
+        "gold_document_recall": 0.0
+      }
+    }
+  ]
+}
