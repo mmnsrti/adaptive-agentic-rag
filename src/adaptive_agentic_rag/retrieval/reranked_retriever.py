@@ -15,6 +15,7 @@ from adaptive_agentic_rag.retrieval.multi_query_retriever import (
     MultiQueryRetriever
 )
 
+
 class RerankedRetriever:
 
 
