@@ -1,3 +1,7 @@
+from adaptive_agentic_rag.retrieval.dense_retriever import (
+    DenseRetriever,
+)
+
 from adaptive_agentic_rag.retrieval.hybrid_retriever import (
     HybridRetriever,
 )
@@ -24,7 +28,7 @@ class RerankedRetriever:
 
     def __init__(
         self,
-        dense_retriever,
+        dense_retriever=None,
         hybrid_top_k: int = 20,
         rerank_top_k: int = 10,
         final_top_k: int = 5,
@@ -32,29 +36,75 @@ class RerankedRetriever:
         bm25_corpus_path: str = DEFAULT_BM25_CORPUS_PATH,
     ):
 
-        self.hybrid = HybridRetriever(
-            dense_retriever=dense_retriever,
-            final_top_k=hybrid_top_k,
-            bm25_corpus_path=bm25_corpus_path,
-        )
+        # ====================================================
+        # Backward-compatible Dense ownership
+        #
+        # Preferred production usage:
+        #
+        # RerankedRetriever(
+        #     dense_retriever=shared_dense
+        # )
+        #
+        # Standalone usage remains supported:
+        #
+        # RerankedRetriever()
+        # ====================================================
 
-        self.multi_query = (
-            MultiQueryRetriever(
-                hybrid_retriever=self.hybrid
+        if dense_retriever is None:
+
+            dense_retriever = (
+                DenseRetriever()
+            )
+
+
+        self.hybrid = (
+            HybridRetriever(
+                dense_retriever=
+                    dense_retriever,
+                final_top_k=
+                    hybrid_top_k,
+                bm25_corpus_path=
+                    bm25_corpus_path,
             )
         )
 
-        self.reranker = BGEReranker()
 
-        self.rerank_top_k = rerank_top_k
+        self.multi_query = (
+            MultiQueryRetriever(
+                hybrid_retriever=
+                    self.hybrid
+            )
+        )
 
-        self.final_top_k = final_top_k
 
-        self.mmr_lambda = mmr_lambda
+        self.reranker = (
+            BGEReranker()
+        )
+
+
+        self.rerank_top_k = (
+            rerank_top_k
+        )
+
+        self.final_top_k = (
+            final_top_k
+        )
+
+        self.mmr_lambda = (
+            mmr_lambda
+        )
 
         self.bm25_corpus_path = (
             bm25_corpus_path
         )
+
+
+        self._closed = False
+
+
+    # ========================================================
+    # Search
+    # ========================================================
 
     def search(
         self,
@@ -63,13 +113,20 @@ class RerankedRetriever:
     ) -> list[dict]:
 
         if top_k is None:
-            top_k = self.final_top_k
+
+            top_k = (
+                self.final_top_k
+            )
+
 
         if (
             not query
-            or top_k <= 0
+            or
+            top_k <= 0
         ):
+
             return []
+
 
         # ====================================================
         # Candidate budgets
@@ -80,15 +137,18 @@ class RerankedRetriever:
             top_k * 2,
         )
 
+
         hybrid_candidate_k = max(
             self.hybrid.final_top_k,
             rerank_candidate_k,
         )
 
+
         multi_query_candidate_k = max(
             hybrid_candidate_k * 2,
             40,
         )
+
 
         # ====================================================
         # 1. Multi-query hybrid candidate generation
@@ -97,33 +157,58 @@ class RerankedRetriever:
         candidates = (
             self.multi_query.search(
                 query,
-                top_k=multi_query_candidate_k,
+                top_k=
+                    multi_query_candidate_k,
             )
         )
 
+
+        if not candidates:
+
+            return []
+
+
         # ====================================================
-        # 2. One cross-encoder rerank against original query
+        # 2. ONE cross-encoder rerank
+        #
+        # Always against the original query.
         # ====================================================
 
-        reranked = self.reranker.rerank(
-            query,
-            candidates,
-            top_k=rerank_candidate_k,
+        reranked = (
+            self.reranker.rerank(
+                query,
+                candidates,
+                top_k=
+                    rerank_candidate_k,
+            )
         )
 
+
+        if not reranked:
+
+            return []
+
+
         # ====================================================
-        # 3. Ensure vectors exist for MMR
+        # 3. Ensure every candidate has a Dense vector
+        #
+        # Dense-origin candidates normally already have one.
+        #
+        # BM25-only candidates may not, so only those missing
+        # vectors are embedded here.
         # ====================================================
 
         valid_documents = []
 
         document_embeddings = []
 
+
         for item in reranked:
 
             vector = item.get(
                 "vector"
             )
+
 
             if vector is None:
 
@@ -133,12 +218,18 @@ class RerankedRetriever:
                     .embedder
                     .encode_documents(
                         [
-                            item["text"]
+                            item[
+                                "text"
+                            ]
                         ]
                     )[0]
                 )
 
-                item["vector"] = vector
+
+                item[
+                    "vector"
+                ] = vector
+
 
             valid_documents.append(
                 item
@@ -148,10 +239,16 @@ class RerankedRetriever:
                 vector
             )
 
-        reranked = valid_documents
+
+        reranked = (
+            valid_documents
+        )
+
 
         if not reranked:
+
             return []
+
 
         # ====================================================
         # 4. Query embedding for MMR
@@ -166,30 +263,73 @@ class RerankedRetriever:
             )[0]
         )
 
+
         # ====================================================
-        # 5. MMR
+        # 5. MMR diversity selection
         # ====================================================
 
-        selected = mmr_select(
-            query_embedding=query_embedding,
-            document_embeddings=document_embeddings,
-            documents=reranked,
-            top_k=top_k,
-            lambda_param=self.mmr_lambda,
+        selected = (
+            mmr_select(
+                query_embedding=
+                    query_embedding,
+                document_embeddings=
+                    document_embeddings,
+                documents=
+                    reranked,
+                top_k=
+                    top_k,
+                lambda_param=
+                    self.mmr_lambda,
+            )
         )
 
+
         # ====================================================
-        # 6. Final score = cross-encoder score
+        # 6. Public final score
+        #
+        # Downstream consumers should see the strongest
+        # semantic ranking signal:
+        #
+        #     Cross-Encoder rerank score
+        #
+        # Earlier retrieval diagnostics such as RRF scores
+        # remain available in their own metadata fields.
         # ====================================================
 
         for item in selected:
 
-            item["score"] = (
-                item["rerank_score"]
+            rerank_score = (
+                item.get(
+                    "rerank_score"
+                )
             )
+
+
+            if rerank_score is not None:
+
+                item[
+                    "score"
+                ] = (
+                    rerank_score
+                )
+
 
         return selected
 
-    def close(self):
+
+    # ========================================================
+    # Cleanup
+    # ========================================================
+
+    def close(
+        self,
+    ):
+
+        if self._closed:
+
+            return
+
 
         self.hybrid.close()
+
+        self._closed = True
