@@ -3,6 +3,9 @@ import re
 from dataclasses import dataclass
 
 
+_SENTENCE_DOT_PLACEHOLDER = "\uE000"
+
+
 @dataclass
 class AtomicClaims:
 
@@ -14,16 +17,24 @@ class AtomicClaims:
 class AtomicClaimExtractor:
 
 
+    # ========================================================
+    # Cleaning
+    # ========================================================
+
     def _clean(
         self,
         text: str
     ) -> str:
 
-        text = text.strip()
+        text = (
+            text
+            or ""
+        ).strip()
 
-        #
+
+        # ----------------------------------------------------
         # Remove bullet markers
-        #
+        # ----------------------------------------------------
 
         text = re.sub(
             r"^[-*•]\s*",
@@ -32,9 +43,9 @@ class AtomicClaimExtractor:
         )
 
 
-        #
+        # ----------------------------------------------------
         # Remove existing citations
-        #
+        # ----------------------------------------------------
 
         text = re.sub(
             r"\[\d+\]",
@@ -43,9 +54,9 @@ class AtomicClaimExtractor:
         )
 
 
-        #
+        # ----------------------------------------------------
         # Normalize whitespace
-        #
+        # ----------------------------------------------------
 
         text = re.sub(
             r"\s+",
@@ -57,27 +68,144 @@ class AtomicClaimExtractor:
         return text.strip()
 
 
+    # ========================================================
+    # Sentence-boundary protection
+    #
+    # Naive splitting on:
+    #
+    #     (?<=[.!?])\s+
+    #
+    # incorrectly breaks:
+    #
+    # Epic v. Google
+    # Chiefs vs. Chargers
+    # U.S. antitrust law
+    # Dr. Smith
+    #
+    # Protect these periods before sentence splitting.
+    # ========================================================
+
+    def _protect_sentence_periods(
+        self,
+        text: str
+    ) -> str:
+
+        patterns = [
+
+            # Legal / comparison abbreviations
+            r"\bv\.",
+            r"\bvs\.",
+
+            # Titles
+            r"\bMr\.",
+            r"\bMrs\.",
+            r"\bMs\.",
+            r"\bDr\.",
+            r"\bProf\.",
+            r"\bJr\.",
+            r"\bSr\.",
+
+            # Company / general abbreviations
+            r"\bInc\.",
+            r"\bLtd\.",
+            r"\bCorp\.",
+            r"\bCo\.",
+            r"\bNo\.",
+
+            # Common Latin abbreviations
+            r"\be\.g\.",
+            r"\bi\.e\.",
+
+            # Country abbreviations
+            r"\bU\.S\.",
+            r"\bU\.K\.",
+        ]
+
+
+        protected = text
+
+
+        for pattern in patterns:
+
+            protected = re.sub(
+
+                pattern,
+
+                lambda match: (
+                    match.group(0).replace(
+                        ".",
+                        _SENTENCE_DOT_PLACEHOLDER
+                    )
+                ),
+
+                protected,
+
+                flags=re.IGNORECASE
+            )
+
+
+        return protected
+
+
+    @staticmethod
+    def _restore_sentence_periods(
+        text: str
+    ) -> str:
+
+        return text.replace(
+            _SENTENCE_DOT_PLACEHOLDER,
+            "."
+        )
+
+
+    # ========================================================
+    # Sentence splitting
+    # ========================================================
+
     def _split_sentences(
         self,
         text: str
     ) -> list[str]:
 
-        sentences = re.split(
-            r"(?<=[.!?])\s+",
-            text
+        protected = (
+            self._protect_sentence_periods(
+                text
+            )
         )
 
 
-        return [
+        sentences = re.split(
+            r"(?<=[.!?])\s+",
+            protected
+        )
 
-            sentence.strip()
 
-            for sentence in sentences
+        output = []
 
-            if sentence.strip()
 
-        ]
+        for sentence in sentences:
 
+            sentence = (
+                self._restore_sentence_periods(
+                    sentence
+                )
+                .strip()
+            )
+
+
+            if sentence:
+
+                output.append(
+                    sentence
+                )
+
+
+        return output
+
+
+    # ========================================================
+    # Semicolon splitting
+    # ========================================================
 
     def _split_semicolon(
         self,
@@ -89,9 +217,14 @@ class AtomicClaimExtractor:
             sentence
         )
 
+
         parts = [
+
             part.strip()
-            for part in parts
+
+            for part
+            in parts
+
             if part.strip()
         ]
 
@@ -104,45 +237,56 @@ class AtomicClaimExtractor:
         cleaned_parts = []
 
 
-        #
-        # Clauses such as:
+        # ----------------------------------------------------
+        # Context-dependent continuation:
         #
         # however, it ...
-        # but it ...
-        # yet they ...
+        # but they ...
         #
-        # depend on the previous clause and are
-        # not safe standalone atomic claims.
-        #
+        # is unsafe as a standalone claim.
+        # ----------------------------------------------------
 
         dependent_pattern = re.compile(
-            r"^(?:however|but|yet|nevertheless|nonetheless),?\s+"
-            r"(?:it|they|this|these|those|he|she)\b",
+
+            r"^(?:"
+            r"however|"
+            r"but|"
+            r"yet|"
+            r"nevertheless|"
+            r"nonetheless"
+            r"),?\s+"
+
+            r"(?:"
+            r"it|"
+            r"they|"
+            r"this|"
+            r"these|"
+            r"those|"
+            r"he|"
+            r"she"
+            r")\b",
+
             flags=re.IGNORECASE
         )
 
-
-        #
-        # If the connector is followed by an explicit
-        # subject, we can keep the clause after removing
-        # the discourse connector:
-        #
-        # however, Walmart offers ...
-        # -> Walmart offers ...
-        #
 
         connector_pattern = re.compile(
-            r"^(?:however|but|yet|nevertheless|nonetheless),?\s+",
+
+            r"^(?:"
+            r"however|"
+            r"but|"
+            r"yet|"
+            r"nevertheless|"
+            r"nonetheless"
+            r"),?\s+",
+
             flags=re.IGNORECASE
         )
 
 
-        for index, part in enumerate(parts):
-
-            #
-            # First semicolon clause is already
-            # self-contained in the normal case.
-            #
+        for index, part in enumerate(
+            parts
+        ):
 
             if index == 0:
 
@@ -153,21 +297,12 @@ class AtomicClaimExtractor:
                 continue
 
 
-            #
-            # Drop context-dependent clauses.
-            #
-
             if dependent_pattern.match(
                 part
             ):
 
                 continue
 
-
-            #
-            # Remove unnecessary discourse connector
-            # from otherwise self-contained clauses.
-            #
 
             part = connector_pattern.sub(
                 "",
@@ -179,13 +314,6 @@ class AtomicClaimExtractor:
 
                 continue
 
-
-            #
-            # Cosmetic cleanup:
-            #
-            # users must ...
-            # -> Users must ...
-            #
 
             part = (
                 part[0].upper()
@@ -202,31 +330,45 @@ class AtomicClaimExtractor:
         return cleaned_parts
 
 
+    # ========================================================
+    # Dependent explanatory clauses
+    # ========================================================
+
     def _split_explanatory_clause(
         self,
         sentence: str
     ) -> list[str]:
 
         """
-        Remove dependent explanatory clauses such as:
+        Remove dependent generated interpretations.
+
+        Example:
 
         Walmart does not price-match competitors,
-        limiting its ability to compete...
+        limiting its ability to compete.
 
-        -> Walmart does not price-match competitors.
+        ->
 
-        We intentionally discard the dependent clause
-        in the deterministic baseline because expressions
-        such as "limiting", "providing", or "enhancing"
-        often require subject/coreference resolution and
-        may contain generated interpretation.
+        Walmart does not price-match competitors.
         """
 
         pattern = (
+
             r",\s*"
-            r"(allowing|providing|limiting|enhancing|"
-            r"making|causing|creating|giving|offering|"
-            r"bringing)"
+
+            r"(?:"
+            r"allowing|"
+            r"providing|"
+            r"limiting|"
+            r"enhancing|"
+            r"making|"
+            r"causing|"
+            r"creating|"
+            r"giving|"
+            r"offering|"
+            r"bringing"
+            r")"
+
             r"\s+"
         )
 
@@ -263,129 +405,18 @@ class AtomicClaimExtractor:
         ]
 
 
-    def _split_and_clause(
-        self,
-        sentence: str
-    ) -> list[str]:
+    # ========================================================
+    # Finite-verb heuristic
+    # ========================================================
 
-        """
-        Split only when the text after "and"
-        looks like a new independent clause.
-
-        Example:
-
-        Amazon hosts Black Friday sales and
-        Walmart starts its promotion earlier.
-
-        -> split
-
-        But:
-
-        Amazon Prime members receive free games
-        and DLC throughout the year.
-
-        -> do NOT split
-        """
-
-        parts = re.split(
-            r"\s+\band\b\s+",
-            sentence,
-            maxsplit=1,
-            flags=re.IGNORECASE
-        )
-
-
-        if len(parts) != 2:
-
-            return [
-                sentence
-            ]
-
-
-        left = parts[0].strip()
-
-        right = parts[1].strip()
-
-
-        left_words = left.split()
-
-        right_words = right.split()
-
-
-        if (
-            len(left_words) < 3
-            or
-            len(right_words) < 3
-        ):
-
-            return [
-                sentence
-            ]
-
-
-        #
-        # Right side should begin with
-        # something that can act as a subject.
-        #
-
-        first_word = re.sub(
-            r"[^A-Za-z']",
-            "",
-            right_words[0]
-        )
-
-
-        pronouns = {
-            "he",
-            "she",
-            "it",
-            "they",
-            "we",
-            "you"
-        }
-
-
-        subject_like = (
-
-            (
-                first_word
-                and
-                first_word[0].isupper()
-            )
-
-            or
-
-            first_word.lower()
-            in pronouns
-
-        )
-
-
-        if not subject_like:
-
-            return [
-                sentence
-            ]
-
-
-        #
-        # More importantly:
-        # the right side must also contain
-        # something that looks like a finite verb.
-        #
-        # This makes:
-        #
-        # "Walmart starts its promotion"
-        #      -> clause
-        #
-        # but:
-        #
-        # "DLC throughout the year"
-        #      -> NOT a clause
-        #
+    @staticmethod
+    def _has_likely_finite_verb(
+        words: list[str]
+    ) -> bool:
 
         auxiliary_verbs = {
 
+            "am",
             "is",
             "are",
             "was",
@@ -405,28 +436,16 @@ class AtomicClaimExtractor:
             "will",
             "would",
 
+            "shall",
             "should",
+
             "may",
             "might",
-            "must"
-
+            "must",
         }
 
 
-        has_likely_verb = False
-
-
-        #
-        # We inspect only the beginning
-        # of the candidate clause.
-        #
-
-        candidate_words = (
-            right_words[1:6]
-        )
-
-
-        for word in candidate_words:
+        for word in words:
 
             clean_word = re.sub(
                 r"[^A-Za-z']",
@@ -442,38 +461,336 @@ class AtomicClaimExtractor:
 
             if clean_word in auxiliary_verbs:
 
-                has_likely_verb = True
-
-                break
+                return True
 
 
-            #
-            # Conservative heuristic for
-            # common finite verb forms:
+            # ------------------------------------------------
+            # Conservative finite-verb heuristics:
             #
             # starts
-            # matches
             # hosts
             # offers
-            # provided / started ...
-            #
+            # reported
+            # changed
+            # ------------------------------------------------
 
-            if (
-                clean_word.endswith("ed")
-                or
-                (
-                    clean_word.endswith("s")
-                    and
-                    len(clean_word) > 3
-                )
+            if clean_word.endswith(
+                "ed"
             ):
 
-                has_likely_verb = True
-
-                break
+                return True
 
 
-        if not has_likely_verb:
+            if (
+                clean_word.endswith(
+                    "s"
+                )
+                and
+                len(
+                    clean_word
+                ) > 3
+            ):
+
+                return True
+
+
+        return False
+
+
+    # ========================================================
+    # Detect unsafe "and" boundary
+    # ========================================================
+
+    @staticmethod
+    def _looks_like_compound_subject_boundary(
+        left: str,
+        right: str
+    ) -> bool:
+
+        """
+        Prevent:
+
+        Taylor Swift and Travis Kelce have been dating.
+
+        from becoming:
+
+        Taylor Swift.
+        Travis Kelce have been dating.
+
+        Also prevent:
+
+        reports indicate that Swift and Kelce have been dating
+
+        from becoming:
+
+        reports indicate that Swift.
+        Kelce have been dating.
+        """
+
+        left_words = (
+            left.split()
+        )
+
+
+        right_words = (
+            right.split()
+        )
+
+
+        if (
+            not left_words
+            or
+            not right_words
+        ):
+
+            return False
+
+
+        right_first = re.sub(
+            r"[^A-Za-z0-9'-]",
+            "",
+            right_words[
+                0
+            ]
+        )
+
+
+        if not right_first:
+
+            return False
+
+
+        right_starts_proper = (
+            right_first[
+                0
+            ].isupper()
+        )
+
+
+        if not right_starts_proper:
+
+            return False
+
+
+        # ----------------------------------------------------
+        # Case 1:
+        #
+        # Taylor Swift
+        # +
+        # Travis Kelce have ...
+        #
+        # Left side has no finite verb, therefore it cannot
+        # be an independent clause.
+        # ----------------------------------------------------
+
+        if not AtomicClaimExtractor._has_likely_finite_verb(
+            left_words
+        ):
+
+            return True
+
+
+        # ----------------------------------------------------
+        # Case 2:
+        #
+        # reports indicate that Swift
+        # +
+        # Kelce have ...
+        #
+        # "that Swift" is an unfinished subordinate clause.
+        # ----------------------------------------------------
+
+        if re.search(
+
+            (
+                r"\b"
+                r"(?:that|whether|if)"
+                r"\s+"
+                r"[A-Z][A-Za-z0-9'-]*"
+                r"$"
+            ),
+
+            left
+        ):
+
+            return True
+
+
+        return False
+
+
+    # ========================================================
+    # Conservative "and" splitting
+    # ========================================================
+
+    def _split_and_clause(
+        self,
+        sentence: str
+    ) -> list[str]:
+
+        """
+        Split only when BOTH sides look like independent
+        clauses.
+
+        Split:
+
+        Amazon hosts Black Friday sales and
+        Walmart starts its promotion earlier.
+
+        Do NOT split:
+
+        Taylor Swift and Travis Kelce have been dating.
+
+        Do NOT split:
+
+        Reports indicate that Swift and Kelce have been dating.
+
+        Do NOT split:
+
+        Amazon Prime members receive free games and DLC.
+        """
+
+        parts = re.split(
+            r"\s+\band\b\s+",
+            sentence,
+            maxsplit=1,
+            flags=re.IGNORECASE
+        )
+
+
+        if len(parts) != 2:
+
+            return [
+                sentence
+            ]
+
+
+        left = (
+            parts[
+                0
+            ].strip()
+        )
+
+        right = (
+            parts[
+                1
+            ].strip()
+        )
+
+
+        left_words = (
+            left.split()
+        )
+
+        right_words = (
+            right.split()
+        )
+
+
+        if (
+            len(
+                left_words
+            ) < 2
+            or
+            len(
+                right_words
+            ) < 2
+        ):
+
+            return [
+                sentence
+            ]
+
+
+        # ----------------------------------------------------
+        # Prevent compound-subject destruction.
+        # ----------------------------------------------------
+
+        if (
+            self
+            ._looks_like_compound_subject_boundary(
+                left,
+                right
+            )
+        ):
+
+            return [
+                sentence
+            ]
+
+
+        first_word = re.sub(
+            r"[^A-Za-z']",
+            "",
+            right_words[
+                0
+            ]
+        )
+
+
+        pronouns = {
+            "he",
+            "she",
+            "it",
+            "they",
+            "we",
+            "you",
+        }
+
+
+        subject_like = (
+
+            (
+                first_word
+                and
+                first_word[
+                    0
+                ].isupper()
+            )
+
+            or
+
+            first_word.lower()
+            in pronouns
+        )
+
+
+        if not subject_like:
+
+            return [
+                sentence
+            ]
+
+
+        # ----------------------------------------------------
+        # BOTH sides must contain a likely finite verb.
+        #
+        # This is intentionally conservative.
+        # Keeping a compound claim is safer than producing
+        # two malformed pseudo-claims.
+        # ----------------------------------------------------
+
+        left_has_verb = (
+            self._has_likely_finite_verb(
+                left_words
+            )
+        )
+
+
+        right_has_verb = (
+            self._has_likely_finite_verb(
+                right_words[
+                    1:7
+                ]
+            )
+        )
+
+
+        if not (
+            left_has_verb
+            and
+            right_has_verb
+        ):
 
             return [
                 sentence
@@ -485,40 +802,101 @@ class AtomicClaimExtractor:
             right
         ]
 
+
+    # ========================================================
+    # Final claim validity
+    # ========================================================
+
+    @staticmethod
+    def _is_obvious_fragment(
+        claim: str
+    ) -> bool:
+
+        text = (
+            claim
+            or ""
+        ).strip()
+
+
+        if not text:
+
+            return True
+
+
+        words = re.findall(
+            r"[A-Za-z0-9'-]+",
+            text
+        )
+
+
+        if len(words) < 2:
+
+            return True
+
+
+        lower = text.lower()
+
+
+        # ----------------------------------------------------
+        # These endings strongly indicate an accidental
+        # sentence-boundary split.
+        # ----------------------------------------------------
+
+        bad_endings = (
+            " v.",
+            " vs.",
+            " and",
+            " or",
+            " but",
+        )
+
+
+        if lower.endswith(
+            bad_endings
+        ):
+
+            return True
+
+
+        return False
+
+
+    # ========================================================
+    # Main extraction
+    # ========================================================
+
     def extract(
         self,
         text: str
     ) -> AtomicClaims:
 
-
-        original_text = text
-
-
-        text = self._clean(
+        original_text = (
             text
+        )
+
+
+        text = (
+            self._clean(
+                text
+            )
         )
 
 
         if not text:
 
             return AtomicClaims(
-
-                original_text=(
-                    original_text
-                ),
-
-                claims=[]
-
+                original_text=
+                    original_text,
+                claims=[],
             )
 
 
         atomic_claims = []
 
 
-        #
-        # Step 1:
-        # sentence splitting
-        #
+        # ====================================================
+        # 1. Sentences
+        # ====================================================
 
         sentences = (
             self._split_sentences(
@@ -530,10 +908,9 @@ class AtomicClaimExtractor:
         for sentence in sentences:
 
 
-            #
-            # Step 2:
-            # semicolon splitting
-            #
+            # =================================================
+            # 2. Semicolon clauses
+            # =================================================
 
             semicolon_parts = (
                 self._split_semicolon(
@@ -545,10 +922,9 @@ class AtomicClaimExtractor:
             for part in semicolon_parts:
 
 
-                #
-                # Step 3:
-                # participial/explanatory clause
-                #
+                # =============================================
+                # 3. Dependent explanatory clause cleanup
+                # =============================================
 
                 explanatory_parts = (
                     self
@@ -563,10 +939,9 @@ class AtomicClaimExtractor:
                 ):
 
 
-                    #
-                    # Step 4:
-                    # conservative "and" split
-                    #
+                    # =========================================
+                    # 4. Conservative independent "and" split
+                    # =========================================
 
                     final_parts = (
                         self._split_and_clause(
@@ -578,22 +953,26 @@ class AtomicClaimExtractor:
                     for final_part in final_parts:
 
                         claim = (
-                            final_part.strip(
+                            final_part
+                            .strip(
                                 " ,"
                             )
                         )
 
 
-                        if not claim:
+                        if (
+                            self
+                            ._is_obvious_fragment(
+                                claim
+                            )
+                        ):
 
                             continue
 
 
-                        #
-                        # Add final punctuation
-                        #
-
-                        if claim[-1] not in ".!?":
+                        if claim[
+                            -1
+                        ] not in ".!?":
 
                             claim += "."
 
@@ -603,10 +982,9 @@ class AtomicClaimExtractor:
                         )
 
 
-        #
-        # Deduplicate while
-        # preserving order
-        #
+        # ====================================================
+        # Deduplicate preserving generation order
+        # ====================================================
 
         unique_claims = list(
             dict.fromkeys(
@@ -616,11 +994,8 @@ class AtomicClaimExtractor:
 
 
         return AtomicClaims(
-
-            original_text=(
-                original_text
-            ),
-
-            claims=unique_claims
-
+            original_text=
+                original_text,
+            claims=
+                unique_claims,
         )

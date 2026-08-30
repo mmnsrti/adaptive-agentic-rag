@@ -1,4 +1,5 @@
 import re
+
 from dataclasses import dataclass
 
 import numpy as np
@@ -7,11 +8,15 @@ import torch
 from sentence_transformers import CrossEncoder
 
 from adaptive_agentic_rag.generation.context_builder import (
-    BuiltContext
+    BuiltContext,
 )
 
 from adaptive_agentic_rag.generation.atomic_claim_extractor import (
-    AtomicClaimExtractor
+    AtomicClaimExtractor,
+)
+
+from adaptive_agentic_rag.generation.sentence_splitter import (
+    split_sentences,
 )
 
 
@@ -23,7 +28,7 @@ NLI_MODEL_NAME = (
 LABELS = [
     "contradiction",
     "entailment",
-    "neutral"
+    "neutral",
 ]
 
 
@@ -55,11 +60,10 @@ class GroundedClaims:
 
 class ClaimGrounder:
 
-
     def __init__(
         self,
         model_name: str = NLI_MODEL_NAME,
-        device: str | None = None
+        device: str | None = None,
     ):
 
         if device is None:
@@ -71,7 +75,9 @@ class ClaimGrounder:
             )
 
 
-        self.device = device
+        self.device = (
+            device
+        )
 
 
         print(
@@ -80,43 +86,36 @@ class ClaimGrounder:
         )
 
 
-        self.model = CrossEncoder(
-            model_name,
-            device=device
+        self.model = (
+            CrossEncoder(
+                model_name,
+                device=device,
+            )
         )
 
-
-        #
-        # Atomic claim extraction
-        #
 
         self.atomic_extractor = (
             AtomicClaimExtractor()
         )
 
 
-    # =========================================================
-    # Extract atomic claims from generated answer
-    # =========================================================
+    # ========================================================
+    # Extract atomic claims
+    # ========================================================
 
     def extract_claims(
         self,
-        answer: str
+        answer: str,
     ) -> list[str]:
-
 
         atomic_claims = []
 
 
-        #
-        # Qwen normally produces bullet points.
-        #
-        # We process each bullet independently first.
-        #
-
         for line in answer.splitlines():
 
-            line = line.strip()
+            line = (
+                line.strip()
+            )
 
 
             if not line:
@@ -124,43 +123,35 @@ class ClaimGrounder:
                 continue
 
 
-            #
-            # Ignore common non-answer headings
-            #
-
-            if line.lower() in {
-                "answer:",
-                "response:",
-                "final answer:"
-            }:
+            if (
+                line.lower()
+                in {
+                    "answer:",
+                    "response:",
+                    "final answer:",
+                }
+            ):
 
                 continue
 
-
-            #
-            # Remove bullet marker
-            #
 
             line = re.sub(
                 r"^[-*•]\s*",
                 "",
-                line
+                line,
             )
 
-
-            #
-            # Existing citations are irrelevant
-            # during claim verification.
-            #
 
             line = re.sub(
                 r"\[\d+\]",
                 "",
-                line
+                line,
             )
 
 
-            line = line.strip()
+            line = (
+                line.strip()
+            )
 
 
             if not line:
@@ -168,15 +159,9 @@ class ClaimGrounder:
                 continue
 
 
-            #
-            # -----------------------------
-            # NEW:
-            # Atomic claim extraction
-            # -----------------------------
-            #
-
             extraction = (
-                self.atomic_extractor.extract(
+                self.atomic_extractor
+                .extract(
                     line
                 )
             )
@@ -187,11 +172,6 @@ class ClaimGrounder:
             )
 
 
-        #
-        # Deduplicate while
-        # preserving order
-        #
-
         return list(
             dict.fromkeys(
                 atomic_claims
@@ -199,65 +179,35 @@ class ClaimGrounder:
         )
 
 
-    # =========================================================
-    # Split evidence chunk into sentences
-    # =========================================================
+    # ========================================================
+    # Evidence sentence splitting
+    # ========================================================
 
     def _split_sentences(
         self,
-        text: str
+        text: str,
     ) -> list[str]:
 
-
-        text = re.sub(
-            r"\s+",
-            " ",
-            text
-        ).strip()
-
-
-        if not text:
-
-            return []
-
-
-        sentences = re.split(
-            r"(?<=[.!?])\s+",
-            text
+        return (
+            split_sentences(
+                text,
+                split_newlines=False,
+                min_chars=20,
+            )
         )
 
 
-        return [
-
-            sentence.strip()
-
-            for sentence in sentences
-
-            if len(
-                sentence.strip()
-            ) >= 20
-
-        ]
-
-
-    # =========================================================
-    # Build small evidence units
+    # ========================================================
+    # Build evidence units
     #
-    # Instead of:
-    #
-    # claim ↔ 300-word chunk
-    #
-    # we compare:
-    #
-    # claim ↔ sentence
-    # claim ↔ two-sentence window
-    # =========================================================
+    # Claim ↔ sentence
+    # Claim ↔ two-sentence window
+    # ========================================================
 
     def _build_evidence_units(
         self,
-        context: BuiltContext
+        context: BuiltContext,
     ) -> list[dict]:
-
 
         units = []
 
@@ -271,14 +221,16 @@ class ClaimGrounder:
             )
 
 
-            for index, sentence in enumerate(
+            for (
+                index,
+                sentence,
+            ) in enumerate(
                 sentences
             ):
 
-
-                #
+                # ============================================
                 # Single sentence
-                #
+                # ============================================
 
                 units.append(
                     {
@@ -286,26 +238,32 @@ class ClaimGrounder:
                             item.citation_id,
 
                         "text":
-                            sentence
+                            sentence,
                     }
                 )
 
 
-                #
-                # Two-sentence window
-                #
+                # ============================================
+                # Two-sentence evidence window
+                # ============================================
 
                 if (
                     index + 1
                     <
-                    len(sentences)
+                    len(
+                        sentences
+                    )
                 ):
 
                     window = (
                         sentence
-                        + " "
-                        + sentences[
-                            index + 1
+                        +
+                        " "
+                        +
+                        sentences[
+                            index
+                            +
+                            1
                         ]
                     )
 
@@ -316,7 +274,7 @@ class ClaimGrounder:
                                 item.citation_id,
 
                             "text":
-                                window
+                                window,
                         }
                     )
 
@@ -324,16 +282,15 @@ class ClaimGrounder:
         return units
 
 
-    # =========================================================
-    # Check ONE atomic claim against evidence
-    # =========================================================
+    # ========================================================
+    # Check one atomic claim
+    # ========================================================
 
     def _check_claim(
         self,
         claim: str,
-        context: BuiltContext
+        context: BuiltContext,
     ) -> ClaimSupport:
-
 
         evidence_units = (
             self._build_evidence_units(
@@ -345,73 +302,64 @@ class ClaimGrounder:
         if not evidence_units:
 
             return ClaimSupport(
-
-                claim=claim,
-
-                supported=False,
-
-                citation_id=None,
-
-                label="neutral",
-
-                entailment_score=0.0,
-
-                supporting_text=None
+                claim=
+                    claim,
+                supported=
+                    False,
+                citation_id=
+                    None,
+                label=
+                    "neutral",
+                entailment_score=
+                    0.0,
+                supporting_text=
+                    None,
             )
 
 
-        #
-        # NLI format:
+        # ====================================================
+        # NLI:
         #
         # premise    = evidence
-        # hypothesis = claim
-        #
+        # hypothesis = generated claim
+        # ====================================================
 
         pairs = [
 
             (
-                unit["text"],
-                claim
+                unit[
+                    "text"
+                ],
+                claim,
             )
 
-            for unit in evidence_units
-
+            for unit
+            in evidence_units
         ]
 
 
         probabilities = (
             self.model.predict(
-
                 pairs,
-
-                apply_softmax=True
-
+                apply_softmax=True,
             )
         )
 
 
-        probabilities = np.asarray(
-            probabilities
+        probabilities = (
+            np.asarray(
+                probabilities
+            )
         )
 
-
-        #
-        # Label order:
-        #
-        # 0 = contradiction
-        # 1 = entailment
-        # 2 = neutral
-        #
 
         entailment_scores = (
-            probabilities[:, 1]
+            probabilities[
+                :,
+                1
+            ]
         )
 
-
-        #
-        # Find evidence unit with
-        # strongest entailment probability
-        #
 
         best_index = int(
             np.argmax(
@@ -448,6 +396,15 @@ class ClaimGrounder:
         )
 
 
+        # ====================================================
+        # CURRENT policy:
+        #
+        # Entailment being the winning NLI label is enough.
+        #
+        # We intentionally do NOT add a numerical threshold
+        # yet. That will be calibrated after diagnostics.
+        # ====================================================
+
         supported = (
             predicted_label
             ==
@@ -456,64 +413,46 @@ class ClaimGrounder:
 
 
         return ClaimSupport(
-
-            claim=claim,
-
-            supported=supported,
-
+            claim=
+                claim,
+            supported=
+                supported,
             citation_id=(
-
                 best_unit[
                     "citation_id"
                 ]
-
                 if supported
-
                 else None
             ),
-
-            label=(
-                predicted_label
-            ),
-
+            label=
+                predicted_label,
             entailment_score=round(
-
                 float(
                     entailment_scores[
                         best_index
                     ]
                 ),
-
-                4
+                4,
             ),
-
             supporting_text=(
-
                 best_unit[
                     "text"
                 ]
-
                 if supported
-
                 else None
-            )
+            ),
         )
 
 
-    # =========================================================
-    # Ground full generated answer
-    # =========================================================
+    # ========================================================
+    # Ground generated answer
+    # ========================================================
 
     def ground(
         self,
         answer: str,
-        context: BuiltContext
+        context: BuiltContext,
     ) -> GroundedClaims:
-
-
-        #
-        # This now returns ATOMIC claims
-        #
 
         claims = (
             self.extract_claims(
@@ -525,20 +464,14 @@ class ClaimGrounder:
         results = []
 
 
-        #
-        # Each atomic claim is fact-checked
-        # independently.
-        #
-
         for claim in claims:
 
             result = (
                 self._check_claim(
-
-                    claim=claim,
-
-                    context=context
-
+                    claim=
+                        claim,
+                    context=
+                        context,
                 )
             )
 
@@ -552,33 +485,27 @@ class ClaimGrounder:
 
             1
 
-            for result in results
+            for result
+            in results
 
             if result.supported
-
         )
 
 
         unsupported_count = (
-
-            len(results)
-
+            len(
+                results
+            )
             -
-
             supported_count
-
         )
 
 
         return GroundedClaims(
-
-            claims=results,
-
-            supported_count=(
-                supported_count
-            ),
-
-            unsupported_count=(
-                unsupported_count
-            )
+            claims=
+                results,
+            supported_count=
+                supported_count,
+            unsupported_count=
+                unsupported_count,
         )

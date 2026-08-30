@@ -1,99 +1,114 @@
 from adaptive_agentic_rag.generation.atomic_claim_extractor import (
-    AtomicClaimExtractor
+    AtomicClaimExtractor,
 )
 
 
-def main():
+def extractor():
 
-    extractor = (
-        AtomicClaimExtractor()
+    return AtomicClaimExtractor()
+
+
+def test_does_not_split_legal_v_abbreviation():
+
+    result = extractor().extract(
+        (
+            "The Verge reports that Google engaged in "
+            "anticompetitive practices during the "
+            "Epic v. Google trial."
+        )
     )
 
 
-    examples = [
-
+    assert result.claims == [
         (
-            "Walmart does not price-match competitors' products, "
-            "limiting its ability to compete effectively in price wars."
-        ),
-
-        (
-            "Amazon Prime members receive free games and downloadable "
-            "content throughout the year, enhancing their shopping experience."
-        ),
-
-        (
-            "Apple does not offer a universal price-matching policy; "
-            "users must check individual websites for specific deals."
-        ),
-
-        (
-            "Amazon hosts Black Friday sales and Walmart starts "
-            "its promotion earlier."
-        ),
-
-        (
-            "Amazon Prime members receive free games and DLC throughout "
-            "the year."
-        ),
-        (
-        "Walmart does not price-match competitors' products; "
-        "however, it provides price-matching on items purchased "
-        "from its own stores."
-    ),
-
-    (
-        "Amazon runs seasonal promotions; "
-        "however, Walmart offers different discount policies."
-    )
-
+            "The Verge reports that Google engaged in "
+            "anticompetitive practices during the "
+            "Epic v. Google trial."
+        )
     ]
 
 
-    for index, text in enumerate(
-        examples,
-        start=1
-    ):
+def test_does_not_split_vs_abbreviation():
 
-        result = extractor.extract(
-            text
+    result = extractor().extract(
+        (
+            "Swift attended the Chiefs vs. Chargers game."
         )
+    )
 
 
-        print(
-            "\n"
-            "================================"
+    assert result.claims == [
+        (
+            "Swift attended the Chiefs vs. Chargers game."
         )
+    ]
 
-        print(
-            f"EXAMPLE {index}"
+
+def test_does_not_split_compound_subject():
+
+    result = extractor().extract(
+        (
+            "Taylor Swift and Travis Kelce "
+            "have been dating for several weeks."
         )
+    )
 
 
-        print(
-            "\nORIGINAL:"
+    assert result.claims == [
+        (
+            "Taylor Swift and Travis Kelce "
+            "have been dating for several weeks."
         )
+    ]
 
-        print(
-            text
+
+def test_does_not_split_subordinate_compound_subject():
+
+    result = extractor().extract(
+        (
+            "The independent reports indicate that "
+            "Swift and Kelce have been dating "
+            "for several weeks."
         )
+    )
 
 
-        print(
-            "\nATOMIC CLAIMS:"
+    assert result.claims == [
+        (
+            "The independent reports indicate that "
+            "Swift and Kelce have been dating "
+            "for several weeks."
         )
+    ]
 
 
-        for claim_index, claim in enumerate(
-            result.claims,
-            start=1
-        ):
+def test_splits_two_real_independent_clauses():
 
-            print(
-                f"{claim_index}. "
-                f"{claim}"
-            )
+    result = extractor().extract(
+        (
+            "Amazon hosts Black Friday sales and "
+            "Walmart starts its promotion earlier."
+        )
+    )
 
 
-if __name__ == "__main__":
-    main()
+    assert result.claims == [
+        "Amazon hosts Black Friday sales.",
+        "Walmart starts its promotion earlier.",
+    ]
+
+
+def test_does_not_split_us_abbreviation():
+
+    result = extractor().extract(
+        (
+            "The U.S. government filed an antitrust case."
+        )
+    )
+
+
+    assert result.claims == [
+        (
+            "The U.S. government filed an antitrust case."
+        )
+    ]

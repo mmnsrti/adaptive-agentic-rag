@@ -2,6 +2,10 @@ import re
 
 from dataclasses import dataclass
 
+from adaptive_agentic_rag.generation.sentence_splitter import (
+    split_sentences,
+)
+
 
 # ============================================================
 # Lightweight lexical filtering
@@ -108,12 +112,16 @@ class ContextBuilder:
         max_chunks: int = 10,
         max_chunks_per_document: int = 2,
         max_words_per_chunk: int = 240,
-        min_words_per_chunk: int = 80
+        min_words_per_chunk: int = 80,
     ):
 
-        self.max_words = max_words
+        self.max_words = (
+            max_words
+        )
 
-        self.max_chunks = max_chunks
+        self.max_chunks = (
+            max_chunks
+        )
 
         self.max_chunks_per_document = (
             max_chunks_per_document
@@ -134,12 +142,12 @@ class ContextBuilder:
 
     def _tokenize(
         self,
-        text: str
+        text: str,
     ) -> set[str]:
 
         tokens = re.findall(
             r"\b[a-zA-Z0-9]+\b",
-            text.lower()
+            text.lower(),
         )
 
 
@@ -147,7 +155,8 @@ class ContextBuilder:
 
             token
 
-            for token in tokens
+            for token
+            in tokens
 
             if (
                 len(token) > 1
@@ -163,52 +172,40 @@ class ContextBuilder:
 
     def _split_sentences(
         self,
-        text: str
+        text: str,
     ) -> list[str]:
 
-        text = (
-            text
-            .replace("\r\n", "\n")
-            .strip()
+        sentences = (
+            split_sentences(
+                text,
+                split_newlines=True,
+            )
         )
 
 
-        if not text:
-
-            return []
+        cleaned = []
 
 
-        #
-        # Split both normal prose and bullet-heavy documents.
-        #
+        for sentence in sentences:
 
-        raw_parts = re.split(
-            r"(?<=[.!?])\s+|\n+",
-            text
-        )
-
-
-        sentences = []
-
-
-        for part in raw_parts:
-
-            part = (
-                part
+            sentence = (
+                sentence
                 .strip()
-                .lstrip("-•* ")
+                .lstrip(
+                    "-•* "
+                )
                 .strip()
             )
 
 
-            if part:
+            if sentence:
 
-                sentences.append(
-                    part
+                cleaned.append(
+                    sentence
                 )
 
 
-        return sentences
+        return cleaned
 
 
     # ========================================================
@@ -219,7 +216,7 @@ class ContextBuilder:
         self,
         sentence: str,
         query_terms: set[str],
-        position: int
+        position: int,
     ) -> float:
 
         sentence_terms = (
@@ -241,8 +238,10 @@ class ContextBuilder:
         )
 
 
-        overlap_count = len(
-            overlap
+        overlap_count = (
+            len(
+                overlap
+            )
         )
 
 
@@ -270,13 +269,6 @@ class ContextBuilder:
         )
 
 
-        #
-        # Small position bonus:
-        #
-        # Earlier sentences are often useful,
-        # but lexical relevance remains dominant.
-        #
-
         position_bonus = (
             0.05
             /
@@ -289,7 +281,6 @@ class ContextBuilder:
 
 
         return (
-
             2.0
             *
             query_coverage
@@ -312,10 +303,12 @@ class ContextBuilder:
         self,
         text: str,
         query: str,
-        word_budget: int
+        word_budget: int,
     ) -> str:
 
-        text = text.strip()
+        text = (
+            text.strip()
+        )
 
 
         if not text:
@@ -323,10 +316,16 @@ class ContextBuilder:
             return ""
 
 
-        words = text.split()
+        words = (
+            text.split()
+        )
 
 
-        if len(words) <= word_budget:
+        if (
+            len(words)
+            <=
+            word_budget
+        ):
 
             return text
 
@@ -354,11 +353,6 @@ class ContextBuilder:
         )
 
 
-        #
-        # If there is no usable query signal,
-        # fall back to deterministic truncation.
-        #
-
         if not query_terms:
 
             return " ".join(
@@ -371,30 +365,30 @@ class ContextBuilder:
         scored_sentences = []
 
 
-        for position, sentence in enumerate(
+        for (
+            position,
+            sentence,
+        ) in enumerate(
             sentences
         ):
 
             scored_sentences.append(
                 (
                     self._sentence_score(
-                        sentence=sentence,
-                        query_terms=query_terms,
-                        position=position
+                        sentence=
+                            sentence,
+                        query_terms=
+                            query_terms,
+                        position=
+                            position,
                     ),
 
                     position,
 
-                    sentence
+                    sentence,
                 )
             )
 
-
-        #
-        # Highest relevance first.
-        #
-        # Position is the tie-breaker.
-        #
 
         ranked_sentences = sorted(
 
@@ -402,8 +396,8 @@ class ContextBuilder:
 
             key=lambda item: (
                 -item[0],
-                item[1]
-            )
+                item[1],
+            ),
         )
 
 
@@ -412,9 +406,11 @@ class ContextBuilder:
         used_words = 0
 
 
-        for score, position, sentence in (
-            ranked_sentences
-        ):
+        for (
+            score,
+            position,
+            sentence,
+        ) in ranked_sentences:
 
             sentence_words = (
                 sentence.split()
@@ -438,27 +434,28 @@ class ContextBuilder:
                 break
 
 
-            if len(sentence_words) <= remaining:
+            if (
+                len(sentence_words)
+                <=
+                remaining
+            ):
 
                 selected.append(
                     (
                         position,
-                        sentence
+                        sentence,
                     )
                 )
 
-                used_words += len(
-                    sentence_words
+
+                used_words += (
+                    len(
+                        sentence_words
+                    )
                 )
 
 
             elif not selected:
-
-                #
-                # Guarantee that at least one relevant
-                # segment survives even for very long
-                # sentences.
-                #
 
                 selected.append(
                     (
@@ -468,11 +465,14 @@ class ContextBuilder:
                             sentence_words[
                                 :remaining
                             ]
-                        )
+                        ),
                     )
                 )
 
-                used_words += remaining
+
+                used_words += (
+                    remaining
+                )
 
 
         if not selected:
@@ -484,13 +484,9 @@ class ContextBuilder:
             )
 
 
-        #
-        # Restore source ordering so the context
-        # remains readable and coherent.
-        #
-
         selected.sort(
-            key=lambda item: item[0]
+            key=lambda item:
+                item[0]
         )
 
 
@@ -498,14 +494,11 @@ class ContextBuilder:
 
             sentence
 
-            for _, sentence
+            for _,
+            sentence
             in selected
         )
 
-
-        #
-        # Final hard safety check.
-        #
 
         compacted_words = (
             compacted.split()
@@ -525,7 +518,9 @@ class ContextBuilder:
             )
 
 
-        return compacted.strip()
+        return (
+            compacted.strip()
+        )
 
 
     # ========================================================
@@ -534,7 +529,7 @@ class ContextBuilder:
 
     def _select_candidates(
         self,
-        results: list[dict]
+        results: list[dict],
     ) -> list[dict]:
 
         if not results:
@@ -549,49 +544,70 @@ class ContextBuilder:
         document_counts = {}
 
 
-        # ----------------------------------------------------
+        # ====================================================
         # Pass 1:
-        # maximize document diversity.
-        # ----------------------------------------------------
+        # maximize document diversity
+        # ====================================================
 
         seen_documents = set()
 
 
         for result in results:
 
-            if len(selected) >= self.max_chunks:
+            if (
+                len(selected)
+                >=
+                self.max_chunks
+            ):
 
                 break
 
 
-            chunk_id = result.get(
-                "id"
+            chunk_id = (
+                result.get(
+                    "id"
+                )
             )
 
-            document_id = result.get(
-                "document_id"
+            document_id = (
+                result.get(
+                    "document_id"
+                )
             )
 
 
-            if not chunk_id or not document_id:
+            if (
+                not chunk_id
+                or
+                not document_id
+            ):
 
                 continue
 
 
-            if chunk_id in selected_ids:
+            if (
+                chunk_id
+                in
+                selected_ids
+            ):
 
                 continue
 
 
-            if document_id in seen_documents:
+            if (
+                document_id
+                in
+                seen_documents
+            ):
 
                 continue
 
 
             text = (
-                result.get(
+                result
+                .get(
                     "text",
-                    ""
+                    "",
                 )
                 .strip()
             )
@@ -606,49 +622,71 @@ class ContextBuilder:
                 result
             )
 
+
             selected_ids.add(
                 chunk_id
             )
 
+
             seen_documents.add(
                 document_id
             )
+
 
             document_counts[
                 document_id
             ] = 1
 
 
-        # ----------------------------------------------------
+        # ====================================================
         # Pass 2:
-        # if slots remain, allow additional chunks from
-        # already-selected documents up to the configured cap.
-        # ----------------------------------------------------
+        # allow more chunks from already selected documents
+        # ====================================================
 
-        if len(selected) < self.max_chunks:
+        if (
+            len(selected)
+            <
+            self.max_chunks
+        ):
 
             for result in results:
 
-                if len(selected) >= self.max_chunks:
+                if (
+                    len(selected)
+                    >=
+                    self.max_chunks
+                ):
 
                     break
 
 
-                chunk_id = result.get(
-                    "id"
+                chunk_id = (
+                    result.get(
+                        "id"
+                    )
                 )
 
-                document_id = result.get(
-                    "document_id"
+                document_id = (
+                    result.get(
+                        "document_id"
+                    )
                 )
 
 
-                if not chunk_id or not document_id:
+                if (
+                    not chunk_id
+                    or
+                    not document_id
+                ):
 
                     continue
 
 
-                if chunk_id in selected_ids:
+                if (
+                    chunk_id
+                    in
+                    selected_ids
+                ):
 
                     continue
 
@@ -656,7 +694,7 @@ class ContextBuilder:
                 current_count = (
                     document_counts.get(
                         document_id,
-                        0
+                        0,
                     )
                 )
 
@@ -671,9 +709,10 @@ class ContextBuilder:
 
 
                 text = (
-                    result.get(
+                    result
+                    .get(
                         "text",
-                        ""
+                        "",
                     )
                     .strip()
                 )
@@ -688,9 +727,11 @@ class ContextBuilder:
                     result
                 )
 
+
                 selected_ids.add(
                     chunk_id
                 )
+
 
                 document_counts[
                     document_id
@@ -711,7 +752,7 @@ class ContextBuilder:
     def build(
         self,
         results: list[dict],
-        query: str = ""
+        query: str = "",
     ) -> BuiltContext:
 
         if not results:
@@ -719,7 +760,7 @@ class ContextBuilder:
             return BuiltContext(
                 text="",
                 items=[],
-                total_words=0
+                total_words=0,
             )
 
 
@@ -735,17 +776,9 @@ class ContextBuilder:
             return BuiltContext(
                 text="",
                 items=[],
-                total_words=0
+                total_words=0,
             )
 
-
-        #
-        # Fair-share budget.
-        #
-        # With 10 candidates and 1800 words:
-        #
-        # ~180 words per evidence item.
-        #
 
         fair_share = max(
 
@@ -755,7 +788,7 @@ class ContextBuilder:
             //
             len(
                 candidates
-            )
+            ),
         )
 
 
@@ -763,7 +796,7 @@ class ContextBuilder:
 
             fair_share,
 
-            self.max_words_per_chunk
+            self.max_words_per_chunk,
         )
 
 
@@ -774,7 +807,11 @@ class ContextBuilder:
 
         for result in candidates:
 
-            if len(selected_items) >= self.max_chunks:
+            if (
+                len(selected_items)
+                >=
+                self.max_chunks
+            ):
 
                 break
 
@@ -793,7 +830,7 @@ class ContextBuilder:
 
             item_budget = min(
                 per_chunk_budget,
-                remaining_words
+                remaining_words,
             )
 
 
@@ -803,9 +840,10 @@ class ContextBuilder:
 
 
             original_text = (
-                result.get(
+                result
+                .get(
                     "text",
-                    ""
+                    "",
                 )
                 .strip()
             )
@@ -813,9 +851,12 @@ class ContextBuilder:
 
             compacted_text = (
                 self._compact_text(
-                    text=original_text,
-                    query=query,
-                    word_budget=item_budget
+                    text=
+                        original_text,
+                    query=
+                        query,
+                    word_budget=
+                        item_budget,
                 )
             )
 
@@ -828,51 +869,65 @@ class ContextBuilder:
             metadata = (
                 result.get(
                     "metadata",
-                    {}
+                    {},
                 )
                 or {}
             )
 
 
-            item = ContextItem(
+            item = (
+                ContextItem(
 
-                citation_id=(
-                    len(
-                        selected_items
-                    )
-                    +
-                    1
-                ),
+                    citation_id=(
+                        len(
+                            selected_items
+                        )
+                        +
+                        1
+                    ),
 
-                chunk_id=result[
-                    "id"
-                ],
+                    chunk_id=(
+                        result[
+                            "id"
+                        ]
+                    ),
 
-                document_id=result[
-                    "document_id"
-                ],
+                    document_id=(
+                        result[
+                            "document_id"
+                        ]
+                    ),
 
-                title=metadata.get(
-                    "title",
-                    ""
-                ),
+                    title=(
+                        metadata.get(
+                            "title",
+                            "",
+                        )
+                    ),
 
-                source=metadata.get(
-                    "source",
-                    ""
-                ),
+                    source=(
+                        metadata.get(
+                            "source",
+                            "",
+                        )
+                    ),
 
-                url=metadata.get(
-                    "url"
-                ),
+                    url=(
+                        metadata.get(
+                            "url"
+                        )
+                    ),
 
-                text=compacted_text,
+                    text=(
+                        compacted_text
+                    ),
 
-                score=float(
-                    result.get(
-                        "score",
-                        0.0
-                    )
+                    score=float(
+                        result.get(
+                            "score",
+                            0.0,
+                        )
+                    ),
                 )
             )
 
@@ -882,8 +937,11 @@ class ContextBuilder:
             )
 
 
-            total_words += len(
-                compacted_text.split()
+            total_words += (
+                len(
+                    compacted_text
+                    .split()
+                )
             )
 
 
@@ -904,21 +962,17 @@ class ContextBuilder:
 
             if item.source:
 
-                #
-                # ASCII separator intentionally used here
-                # to avoid Windows encoding corruption.
-                #
-
                 header += (
-                    f" - {item.source}"
+                    f" - "
+                    f"{item.source}"
                 )
 
 
             context_parts.append(
-
-                f"{header}\n"
-                f"{item.text}"
-
+                (
+                    f"{header}\n"
+                    f"{item.text}"
+                )
             )
 
 
@@ -930,11 +984,10 @@ class ContextBuilder:
 
 
         return BuiltContext(
-
-            text=context_text,
-
-            items=selected_items,
-
-            total_words=total_words
-
+            text=
+                context_text,
+            items=
+                selected_items,
+            total_words=
+                total_words,
         )
