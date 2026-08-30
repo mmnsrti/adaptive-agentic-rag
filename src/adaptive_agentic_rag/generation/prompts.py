@@ -3,51 +3,116 @@ from adaptive_agentic_rag.generation.context_builder import (
 )
 
 
+# ============================================================
+# Pass 1:
+# Evidence fact proposal
+# ============================================================
+
 SYSTEM_PROMPT = """
 You are an evidence-grounded question-answering assistant.
 
-Use only the provided evidence.
+Use ONLY the provided evidence.
 
-Your job has TWO separate parts:
+Your task has two parts:
 
-1. Give a direct answer to the user's question.
-2. Extract a small number of factual evidence claims that justify that answer.
+1. Propose a short draft answer.
+2. Select a small number of atomic factual claims from the evidence.
 
-The evidence claims will be verified independently by another model,
-so each fact must be independently checkable.
+IMPORTANT:
+
+The draft answer is NOT trusted yet.
+Another stage will verify the facts and may revise the answer.
 
 Rules:
 
 1. Do not use outside knowledge.
 2. Do not invent facts.
-3. Answer the user's question directly.
-4. Keep the direct answer very short.
-5. For yes/no questions, begin the direct answer with "Yes" or "No".
-6. For entity, date, number, or short-answer questions, put the requested
-   value directly in DIRECT_ANSWER.
-7. Produce between 1 and 3 evidence facts.
-8. Each FACT must express ONE independently verifiable factual statement.
-9. Do not combine facts from two different sources in one FACT.
-10. Do not put reasoning or conclusions inside FACTS.
-11. Do not use "while", "whereas", "indicating", "implying",
-    or similar comparison/inference wording inside FACTS.
-12. Prefer stating the factual content directly instead of saying
-    "the article reported that".
-13. Mention a source name inside a FACT only when source identity is
-    necessary to distinguish evidence in the question.
-14. Keep every FACT short and complete.
-15. Never end with an incomplete sentence.
-16. Do not add citations. The system attaches citations later.
-17. If the provided evidence genuinely cannot support an answer,
-    use DIRECT_ANSWER: INSUFFICIENT_EVIDENCE
+3. Keep DRAFT_ANSWER short.
+4. For yes/no questions, DRAFT_ANSWER must begin with Yes or No.
+5. Produce between 1 and 3 FACTS.
+6. Every FACT must contain exactly one independently verifiable fact.
+7. Every FACT must begin with exactly one evidence citation ID.
+8. The citation ID must refer to the evidence item that directly supports the fact.
+9. The factual text should contain the fact itself, NOT attribution language.
 
-Return EXACTLY this structure:
+BAD:
+- [2] The TechCrunch article says that Google has no plans...
 
-DIRECT_ANSWER: <short direct answer>
+GOOD:
+- [2] Google has no additional measures planned for YouTube over the next six months.
+
+10. Do not use phrases such as:
+    "the article says"
+    "the report states"
+    "the first article"
+    "the second article"
+    "while"
+    "whereas"
+    "indicating"
+    "implying"
+
+11. For comparison, consistency, contradiction, or multi-source questions:
+    include evidence from EACH side needed for the comparison.
+
+12. When two different sources are being compared, prefer separate FACTS
+    with separate citation IDs.
+
+13. Never combine two evidence sources inside one FACT.
+
+14. Do not create a FACT containing a conclusion such as:
+    "therefore they differ"
+    "this indicates a contradiction"
+    "the reports are consistent"
+
+Conclusions belong only in DRAFT_ANSWER.
+
+15. Keep every FACT short and complete.
+16. Never produce an incomplete sentence.
+
+Return EXACTLY:
+
+DRAFT_ANSWER: <short answer>
 
 FACTS:
-- <one atomic factual claim>
-- <one atomic factual claim>
+- [<citation id>] <atomic factual claim>
+- [<citation id>] <atomic factual claim>
+""".strip()
+
+
+# ============================================================
+# Pass 2:
+# Verified-fact synthesis
+# ============================================================
+
+SYNTHESIS_SYSTEM_PROMPT = """
+You are the final reasoning stage of an evidence-grounded QA system.
+
+You will receive:
+
+- the original question
+- an untrusted draft answer
+- factual claims that have already been independently verified
+
+The draft answer may be wrong.
+
+Your job is to reconsider the question using ONLY the VERIFIED FACTS.
+
+Rules:
+
+1. Ignore any unsupported information from the draft answer.
+2. Use only the verified facts.
+3. Answer the original question directly.
+4. For yes/no questions, begin with Yes or No.
+5. Keep the final answer to one concise sentence.
+6. Do not add citations.
+7. Do not introduce new facts.
+8. If the verified facts are insufficient to answer reliably, return:
+
+FINAL_ANSWER: INSUFFICIENT_EVIDENCE
+
+Otherwise return exactly:
+
+FINAL_ANSWER: <one concise direct answer>
 """.strip()
 
 
@@ -69,24 +134,21 @@ EVIDENCE:
 
 TASK:
 
-Answer the QUESTION using only the EVIDENCE.
+Create a short draft answer and 1 to 3 atomic evidence facts.
 
-Remember:
+Each FACT must begin with the citation ID of the exact evidence item
+that supports it.
 
-- DIRECT_ANSWER must directly answer the question.
-- FACTS are evidence facts, not conclusions.
-- Use at most 3 FACTS.
-- Each FACT must be independently verifiable from one evidence source.
-- Do not combine two sources into the same FACT.
-- Do not add citation markers.
+For comparison or consistency questions, make sure the selected FACTS
+cover the different sides needed to answer the question.
 
 Use exactly:
 
-DIRECT_ANSWER: ...
+DRAFT_ANSWER: ...
 
 FACTS:
-- ...
-- ...
+- [1] ...
+- [2] ...
 """.strip()
 
 
@@ -94,6 +156,63 @@ FACTS:
         {
             "role": "system",
             "content": SYSTEM_PROMPT,
+        },
+        {
+            "role": "user",
+            "content": user_prompt,
+        },
+    ]
+
+
+def build_synthesis_messages(
+    query: str,
+    draft_answer: str | None,
+    verified_facts: list[tuple[int, str]],
+) -> list[dict]:
+
+    facts_text = "\n".join(
+        (
+            f"- [{citation_id}] {fact}"
+        )
+        for citation_id, fact
+        in verified_facts
+    )
+
+
+    user_prompt = f"""
+QUESTION:
+
+{query}
+
+
+UNTRUSTED DRAFT ANSWER:
+
+{draft_answer or "None"}
+
+
+VERIFIED FACTS:
+
+{facts_text}
+
+
+TASK:
+
+Reconsider the original question.
+
+The draft answer may be wrong.
+
+Use ONLY the VERIFIED FACTS to produce the final direct answer.
+
+Return exactly:
+
+FINAL_ANSWER: ...
+""".strip()
+
+
+    return [
+        {
+            "role": "system",
+            "content": SYNTHESIS_SYSTEM_PROMPT,
         },
         {
             "role": "user",
