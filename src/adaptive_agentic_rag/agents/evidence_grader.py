@@ -210,7 +210,7 @@ class EvidenceGrader:
     def __init__(
         self,
         weak_item_threshold: float = 0.20,
-        evidence_score_threshold: float = 0.75,
+        evidence_score_threshold: float =  0.78,
         hard_critical_coverage: float = 0.75,
         simple_critical_coverage: float = 0.50
     ):
