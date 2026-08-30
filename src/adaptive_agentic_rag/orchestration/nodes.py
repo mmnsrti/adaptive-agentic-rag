@@ -28,6 +28,10 @@ from adaptive_agentic_rag.generation.generator import (
     GroundedGenerator
 )
 
+from adaptive_agentic_rag.orchestration.constrained_semantic_rescue import (
+    ConstrainedSemanticRescue
+)
+
 from adaptive_agentic_rag.orchestration.state import (
     AgentState
 )
@@ -63,6 +67,34 @@ class RAGNodes:
         self.evidence_grader = (
             EvidenceGrader()
         )
+
+
+        # ==================================================
+        # Evidence fallback
+        #
+        # IMPORTANT:
+        #
+        # Reuse the SAME BGE reranker already owned by the
+        # production retriever.
+        #
+        # No duplicate model is loaded.
+        # ==================================================
+
+        self.semantic_rescue = (
+            ConstrainedSemanticRescue(
+
+                reranker=(
+                    self.retriever
+                    .reranked
+                    .reranker
+                ),
+
+                evidence_grader=(
+                    self.evidence_grader
+                )
+            )
+        )
+
 
         self.query_rewriter = (
             QueryRewriter()
@@ -123,6 +155,112 @@ class RAGNodes:
 
 
     # ======================================================
+    # Evidence rescue telemetry
+    # ======================================================
+
+    @staticmethod
+    def _semantic_rescue_reasons(
+        result: dict
+    ) -> list[str]:
+
+        reasons = []
+
+
+        if result.get(
+            "sufficient"
+        ):
+
+            reasons.append(
+                "evidence_path=constrained_semantic_rescue"
+            )
+
+        else:
+
+            reasons.append(
+                "semantic_rescue=insufficient"
+            )
+
+
+        supported = result.get(
+            "supported_requirement_count"
+        )
+
+        required = result.get(
+            "required_requirement_count"
+        )
+
+
+        if (
+            supported is not None
+            and
+            required is not None
+        ):
+
+            reasons.append(
+                (
+                    "semantic_requirements="
+                    f"{supported}/{required}"
+                )
+            )
+
+
+        missing_sources = (
+            result.get(
+                "missing_query_sources"
+            )
+            or []
+        )
+
+
+        if missing_sources:
+
+            reasons.append(
+                (
+                    "semantic_missing_sources="
+                    +
+                    ", ".join(
+                        str(value)
+                        for value
+                        in missing_sources
+                    )
+                )
+            )
+
+
+        if (
+            result.get(
+                "document_diversity_required"
+            )
+            and
+            not result.get(
+                "document_diversity_ok"
+            )
+        ):
+
+            reasons.append(
+                "semantic_document_diversity=false"
+            )
+
+
+        if (
+            result.get(
+                "person_bridge_required"
+            )
+            and
+            not result.get(
+                "person_bridge_ok"
+            )
+        ):
+
+            reasons.append(
+                "semantic_person_bridge=false"
+            )
+
+
+        return reasons
+
+
+    # ======================================================
     # Helper
     # Extract citation validity from GenerationResult
     # ======================================================
@@ -132,11 +270,6 @@ class RAGNodes:
         generation_result
     ) -> bool | None:
 
-        #
-        # First check whether GenerationResult
-        # exposes citation_valid directly.
-        #
-
         direct_value = getattr(
             generation_result,
             "citation_valid",
@@ -144,15 +277,11 @@ class RAGNodes:
         )
 
         if direct_value is not None:
+
             return bool(
                 direct_value
             )
 
-
-        #
-        # Otherwise inspect common nested
-        # citation result fields.
-        #
 
         nested_names = [
 
@@ -198,7 +327,9 @@ class RAGNodes:
 
                 if value is not None:
 
-                    return bool(value)
+                    return bool(
+                        value
+                    )
 
 
         return None
@@ -296,6 +427,7 @@ class RAGNodes:
                         0
                     )
                 ),
+
             "citation_valid":
                 self._extract_citation_valid(
                     result
@@ -436,6 +568,16 @@ class RAGNodes:
     # ======================================================
     # Node 4
     # Evidence grading
+    #
+    # Production policy:
+    #
+    # V2 sufficient
+    #     -> accept directly
+    #
+    # V2 insufficient
+    #     -> constrained semantic rescue
+    #
+    # Semantic rescue never overrides an existing V2 accept.
     # ======================================================
 
     def grade_evidence(
@@ -480,6 +622,11 @@ class RAGNodes:
             )
 
 
+        # ==================================================
+        # Stage 1:
+        # Existing lexical/structural V2 gate
+        # ==================================================
+
         grade = (
             self.evidence_grader.grade(
 
@@ -492,16 +639,108 @@ class RAGNodes:
         )
 
 
+        v2_reasons = (
+            self._safe_list(
+                grade.reasons
+            )
+        )
+
+
+        # ==================================================
+        # Fast path:
+        #
+        # If V2 already accepts, do NOT run semantic rescue.
+        #
+        # This avoids unnecessary BGE scoring.
+        # ==================================================
+
+        if grade.sufficient:
+
+            return {
+
+                "evidence_sufficient":
+                    True,
+
+                # ------------------------------------------
+                # Preserve the real V2 score.
+                # Do not fabricate a new scalar.
+                # ------------------------------------------
+
+                "evidence_score":
+                    grade.evidence_score,
+
+                "evidence_reasons":
+                    (
+                        v2_reasons
+                        +
+                        [
+                            "evidence_path=v2"
+                        ]
+                    )
+            }
+
+
+        # ==================================================
+        # Stage 2:
+        # Constrained semantic rescue
+        # ==================================================
+
+        rescue = (
+            self.semantic_rescue.analyze(
+
+                query=original_query,
+
+                context=context,
+
+                query_type=query_type
+            )
+        )
+
+
+        final_sufficient = bool(
+            rescue[
+                "sufficient"
+            ]
+        )
+
+
+        rescue_reasons = (
+            self._semantic_rescue_reasons(
+                rescue
+            )
+        )
+
+
         return {
 
             "evidence_sufficient":
-                grade.sufficient,
+                final_sufficient,
+
+            # ----------------------------------------------
+            # IMPORTANT:
+            #
+            # evidence_score remains the V2 diagnostic
+            # score even when semantic rescue accepts.
+            #
+            # The final decision path is represented in
+            # evidence_reasons.
+            #
+            # Never artificially promote this value to .78.
+            # ----------------------------------------------
 
             "evidence_score":
                 grade.evidence_score,
 
             "evidence_reasons":
-                grade.reasons
+                (
+                    v2_reasons
+                    +
+                    [
+                        "v2_evidence_sufficient=false"
+                    ]
+                    +
+                    rescue_reasons
+                )
         }
 
 
@@ -567,12 +806,6 @@ class RAGNodes:
 
             "rewritten":
                 True,
-
-
-            #
-            # Reset state belonging
-            # to the previous retrieval round.
-            #
 
             "retrieved_results":
                 [],
@@ -688,14 +921,6 @@ class RAGNodes:
                 "without context."
             )
 
-
-        #
-        # Reuse GroundedGenerator's existing
-        # evidence safety gate.
-        #
-        # Because evidence_sufficient=False,
-        # Qwen should NOT be executed here.
-        #
 
         result = (
             self.generator.generate(
