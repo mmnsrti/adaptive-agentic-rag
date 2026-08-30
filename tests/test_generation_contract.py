@@ -1,9 +1,4 @@
-﻿from adaptive_agentic_rag.generation.context_builder import (
-    BuiltContext,
-    ContextItem,
-)
-
-from adaptive_agentic_rag.generation.generator import (
+﻿from adaptive_agentic_rag.generation.generator import (
     GroundedGenerator,
 )
 
@@ -15,7 +10,7 @@ from adaptive_agentic_rag.generation.relevance_filter import (
 def test_parse_structured_generation():
 
     raw = """
-DRAFT_ANSWER: Yes
+DIRECT_ANSWER: Yes
 
 FACTS:
 - McTominay is Manchester United's top scorer.
@@ -44,10 +39,40 @@ FACTS:
     ]
 
 
-def test_accidental_model_citations_are_removed_and_not_trusted():
+def test_old_draft_answer_header_remains_parseable():
 
     raw = """
-DRAFT_ANSWER: Yes [1]
+DRAFT_ANSWER: No
+
+FACTS:
+- One supported fact.
+""".strip()
+
+
+    parsed = (
+        GroundedGenerator
+        ._parse_draft(
+            raw
+        )
+    )
+
+
+    assert (
+        parsed.direct_answer
+        ==
+        "No"
+    )
+
+
+    assert parsed.evidence_claims == [
+        "One supported fact.",
+    ]
+
+
+def test_accidental_model_citations_are_removed():
+
+    raw = """
+DIRECT_ANSWER: Yes [1]
 
 FACTS:
 - [2] McTominay is Manchester United's top scorer.
@@ -159,6 +184,7 @@ def test_insufficient_answer_normalization():
         "Insufficient Evidence",
         "insufficient-evidence",
         "Insufficient Evidence.",
+        "insufficient",
     ]
 
 
@@ -171,62 +197,3 @@ def test_insufficient_answer_normalization():
             )
             is True
         )
-
-
-def test_verified_facts_include_source_metadata():
-
-    context = BuiltContext(
-        text="",
-        total_words=10,
-        items=[
-            ContextItem(
-                citation_id=2,
-                chunk_id="chunk_2",
-                document_id="doc_2",
-                title="Top goalscorers of 2023",
-                source="TalkSport",
-                url=None,
-                text=(
-                    "Haaland has time to become "
-                    "the overall top scorer."
-                ),
-                score=1.0,
-            )
-        ],
-    )
-
-
-    relevant_claims = [
-        RelevantClaim(
-            claim=(
-                "Haaland can become "
-                "the overall top scorer."
-            ),
-            citation_id=2,
-            relevance_score=5.0,
-        )
-    ]
-
-
-    verified = (
-        GroundedGenerator
-        ._build_verified_facts(
-            relevant_claims=
-                relevant_claims,
-            context=
-                context,
-        )
-    )
-
-
-    assert verified == [
-        {
-            "citation_id": 2,
-            "source": "TalkSport",
-            "title": "Top goalscorers of 2023",
-            "text": (
-                "Haaland can become "
-                "the overall top scorer."
-            ),
-        }
-    ]
