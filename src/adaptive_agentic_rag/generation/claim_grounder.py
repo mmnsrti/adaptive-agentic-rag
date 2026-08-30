@@ -47,6 +47,10 @@ class ClaimSupport:
 
     supporting_text: str | None
 
+    evidence_relevance_score: float | None = None
+
+    premise_mode: str | None = None
+
 
 @dataclass
 class GroundedClaims:
@@ -62,8 +66,10 @@ class ClaimGrounder:
 
     def __init__(
         self,
+        reranker,
         model_name: str = NLI_MODEL_NAME,
         device: str | None = None,
+        max_candidate_units: int = 6,
     ):
 
         if device is None:
@@ -77,6 +83,16 @@ class ClaimGrounder:
 
         self.device = (
             device
+        )
+
+
+        self.reranker = (
+            reranker
+        )
+
+
+        self.max_candidate_units = (
+            max_candidate_units
         )
 
 
@@ -100,7 +116,7 @@ class ClaimGrounder:
 
 
     # ========================================================
-    # Extract atomic claims
+    # Claim extraction
     # ========================================================
 
     def extract_claims(
@@ -198,10 +214,15 @@ class ClaimGrounder:
 
 
     # ========================================================
-    # Build evidence units
+    # Evidence units
     #
-    # Claim ↔ sentence
-    # Claim ↔ two-sentence window
+    # Each unit keeps:
+    #
+    # citation
+    # source
+    # title
+    # plain text
+    # provenance-aware text
     # ========================================================
 
     def _build_evidence_units(
@@ -221,6 +242,28 @@ class ClaimGrounder:
             )
 
 
+            provenance_parts = []
+
+
+            if item.source:
+
+                provenance_parts.append(
+                    f"Source: {item.source}."
+                )
+
+
+            if item.title:
+
+                provenance_parts.append(
+                    f"Title: {item.title}."
+                )
+
+
+            provenance = " ".join(
+                provenance_parts
+            )
+
+
             for (
                 index,
                 sentence,
@@ -228,24 +271,22 @@ class ClaimGrounder:
                 sentences
             ):
 
-                # ============================================
-                # Single sentence
-                # ============================================
-
-                units.append(
-                    {
-                        "citation_id":
-                            item.citation_id,
-
-                        "text":
-                            sentence,
-                    }
+                self._append_unit(
+                    units=units,
+                    citation_id=
+                        item.citation_id,
+                    source=
+                        item.source,
+                    title=
+                        item.title,
+                    text=
+                        sentence,
+                    provenance=
+                        provenance,
+                    unit_type=
+                        "sentence",
                 )
 
-
-                # ============================================
-                # Two-sentence evidence window
-                # ============================================
 
                 if (
                     index + 1
@@ -261,29 +302,350 @@ class ClaimGrounder:
                         " "
                         +
                         sentences[
-                            index
-                            +
-                            1
+                            index + 1
                         ]
                     )
 
 
-                    units.append(
-                        {
-                            "citation_id":
-                                item.citation_id,
-
-                            "text":
-                                window,
-                        }
+                    self._append_unit(
+                        units=units,
+                        citation_id=
+                            item.citation_id,
+                        source=
+                            item.source,
+                        title=
+                            item.title,
+                        text=
+                            window,
+                        provenance=
+                            provenance,
+                        unit_type=
+                            "window",
                     )
 
 
         return units
 
 
+    @staticmethod
+    def _append_unit(
+        *,
+        units,
+        citation_id,
+        source,
+        title,
+        text,
+        provenance,
+        unit_type,
+    ):
+
+        text = (
+            text.strip()
+        )
+
+
+        if not text:
+
+            return
+
+
+        provenance_text = (
+            (
+                f"{provenance} "
+                f"Evidence: {text}"
+            )
+            .strip()
+        )
+
+
+        units.append(
+            {
+                "id":
+                    (
+                        f"evidence_"
+                        f"{len(units)}"
+                    ),
+
+                "citation_id":
+                    citation_id,
+
+                "source":
+                    source or "",
+
+                "title":
+                    title or "",
+
+                "text":
+                    text,
+
+                "provenance_text":
+                    provenance_text,
+
+                "unit_type":
+                    unit_type,
+            }
+        )
+
+
     # ========================================================
-    # Check one atomic claim
+    # Candidate retrieval BEFORE NLI
+    #
+    # This avoids:
+    #
+    # NLI(claim, every sentence)
+    # then max(score)
+    #
+    # which can generate spurious high entailment scores.
+    # ========================================================
+
+    def _select_candidate_units(
+        self,
+        claim: str,
+        units: list[dict],
+    ) -> list[dict]:
+
+        if not units:
+
+            return []
+
+
+        documents = []
+
+
+        for index, unit in enumerate(
+            units
+        ):
+
+            documents.append(
+                {
+                    "id":
+                        f"grounding_unit_{index}",
+
+                    "text":
+                        unit[
+                            "provenance_text"
+                        ],
+
+                    "unit":
+                        unit,
+                }
+            )
+
+
+        top_k = min(
+            self.max_candidate_units,
+            len(
+                documents
+            ),
+        )
+
+
+        ranked = (
+            self.reranker.rerank(
+                query=
+                    claim,
+                documents=
+                    documents,
+                top_k=
+                    top_k,
+            )
+        )
+
+
+        candidates = []
+
+
+        for item in ranked:
+
+            unit = (
+                item[
+                    "unit"
+                ].copy()
+            )
+
+
+            unit[
+                "relevance_score"
+            ] = round(
+                float(
+                    item[
+                        "rerank_score"
+                    ]
+                ),
+                4,
+            )
+
+
+            candidates.append(
+                unit
+            )
+
+
+        return candidates
+
+
+    # ========================================================
+    # Score one premise
+    # ========================================================
+
+    def _predict_nli(
+        self,
+        premise: str,
+        claim: str,
+    ) -> dict:
+
+        probabilities = (
+            self.model.predict(
+                [
+                    (
+                        premise,
+                        claim,
+                    )
+                ],
+                apply_softmax=True,
+            )
+        )
+
+
+        probabilities = (
+            np.asarray(
+                probabilities
+            )
+        )
+
+
+        if (
+            probabilities.ndim
+            ==
+            2
+        ):
+
+            probabilities = (
+                probabilities[
+                    0
+                ]
+            )
+
+
+        label_index = int(
+            np.argmax(
+                probabilities
+            )
+        )
+
+
+        return {
+            "label":
+                LABELS[
+                    label_index
+                ],
+
+            "contradiction":
+                float(
+                    probabilities[
+                        0
+                    ]
+                ),
+
+            "entailment":
+                float(
+                    probabilities[
+                        1
+                    ]
+                ),
+
+            "neutral":
+                float(
+                    probabilities[
+                        2
+                    ]
+                ),
+        }
+
+
+    # ========================================================
+    # Evaluate candidate evidence
+    #
+    # We test BOTH:
+    #
+    # plain evidence
+    #
+    # and
+    #
+    # source + title + evidence
+    #
+    # because the diagnostic showed that neither representation
+    # dominates universally.
+    # ========================================================
+
+    def _evaluate_candidate(
+        self,
+        claim: str,
+        unit: dict,
+    ) -> list[dict]:
+
+        variants = [
+            (
+                "plain",
+                unit[
+                    "text"
+                ],
+            ),
+            (
+                "provenance",
+                unit[
+                    "provenance_text"
+                ],
+            ),
+        ]
+
+
+        results = []
+
+
+        for (
+            mode,
+            premise,
+        ) in variants:
+
+            prediction = (
+                self._predict_nli(
+                    premise=
+                        premise,
+                    claim=
+                        claim,
+                )
+            )
+
+
+            results.append(
+                {
+                    "mode":
+                        mode,
+
+                    "premise":
+                        premise,
+
+                    "citation_id":
+                        unit[
+                            "citation_id"
+                        ],
+
+                    "relevance_score":
+                        unit[
+                            "relevance_score"
+                        ],
+
+                    **prediction,
+                }
+            )
+
+
+        return results
+
+
+    # ========================================================
+    # Check one claim
     # ========================================================
 
     def _check_claim(
@@ -292,14 +654,14 @@ class ClaimGrounder:
         context: BuiltContext,
     ) -> ClaimSupport:
 
-        evidence_units = (
+        units = (
             self._build_evidence_units(
                 context
             )
         )
 
 
-        if not evidence_units:
+        if not units:
 
             return ClaimSupport(
                 claim=
@@ -314,101 +676,157 @@ class ClaimGrounder:
                     0.0,
                 supporting_text=
                     None,
+                evidence_relevance_score=
+                    None,
+                premise_mode=
+                    None,
+            )
+
+
+        candidates = (
+            self._select_candidate_units(
+                claim=
+                    claim,
+                units=
+                    units,
+            )
+        )
+
+
+        if not candidates:
+
+            return ClaimSupport(
+                claim=
+                    claim,
+                supported=
+                    False,
+                citation_id=
+                    None,
+                label=
+                    "neutral",
+                entailment_score=
+                    0.0,
+                supporting_text=
+                    None,
+                evidence_relevance_score=
+                    None,
+                premise_mode=
+                    None,
+            )
+
+
+        evaluations = []
+
+
+        for unit in candidates:
+
+            evaluations.extend(
+                self._evaluate_candidate(
+                    claim=
+                        claim,
+                    unit=
+                        unit,
+                )
             )
 
 
         # ====================================================
-        # NLI:
+        # IMPORTANT:
         #
-        # premise    = evidence
-        # hypothesis = generated claim
+        # We still use "entailment is winning label"
+        # as the support rule.
+        #
+        # No arbitrary entailment threshold is added yet.
         # ====================================================
 
-        pairs = [
+        entailed = [
 
-            (
-                unit[
-                    "text"
-                ],
-                claim,
+            evaluation
+
+            for evaluation
+            in evaluations
+
+            if (
+                evaluation[
+                    "label"
+                ]
+                ==
+                "entailment"
             )
-
-            for unit
-            in evidence_units
         ]
 
 
-        probabilities = (
-            self.model.predict(
-                pairs,
-                apply_softmax=True,
+        if entailed:
+
+            # ------------------------------------------------
+            # Among valid entailments:
+            #
+            # prioritize NLI entailment confidence,
+            # then candidate relevance.
+            # ------------------------------------------------
+
+            best = max(
+
+                entailed,
+
+                key=lambda item: (
+                    item[
+                        "entailment"
+                    ],
+                    item[
+                        "relevance_score"
+                    ],
+                ),
             )
-        )
 
 
-        probabilities = (
-            np.asarray(
-                probabilities
+            return ClaimSupport(
+                claim=
+                    claim,
+                supported=
+                    True,
+                citation_id=
+                    best[
+                        "citation_id"
+                    ],
+                label=
+                    "entailment",
+                entailment_score=
+                    round(
+                        best[
+                            "entailment"
+                        ],
+                        4,
+                    ),
+                supporting_text=
+                    best[
+                        "premise"
+                    ],
+                evidence_relevance_score=
+                    best[
+                        "relevance_score"
+                    ],
+                premise_mode=
+                    best[
+                        "mode"
+                    ],
             )
-        )
-
-
-        entailment_scores = (
-            probabilities[
-                :,
-                1
-            ]
-        )
-
-
-        best_index = int(
-            np.argmax(
-                entailment_scores
-            )
-        )
-
-
-        best_probabilities = (
-            probabilities[
-                best_index
-            ]
-        )
-
-
-        predicted_label_index = int(
-            np.argmax(
-                best_probabilities
-            )
-        )
-
-
-        predicted_label = (
-            LABELS[
-                predicted_label_index
-            ]
-        )
-
-
-        best_unit = (
-            evidence_units[
-                best_index
-            ]
-        )
 
 
         # ====================================================
-        # CURRENT policy:
+        # Unsupported:
         #
-        # Entailment being the winning NLI label is enough.
-        #
-        # We intentionally do NOT add a numerical threshold
-        # yet. That will be calibrated after diagnostics.
+        # Preserve the highest-entailment diagnostic candidate.
         # ====================================================
 
-        supported = (
-            predicted_label
-            ==
-            "entailment"
+        best = max(
+
+            evaluations,
+
+            key=lambda item:
+                item[
+                    "entailment"
+                ],
         )
 
 
@@ -416,36 +834,37 @@ class ClaimGrounder:
             claim=
                 claim,
             supported=
-                supported,
-            citation_id=(
-                best_unit[
-                    "citation_id"
-                ]
-                if supported
-                else None
-            ),
+                False,
+            citation_id=
+                None,
             label=
-                predicted_label,
-            entailment_score=round(
-                float(
-                    entailment_scores[
-                        best_index
-                    ]
+                best[
+                    "label"
+                ],
+            entailment_score=
+                round(
+                    best[
+                        "entailment"
+                    ],
+                    4,
                 ),
-                4,
-            ),
-            supporting_text=(
-                best_unit[
-                    "text"
-                ]
-                if supported
-                else None
-            ),
+            supporting_text=
+                best[
+                    "premise"
+                ],
+            evidence_relevance_score=
+                best[
+                    "relevance_score"
+                ],
+            premise_mode=
+                best[
+                    "mode"
+                ],
         )
 
 
     # ========================================================
-    # Ground generated answer
+    # Ground full generated answer
     # ========================================================
 
     def ground(

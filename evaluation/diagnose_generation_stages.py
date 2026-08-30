@@ -1,9 +1,14 @@
 import json
-from pathlib import Path
 
+from pathlib import Path
+from types import SimpleNamespace
 
 from adaptive_agentic_rag.orchestration.nodes import (
     RAGNodes,
+)
+
+from adaptive_agentic_rag.generation.citation import (
+    validate_citations,
 )
 
 
@@ -14,16 +19,9 @@ FROZEN_PATH = Path(
 
 OUTPUT_PATH = Path(
     "evaluation/results/"
-    "generation_stage_diagnostic.json"
+    "generation_stage_diagnostic_v2.json"
 )
 
-
-# ============================================================
-# Known problematic families from the previous E2E smoke run.
-#
-# We locate them from the frozen set instead of manually
-# duplicating entire questions.
-# ============================================================
 
 TARGETS = {
     "taylor_kelce": [
@@ -53,7 +51,7 @@ TARGETS = {
 
 
 # ============================================================
-# Dataset loading
+# Dataset
 # ============================================================
 
 def load_examples():
@@ -91,14 +89,9 @@ def load_examples():
 
 
     raise ValueError(
-        "Could not locate frozen examples "
-        f"inside {FROZEN_PATH}"
+        "Could not locate frozen examples."
     )
 
-
-# ============================================================
-# Find known smoke families
-# ============================================================
 
 def find_target_examples(
     examples,
@@ -149,33 +142,17 @@ def find_target_examples(
 
             print(
                 f"[NOT FOUND] "
-                f"{target_name}: "
-                f"{required_terms}"
+                f"{target_name}"
             )
 
             continue
 
 
-        # ----------------------------------------------------
-        # Deterministic choice.
-        #
-        # Prefer the shortest matching question because broad
-        # keyword pairs can occasionally match multiple frozen
-        # questions.
-        # ----------------------------------------------------
-
         matches.sort(
             key=lambda item:
                 len(
-                    (
-                        item.get(
-                            "question"
-                        )
-                        or
-                        item.get(
-                            "query"
-                        )
-                        or
+                    item.get(
+                        "question",
                         ""
                     )
                 )
@@ -189,25 +166,14 @@ def find_target_examples(
         )
 
 
-        question = (
-            chosen.get(
-                "question"
-            )
-            or
-            chosen.get(
-                "query"
-            )
-            or
-            ""
-        )
-
-
         print(
             f"\n[{target_name}]"
         )
 
         print(
-            question
+            chosen[
+                "question"
+            ]
         )
 
         print(
@@ -242,6 +208,7 @@ def serialize_context(
             context.total_words,
 
         "items": [
+
             {
                 "citation_id":
                     item.citation_id,
@@ -275,47 +242,7 @@ def serialize_context(
 
 
 # ============================================================
-# Grounded claim serialization
-# ============================================================
-
-def serialize_grounded_claim(
-    claim,
-):
-
-    return {
-        "claim":
-            claim.claim,
-
-        "supported":
-            claim.supported,
-
-        "citation_id":
-            claim.citation_id,
-
-        "label":
-            claim.label,
-
-        "entailment_score":
-            claim.entailment_score,
-
-        "supporting_text":
-            claim.supporting_text,
-    }
-
-
-# ============================================================
-# Run retrieval + evidence gate
-#
-# This mirrors the graph:
-#
-# route
-# → retrieve
-# → context
-# → evidence grade
-# → optional rewrite
-# → retrieve again
-# → context again
-# → evidence grade again
+# Evidence path
 # ============================================================
 
 def prepare_evidence(
@@ -399,7 +326,7 @@ def prepare_evidence(
 
 
     # ========================================================
-    # One rewrite maximum — matching current architecture.
+    # One rewrite maximum
     # ========================================================
 
     if not state[
@@ -478,7 +405,61 @@ def prepare_evidence(
 
 
 # ============================================================
-# Stage-by-stage generation diagnostic
+# Yes / No evaluator for DIRECT_ANSWER
+# ============================================================
+
+def direct_answer_matches_gold(
+    direct_answer,
+    gold_answer,
+):
+
+    if not direct_answer:
+
+        return None
+
+
+    if not gold_answer:
+
+        return None
+
+
+    gold = (
+        str(
+            gold_answer
+        )
+        .strip()
+        .lower()
+    )
+
+
+    direct = (
+        str(
+            direct_answer
+        )
+        .strip()
+        .lower()
+    )
+
+
+    if gold == "yes":
+
+        return direct.startswith(
+            "yes"
+        )
+
+
+    if gold == "no":
+
+        return direct.startswith(
+            "no"
+        )
+
+
+    return None
+
+
+# ============================================================
+# Production-contract diagnostic
 # ============================================================
 
 def diagnose_generation(
@@ -493,8 +474,7 @@ def diagnose_generation(
 
 
     # ========================================================
-    # Stage 1
-    # Raw Qwen generation
+    # 1. Generate ONCE
     # ========================================================
 
     generator._load_generator()
@@ -507,17 +487,123 @@ def diagnose_generation(
             context=
                 context,
             max_new_tokens=
-                160,
+                220,
         )
     )
 
 
     # ========================================================
-    # Stage 2
-    # NLI grounding
+    # 2. Parse DIRECT_ANSWER separately from FACTS
+    #
+    # THIS is the important difference from the old diagnostic.
+    # ========================================================
+
+    parsed = (
+        generator._parse_draft(
+            raw_answer
+        )
+    )
+
+
+    # ========================================================
+    # Model requested abstention
+    # ========================================================
+
+    model_insufficient = (
+        parsed.direct_answer
+        is not None
+        and
+        parsed.direct_answer
+        .strip()
+        .upper()
+        ==
+        "INSUFFICIENT_EVIDENCE"
+    )
+
+
+    if model_insufficient:
+
+        return {
+            "raw_answer":
+                raw_answer,
+
+            "direct_answer":
+                parsed.direct_answer,
+
+            "parsed_facts":
+                parsed.evidence_claims,
+
+            "model_insufficient":
+                True,
+
+            "claims":
+                [],
+
+            "final_answer":
+                None,
+
+            "citation_valid":
+                None,
+
+            "cited_ids":
+                [],
+
+            "runtime_grade":
+                None,
+        }
+
+
+    # ========================================================
+    # No facts
+    # ========================================================
+
+    if not parsed.evidence_claims:
+
+        return {
+            "raw_answer":
+                raw_answer,
+
+            "direct_answer":
+                parsed.direct_answer,
+
+            "parsed_facts":
+                [],
+
+            "model_insufficient":
+                False,
+
+            "claims":
+                [],
+
+            "final_answer":
+                None,
+
+            "citation_valid":
+                False,
+
+            "cited_ids":
+                [],
+
+            "runtime_grade":
+                None,
+        }
+
+
+    # ========================================================
+    # 3. Ground FACTS ONLY
+    #
+    # DIRECT_ANSWER never enters NLI.
     # ========================================================
 
     generator._load_claim_grounder()
+
+
+    grounding_input = (
+        generator
+        ._render_claims_for_grounding(
+            parsed.evidence_claims
+        )
+    )
 
 
     grounded = (
@@ -525,7 +611,7 @@ def diagnose_generation(
         .claim_grounder
         .ground(
             answer=
-                raw_answer,
+                grounding_input,
             context=
                 context,
         )
@@ -533,8 +619,7 @@ def diagnose_generation(
 
 
     # ========================================================
-    # Stage 3
-    # Relevance reranking
+    # 4. Relevance over supported factual claims
     # ========================================================
 
     relevance = (
@@ -549,16 +634,22 @@ def diagnose_generation(
     )
 
 
-    relevant_by_claim = {
-        item.claim: item
-        for item
+    relevant_map = {
+
+        claim.claim:
+            claim
+
+        for claim
         in relevance.relevant_claims
     }
 
 
-    filtered_by_claim = {
-        item.claim: item
-        for item
+    filtered_map = {
+
+        claim.claim:
+            claim
+
+        for claim
         in relevance.filtered_claims
     }
 
@@ -577,18 +668,21 @@ def diagnose_generation(
 
         if (
             claim.claim
-            in relevant_by_claim
+            in relevant_map
         ):
 
-            item = (
-                relevant_by_claim[
+            relevant_claim = (
+                relevant_map[
                     claim.claim
                 ]
             )
 
+
             relevance_score = (
-                item.relevance_score
+                relevant_claim
+                .relevance_score
             )
+
 
             relevance_decision = (
                 "KEEP"
@@ -597,18 +691,21 @@ def diagnose_generation(
 
         elif (
             claim.claim
-            in filtered_by_claim
+            in filtered_map
         ):
 
-            item = (
-                filtered_by_claim[
+            filtered_claim = (
+                filtered_map[
                     claim.claim
                 ]
             )
 
+
             relevance_score = (
-                item.relevance_score
+                filtered_claim
+                .relevance_score
             )
+
 
             relevance_decision = (
                 "FILTER"
@@ -617,11 +714,39 @@ def diagnose_generation(
 
         claim_rows.append(
             {
-                **serialize_grounded_claim(
-                    claim
-                ),
+                "claim":
+                    claim.claim,
 
-                "relevance_score":
+                "supported":
+                    claim.supported,
+
+                "citation_id":
+                    claim.citation_id,
+
+                "label":
+                    claim.label,
+
+                "entailment_score":
+                    claim.entailment_score,
+
+                "supporting_text":
+                    claim.supporting_text,
+
+                "evidence_relevance_score":
+                    getattr(
+                        claim,
+                        "evidence_relevance_score",
+                        None,
+                    ),
+
+                "premise_mode":
+                    getattr(
+                        claim,
+                        "premise_mode",
+                        None,
+                    ),
+
+                "final_relevance_score":
                     relevance_score,
 
                 "relevance_decision":
@@ -630,14 +755,149 @@ def diagnose_generation(
         )
 
 
+    # ========================================================
+    # No grounded relevant facts
+    # ========================================================
+
+    if not relevance.relevant_claims:
+
+        return {
+            "raw_answer":
+                raw_answer,
+
+            "direct_answer":
+                parsed.direct_answer,
+
+            "parsed_facts":
+                parsed.evidence_claims,
+
+            "model_insufficient":
+                False,
+
+            "supported_count":
+                grounded.supported_count,
+
+            "unsupported_count":
+                grounded.unsupported_count,
+
+            "claims":
+                claim_rows,
+
+            "final_answer":
+                None,
+
+            "citation_valid":
+                False,
+
+            "cited_ids":
+                [],
+
+            "runtime_grade":
+                None,
+        }
+
+
+    # ========================================================
+    # 5. Build final answer using production contract
+    # ========================================================
+
+    final_answer = (
+        generator
+        ._build_grounded_answer(
+            direct_answer=
+                parsed.direct_answer,
+            relevant_claims=
+                relevance.relevant_claims,
+        )
+    )
+
+
+    # ========================================================
+    # 6. Citation validation
+    # ========================================================
+
+    citation_result = (
+        validate_citations(
+            answer=
+                final_answer,
+            context=
+                context,
+        )
+    )
+
+
+    # ========================================================
+    # 7. Runtime AnswerGrader
+    #
+    # We avoid a second generation call.
+    # ========================================================
+
+    generation_result = (
+        SimpleNamespace(
+            answer=
+                final_answer,
+
+            raw_answer=
+                raw_answer,
+
+            direct_answer=
+                parsed.direct_answer,
+
+            abstained=
+                False,
+
+            citation_valid=
+                citation_result.valid,
+
+            cited_ids=
+                citation_result.cited_ids,
+
+            invalid_citation_ids=
+                citation_result.invalid_ids,
+
+            supported_claims=
+                grounded.supported_count,
+
+            unsupported_claims=
+                grounded.unsupported_count,
+
+            relevant_claims=
+                len(
+                    relevance.relevant_claims
+                ),
+
+            filtered_irrelevant_claims=
+                len(
+                    relevance.filtered_claims
+                ),
+        )
+    )
+
+
+    runtime_grade = (
+        nodes.answer_grader.grade(
+            query=
+                question,
+            generation_result=
+                generation_result,
+            evidence_sufficient=
+                True,
+        )
+    )
+
+
     return {
         "raw_answer":
             raw_answer,
 
-        "extracted_claim_count":
-            len(
-                grounded.claims
-            ),
+        "direct_answer":
+            parsed.direct_answer,
+
+        "parsed_facts":
+            parsed.evidence_claims,
+
+        "model_insufficient":
+            False,
 
         "supported_count":
             grounded.supported_count,
@@ -650,21 +910,50 @@ def diagnose_generation(
                 relevance.relevant_claims
             ),
 
-        "filtered_relevant_count":
+        "filtered_count":
             len(
                 relevance.filtered_claims
             ),
 
         "claims":
             claim_rows,
+
+        "final_answer":
+            final_answer,
+
+        "citation_valid":
+            citation_result.valid,
+
+        "cited_ids":
+            citation_result.cited_ids,
+
+        "invalid_citation_ids":
+            citation_result.invalid_ids,
+
+        "runtime_grade":
+            {
+                "passed":
+                    runtime_grade.passed,
+
+                "supported_claim_ratio":
+                    runtime_grade
+                    .supported_claim_ratio,
+
+                "relevance_score":
+                    runtime_grade
+                    .relevance_score,
+
+                "reasons":
+                    runtime_grade.reasons,
+            },
     }
 
 
 # ============================================================
-# Pretty console output
+# Console
 # ============================================================
 
-def print_generation_diagnostic(
+def print_diagnostic(
     diagnostic,
 ):
 
@@ -680,7 +969,43 @@ def print_generation_diagnostic(
 
 
     print(
-        "\n===== CLAIM PIPELINE ====="
+        "\n===== PARSED CONTRACT ====="
+    )
+
+
+    print(
+        "DIRECT ANSWER:",
+        diagnostic[
+            "direct_answer"
+        ]
+    )
+
+
+    print(
+        "FACT COUNT:",
+        len(
+            diagnostic[
+                "parsed_facts"
+            ]
+        )
+    )
+
+
+    for index, fact in enumerate(
+        diagnostic[
+            "parsed_facts"
+        ],
+        start=1,
+    ):
+
+        print(
+            f"FACT {index}:",
+            fact,
+        )
+
+
+    print(
+        "\n===== FACT GROUNDING ====="
     )
 
 
@@ -692,7 +1017,7 @@ def print_generation_diagnostic(
     ):
 
         print(
-            f"\nCLAIM {index}"
+            f"\nFACT {index}"
         )
 
         print(
@@ -710,7 +1035,7 @@ def print_generation_diagnostic(
         )
 
         print(
-            "NLI label:",
+            "NLI:",
             claim[
                 "label"
             ]
@@ -724,6 +1049,20 @@ def print_generation_diagnostic(
         )
 
         print(
+            "Evidence relevance:",
+            claim[
+                "evidence_relevance_score"
+            ]
+        )
+
+        print(
+            "Premise mode:",
+            claim[
+                "premise_mode"
+            ]
+        )
+
+        print(
             "Citation:",
             claim[
                 "citation_id"
@@ -731,9 +1070,9 @@ def print_generation_diagnostic(
         )
 
         print(
-            "Relevance:",
+            "Final relevance:",
             claim[
-                "relevance_score"
+                "final_relevance_score"
             ]
         )
 
@@ -760,6 +1099,42 @@ def print_generation_diagnostic(
             )
 
 
+    print(
+        "\n===== FINAL ANSWER ====="
+    )
+
+
+    print(
+        diagnostic[
+            "final_answer"
+        ]
+    )
+
+
+    print(
+        "Citation valid:",
+        diagnostic[
+            "citation_valid"
+        ]
+    )
+
+
+    print(
+        "Cited IDs:",
+        diagnostic[
+            "cited_ids"
+        ]
+    )
+
+
+    print(
+        "Runtime grade:",
+        diagnostic[
+            "runtime_grade"
+        ]
+    )
+
+
 # ============================================================
 # Main
 # ============================================================
@@ -778,20 +1153,42 @@ def main():
     )
 
 
-    if not selected:
-
-        raise RuntimeError(
-            "No diagnostic targets "
-            "were found."
-        )
-
-
     nodes = (
         RAGNodes()
     )
 
 
     output = []
+
+
+    summary = {
+        "cases":
+            0,
+
+        "evidence_sufficient":
+            0,
+
+        "structured_generation":
+            0,
+
+        "final_answers":
+            0,
+
+        "runtime_passes":
+            0,
+
+        "yes_no_direct_answer_scored":
+            0,
+
+        "yes_no_direct_answer_correct":
+            0,
+
+        "supported_facts":
+            0,
+
+        "unsupported_facts":
+            0,
+    }
 
 
     try:
@@ -801,16 +1198,22 @@ def main():
             example,
         ) in selected:
 
+            summary[
+                "cases"
+            ] += 1
+
+
             question = (
-                example.get(
+                example[
                     "question"
-                )
-                or
+                ]
+            )
+
+
+            gold_answer = (
                 example.get(
-                    "query"
+                    "answer"
                 )
-                or
-                ""
             )
 
 
@@ -828,8 +1231,9 @@ def main():
                 "=" * 100
             )
 
+
             print(
-                "Question:"
+                "QUESTION:"
             )
 
             print(
@@ -837,11 +1241,23 @@ def main():
             )
 
 
-            state, attempts = (
-                prepare_evidence(
+            print(
+                "\nGOLD:"
+            )
+
+            print(
+                gold_answer
+            )
+
+
+            (
+                state,
+                attempts,
+            ) = prepare_evidence(
+                nodes=
                     nodes,
+                question=
                     question,
-                )
             )
 
 
@@ -863,13 +1279,6 @@ def main():
                     )
                 )
 
-                print(
-                    "Query:",
-                    attempt[
-                        "query"
-                    ]
-                )
-
 
             record = {
                 "target":
@@ -884,9 +1293,7 @@ def main():
                     question,
 
                 "gold_answer":
-                    example.get(
-                        "answer"
-                    ),
+                    gold_answer,
 
                 "question_type":
                     example.get(
@@ -903,14 +1310,6 @@ def main():
             }
 
 
-            # =================================================
-            # If the EvidenceGrader rejects the case,
-            # do NOT force generation.
-            #
-            # That is an evidence-gate failure, not a
-            # generation/grounding failure.
-            # =================================================
-
             if not state[
                 "evidence_sufficient"
             ]:
@@ -920,8 +1319,7 @@ def main():
                 )
 
                 print(
-                    "Final evidence gate "
-                    "is insufficient."
+                    "Evidence insufficient."
                 )
 
 
@@ -935,6 +1333,11 @@ def main():
                 )
 
                 continue
+
+
+            summary[
+                "evidence_sufficient"
+            ] += 1
 
 
             diagnostic = (
@@ -951,16 +1354,116 @@ def main():
             )
 
 
-            print_generation_diagnostic(
+            print_diagnostic(
                 diagnostic
             )
+
+
+            if (
+                diagnostic[
+                    "direct_answer"
+                ]
+                is not None
+                and
+                diagnostic[
+                    "parsed_facts"
+                ]
+            ):
+
+                summary[
+                    "structured_generation"
+                ] += 1
+
+
+            summary[
+                "supported_facts"
+            ] += (
+                diagnostic.get(
+                    "supported_count",
+                    0,
+                )
+            )
+
+
+            summary[
+                "unsupported_facts"
+            ] += (
+                diagnostic.get(
+                    "unsupported_count",
+                    0,
+                )
+            )
+
+
+            if (
+                diagnostic[
+                    "final_answer"
+                ]
+                is not None
+            ):
+
+                summary[
+                    "final_answers"
+                ] += 1
+
+
+            runtime_grade = (
+                diagnostic[
+                    "runtime_grade"
+                ]
+            )
+
+
+            if (
+                runtime_grade
+                and
+                runtime_grade[
+                    "passed"
+                ]
+            ):
+
+                summary[
+                    "runtime_passes"
+                ] += 1
+
+
+            direct_correct = (
+                direct_answer_matches_gold(
+                    direct_answer=
+                        diagnostic[
+                            "direct_answer"
+                        ],
+                    gold_answer=
+                        gold_answer,
+                )
+            )
+
+
+            if (
+                direct_correct
+                is not None
+            ):
+
+                summary[
+                    "yes_no_direct_answer_scored"
+                ] += 1
+
+
+                if direct_correct:
+
+                    summary[
+                        "yes_no_direct_answer_correct"
+                    ] += 1
+
+
+            record[
+                "direct_answer_matches_gold"
+            ] = direct_correct
 
 
             record[
                 "generation"
-            ] = (
-                diagnostic
-            )
+            ] = diagnostic
 
 
             output.append(
@@ -971,6 +1474,55 @@ def main():
     finally:
 
         nodes.close()
+
+
+    print(
+        "\n"
+        +
+        "=" * 100
+    )
+
+    print(
+        "SUMMARY"
+    )
+
+    print(
+        "=" * 100
+    )
+
+
+    scored = (
+        summary[
+            "yes_no_direct_answer_scored"
+        ]
+    )
+
+
+    if scored:
+
+        summary[
+            "yes_no_direct_answer_accuracy"
+        ] = (
+            summary[
+                "yes_no_direct_answer_correct"
+            ]
+            /
+            scored
+        )
+
+    else:
+
+        summary[
+            "yes_no_direct_answer_accuracy"
+        ] = None
+
+
+    print(
+        json.dumps(
+            summary,
+            indent=2,
+        )
+    )
 
 
     OUTPUT_PATH.parent.mkdir(
@@ -987,8 +1539,11 @@ def main():
 
         json.dump(
             {
+                "summary":
+                    summary,
+
                 "records":
-                    output
+                    output,
             },
             file,
             indent=2,
@@ -997,17 +1552,7 @@ def main():
 
 
     print(
-        "\n"
-        +
-        "=" * 100
-    )
-
-    print(
-        "SAVED"
-    )
-
-    print(
-        "=" * 100
+        "\nSaved:"
     )
 
     print(
