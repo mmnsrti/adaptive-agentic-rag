@@ -1,29 +1,38 @@
 {
-  "evaluation_file": "evaluation\\datasets\\frozen_eval_500.json",
-  "max_retries": 1,
+  "evaluator": "answer_evaluator_v2",
+  "source": "evaluation\\results\\end_to_end\\smoke_10_v2.json",
   "summary": {
-    "total_examples": 10,
-    "successful_examples": 10,
+    "total": 10,
     "execution_errors": 0,
-    "answerable_examples": 8,
+    "answerable": 8,
+    "answered_answerable": 4,
     "null_examples": 2,
-    "evidence_sufficient_rate": 0.5,
-    "rewrite_rate": 0.5,
-    "avg_retry_count": 0.5,
-    "answerable_answer_rate": 0.5,
-    "false_abstention_rate": 0.5,
-    "correct_null_abstention_rate": 1.0,
-    "false_null_answer_rate": 0.0,
-    "citation_valid_rate_among_answered": 1.0,
-    "internal_answer_grader_pass_rate": 0.7,
-    "latency_ms": {
-      "mean": 42403.525200001604,
-      "p50": 34290.34745000172,
-      "p95": 78480.62561500189
+    "answer_type_distribution": {
+      "boolean": 5,
+      "short_span": 3,
+      "null": 2
     },
-    "route_distribution": {
-      "multihop|hybrid": 8,
-      "complex|hybrid": 2
+    "automatic_correctness_coverage": 0.75,
+    "answered_only_auto_accuracy": 0.3333333333333333,
+    "end_to_end_auto_correct_rate_lower_bound": 0.125,
+    "legacy_exact_match": 0.0,
+    "legacy_token_f1": 0.008620689655172412,
+    "correct_null_abstention_rate": 1.0,
+    "citation_dataset_evidence_precision": 0.375,
+    "citation_dataset_evidence_recall": 0.25,
+    "answerable_abstention_stages": {
+      "evidence_gate": 3,
+      "generation_or_grounding": 1
+    },
+    "accuracy_by_answer_type": {
+      "boolean": {
+        "count": 2,
+        "accuracy": 0.0
+      },
+      "short_span": {
+        "count": 1,
+        "accuracy": 1.0
+      }
     }
   },
   "records": [
@@ -118,7 +127,32 @@
         }
       ],
       "abstention_stage": null,
-      "graph_error": null
+      "graph_error": null,
+      "offline_evaluation": {
+        "scorable": false,
+        "answer_type": "boolean",
+        "abstention_stage": null,
+        "exact_match": 0.0,
+        "gold_contained": 0.0,
+        "token_f1": 0.0,
+        "answer_correct": null,
+        "method": "boolean_unresolved",
+        "confidence": null,
+        "nli": null,
+        "citation": {
+          "citation_ids": [
+            "7",
+            "9"
+          ],
+          "cited_document_ids": [
+            "doc_0045",
+            "doc_0046"
+          ],
+          "unresolved_citation_ids": [],
+          "dataset_evidence_document_precision": 0.5,
+          "dataset_evidence_document_recall": 0.3333333333333333
+        }
+      }
     },
     {
       "id": "eval_00d16f93f9b3",
@@ -196,7 +230,26 @@
         }
       ],
       "abstention_stage": "evidence_gate",
-      "graph_error": null
+      "graph_error": null,
+      "offline_evaluation": {
+        "scorable": true,
+        "answer_type": "boolean",
+        "abstention_stage": "evidence_gate",
+        "exact_match": 0.0,
+        "gold_contained": 0.0,
+        "token_f1": 0.0,
+        "answer_correct": false,
+        "method": "answerable_abstention",
+        "confidence": 1.0,
+        "nli": null,
+        "citation": {
+          "citation_ids": [],
+          "cited_document_ids": [],
+          "unresolved_citation_ids": [],
+          "dataset_evidence_document_precision": null,
+          "dataset_evidence_document_recall": 0.0
+        }
+      }
     },
     {
       "id": "eval_02b3973ad85f",
@@ -294,7 +347,32 @@
         }
       ],
       "abstention_stage": null,
-      "graph_error": null
+      "graph_error": null,
+      "offline_evaluation": {
+        "scorable": true,
+        "answer_type": "short_span",
+        "abstention_stage": null,
+        "exact_match": 0.0,
+        "gold_contained": 1.0,
+        "token_f1": 0.0689655172413793,
+        "answer_correct": true,
+        "method": "short_span_containment",
+        "confidence": 1.0,
+        "nli": null,
+        "citation": {
+          "citation_ids": [
+            "2",
+            "1"
+          ],
+          "cited_document_ids": [
+            "doc_0354",
+            "doc_0524"
+          ],
+          "unresolved_citation_ids": [],
+          "dataset_evidence_document_precision": 1.0,
+          "dataset_evidence_document_recall": 0.6666666666666666
+        }
+      }
     },
     {
       "id": "eval_02f51dafcc4a",
@@ -393,7 +471,26 @@
         }
       ],
       "abstention_stage": "evidence_gate",
-      "graph_error": null
+      "graph_error": null,
+      "offline_evaluation": {
+        "scorable": true,
+        "answer_type": "short_span",
+        "abstention_stage": "evidence_gate",
+        "exact_match": 0.0,
+        "gold_contained": 0.0,
+        "token_f1": 0.0,
+        "answer_correct": false,
+        "method": "answerable_abstention",
+        "confidence": 1.0,
+        "nli": null,
+        "citation": {
+          "citation_ids": [],
+          "cited_document_ids": [],
+          "unresolved_citation_ids": [],
+          "dataset_evidence_document_precision": null,
+          "dataset_evidence_document_recall": 0.0
+        }
+      }
     },
     {
       "id": "eval_04b92669fb3e",
@@ -492,7 +589,26 @@
         }
       ],
       "abstention_stage": "evidence_gate",
-      "graph_error": null
+      "graph_error": null,
+      "offline_evaluation": {
+        "scorable": true,
+        "answer_type": "short_span",
+        "abstention_stage": "evidence_gate",
+        "exact_match": 0.0,
+        "gold_contained": 0.0,
+        "token_f1": 0.0,
+        "answer_correct": false,
+        "method": "answerable_abstention",
+        "confidence": 1.0,
+        "nli": null,
+        "citation": {
+          "citation_ids": [],
+          "cited_document_ids": [],
+          "unresolved_citation_ids": [],
+          "dataset_evidence_document_precision": null,
+          "dataset_evidence_document_recall": 0.0
+        }
+      }
     },
     {
       "id": "eval_0514d6cef13b",
@@ -587,7 +703,26 @@
         }
       ],
       "abstention_stage": "evidence_gate",
-      "graph_error": null
+      "graph_error": null,
+      "offline_evaluation": {
+        "scorable": true,
+        "answer_type": "null",
+        "abstention_stage": null,
+        "answer_correct": true,
+        "method": "null_abstention",
+        "confidence": 1.0,
+        "exact_match": null,
+        "gold_contained": null,
+        "token_f1": null,
+        "nli": null,
+        "citation": {
+          "citation_ids": [],
+          "cited_document_ids": [],
+          "unresolved_citation_ids": [],
+          "dataset_evidence_document_precision": null,
+          "dataset_evidence_document_recall": null
+        }
+      }
     },
     {
       "id": "eval_074e268b606c",
@@ -681,7 +816,26 @@
         }
       ],
       "abstention_stage": "evidence_gate",
-      "graph_error": null
+      "graph_error": null,
+      "offline_evaluation": {
+        "scorable": true,
+        "answer_type": "null",
+        "abstention_stage": null,
+        "answer_correct": true,
+        "method": "null_abstention",
+        "confidence": 1.0,
+        "exact_match": null,
+        "gold_contained": null,
+        "token_f1": null,
+        "nli": null,
+        "citation": {
+          "citation_ids": [],
+          "cited_document_ids": [],
+          "unresolved_citation_ids": [],
+          "dataset_evidence_document_precision": null,
+          "dataset_evidence_document_recall": null
+        }
+      }
     },
     {
       "id": "eval_090554e34f30",
@@ -773,7 +927,37 @@
         }
       ],
       "abstention_stage": null,
-      "graph_error": null
+      "graph_error": null,
+      "offline_evaluation": {
+        "scorable": true,
+        "answer_type": "boolean",
+        "abstention_stage": null,
+        "exact_match": 0.0,
+        "gold_contained": 0.0,
+        "token_f1": 0.0,
+        "answer_correct": false,
+        "method": "boolean_nli",
+        "confidence": 0.9976099245281999,
+        "nli": {
+          "label": "neutral",
+          "confidence": 0.9976099245281999,
+          "contradiction": 0.000805665679244778,
+          "entailment": 0.0015844097925552779,
+          "neutral": 0.9976099245281999
+        },
+        "boolean_proposition": "the 'Sporting News' article identify Scott McTominay as Manchester United's top scorer for the season, while the 'TalkSport' article suggests Erling Haaland has the chance to become the overall top scorer in 2023, indicating a difference in the scope of their scoring achievements.",
+        "citation": {
+          "citation_ids": [
+            "3"
+          ],
+          "cited_document_ids": [
+            "doc_0571"
+          ],
+          "unresolved_citation_ids": [],
+          "dataset_evidence_document_precision": 0.0,
+          "dataset_evidence_document_recall": 0.0
+        }
+      }
     },
     {
       "id": "eval_0e73e16e3d82",
@@ -865,7 +1049,26 @@
         }
       ],
       "abstention_stage": "generation_or_grounding",
-      "graph_error": null
+      "graph_error": null,
+      "offline_evaluation": {
+        "scorable": true,
+        "answer_type": "boolean",
+        "abstention_stage": "generation_or_grounding",
+        "exact_match": 0.0,
+        "gold_contained": 0.0,
+        "token_f1": 0.0,
+        "answer_correct": false,
+        "method": "answerable_abstention",
+        "confidence": 1.0,
+        "nli": null,
+        "citation": {
+          "citation_ids": [],
+          "cited_document_ids": [],
+          "unresolved_citation_ids": [],
+          "dataset_evidence_document_precision": null,
+          "dataset_evidence_document_recall": 0.0
+        }
+      }
     },
     {
       "id": "eval_10505620ffbb",
@@ -948,7 +1151,39 @@
         }
       ],
       "abstention_stage": null,
-      "graph_error": null
+      "graph_error": null,
+      "offline_evaluation": {
+        "scorable": true,
+        "answer_type": "boolean",
+        "abstention_stage": null,
+        "exact_match": 0.0,
+        "gold_contained": 0.0,
+        "token_f1": 0.0,
+        "answer_correct": false,
+        "method": "boolean_nli",
+        "confidence": 0.8535352144176556,
+        "nli": {
+          "label": "contradiction",
+          "confidence": 0.8535352144176556,
+          "contradiction": 0.8535352144176556,
+          "entailment": 0.0009082622237106285,
+          "neutral": 0.14555652335863378
+        },
+        "boolean_proposition": "the TechCrunch article suggest that Google's behavior towards news publishers is anticompetitive, while The Verge focuses on Google's role in the Epic v. Google trial without making a similar claim about anticompetitive actions.",
+        "citation": {
+          "citation_ids": [
+            "2",
+            "5"
+          ],
+          "cited_document_ids": [
+            "doc_0355",
+            "doc_0237"
+          ],
+          "unresolved_citation_ids": [],
+          "dataset_evidence_document_precision": 0.0,
+          "dataset_evidence_document_recall": 0.0
+        }
+      }
     }
   ]
 }

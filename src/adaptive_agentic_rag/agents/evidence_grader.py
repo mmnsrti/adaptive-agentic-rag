@@ -68,10 +68,10 @@ STOPWORDS = {
 
 
 # ============================================================
-# Tokens that may be capitalized only because of grammar,
-# dates, or generic question wording.
+# Tokens that may be capitalized because of grammar,
+# generic question wording, dates, or relational phrasing.
 #
-# These should NOT become evidence anchors.
+# They must NOT become hard evidence anchors.
 # ============================================================
 
 CRITICAL_TERM_EXCLUSIONS = (
@@ -81,13 +81,30 @@ CRITICAL_TERM_EXCLUSIONS = (
     |
 
     {
+        # ----------------------------------------------------
+        # Relational / question wording
+        # ----------------------------------------------------
+
         "after",
         "before",
+        "between",
+        "both",
         "considering",
         "according",
         "based",
         "following",
         "given",
+
+        "first",
+        "second",
+        "third",
+        "other",
+        "another",
+        "additional",
+
+        # ----------------------------------------------------
+        # Generic source / reporting vocabulary
+        # ----------------------------------------------------
 
         "article",
         "articles",
@@ -96,12 +113,53 @@ CRITICAL_TERM_EXCLUSIONS = (
         "reported",
         "reporting",
         "published",
+        "source",
+        "sources",
+        "news",
+
+        # ----------------------------------------------------
+        # Generic comparison wording
+        # ----------------------------------------------------
 
         "compare",
+        "compared",
         "comparison",
+
+        # ----------------------------------------------------
+        # Generic answer-target wording
+        # ----------------------------------------------------
+
+        "individual",
+        "person",
+        "company",
+        "organization",
+
+        # ----------------------------------------------------
+        # Generic legal wording
+        # ----------------------------------------------------
+
+        "case",
+        "trial",
+        "jury",
+
+        # ----------------------------------------------------
+        # Previously observed false anchors
+        # ----------------------------------------------------
+
+        "age",
+        "life",
+        "style",
+
+        # ----------------------------------------------------
+        # Boolean answer words
+        # ----------------------------------------------------
 
         "yes",
         "no",
+
+        # ----------------------------------------------------
+        # Months
+        # ----------------------------------------------------
 
         "january",
         "february",
@@ -152,12 +210,17 @@ class EvidenceGrader:
     def __init__(
         self,
         weak_item_threshold: float = 0.20,
+        evidence_score_threshold: float = 0.75,
         hard_critical_coverage: float = 0.75,
         simple_critical_coverage: float = 0.50
     ):
 
         self.weak_item_threshold = (
             weak_item_threshold
+        )
+
+        self.evidence_score_threshold = (
+            evidence_score_threshold
         )
 
         self.hard_critical_coverage = (
@@ -180,7 +243,10 @@ class EvidenceGrader:
 
         tokens = re.findall(
             r"\b[a-zA-Z0-9]+\b",
-            text.lower()
+            (
+                text
+                or ""
+            ).lower()
         )
 
 
@@ -209,7 +275,175 @@ class EvidenceGrader:
 
 
     # ========================================================
+    # Critical anchor normalization
+    # ========================================================
+
+    @staticmethod
+    def _normalize_critical_token(
+        token: str
+    ) -> str:
+
+        normalized = (
+            token
+            .replace(
+                "’",
+                "'"
+            )
+            .lower()
+            .strip()
+        )
+
+
+        # ----------------------------------------------------
+        # Normalize English possessives
+        #
+        # Google's
+        #     -> google
+        #
+        # Bankman-Fried's
+        #     -> bankman-fried
+        #
+        # publishers'
+        #     -> publishers
+        # ----------------------------------------------------
+
+        normalized = re.sub(
+            r"(?:'s|s')$",
+            "",
+            normalized
+        )
+
+
+        normalized = (
+            normalized
+            .strip(
+                "-'"
+            )
+        )
+
+
+        return normalized
+
+
+    @staticmethod
+    def _anchor_parts(
+        anchor: str
+    ) -> list[str]:
+
+        return re.findall(
+            r"[a-z0-9]+",
+            (
+                anchor
+                or ""
+            ).lower()
+        )
+
+
+    def _anchor_present(
+        self,
+        text: str,
+        anchor: str
+    ) -> bool:
+
+        parts = (
+            self._anchor_parts(
+                anchor
+            )
+        )
+
+
+        if not parts:
+
+            return False
+
+
+        # ----------------------------------------------------
+        # Single-token anchor
+        #
+        # google
+        # techcrunch
+        # acmemart
+        # ----------------------------------------------------
+
+        if len(
+            parts
+        ) == 1:
+
+            pattern = (
+
+                r"\b"
+
+                +
+
+                re.escape(
+                    parts[0]
+                )
+
+                +
+
+                r"\b"
+            )
+
+
+        # ----------------------------------------------------
+        # Compound anchor
+        #
+        # bankman-fried
+        #
+        # Accept:
+        #
+        # Bankman-Fried
+        # Bankman Fried
+        # Bankman'Fried
+        # ----------------------------------------------------
+
+        else:
+
+            separator = (
+                r"(?:[-'\s]+)"
+            )
+
+
+            pattern = (
+
+                r"\b"
+
+                +
+
+                separator.join(
+
+                    re.escape(
+                        part
+                    )
+
+                    for part
+                    in parts
+                )
+
+                +
+
+                r"\b"
+            )
+
+
+        return bool(
+
+            re.search(
+
+                pattern,
+
+                (
+                    text
+                    or ""
+                ).lower()
+            )
+        )
+
+
+    # ========================================================
     # Critical evidence anchors
+    #
+    # These remain a HARD safety signal.
     #
     # Examples:
     #
@@ -222,9 +456,10 @@ class EvidenceGrader:
     # TechCrunch
     # Google
     # YouTube
+    # Bankman-Fried
     #
-    # These are more important than generic terms like
-    # "shipping", "deals", "report", etc.
+    # Unlike the previous implementation, query anchors and
+    # context anchors now use compatible normalization.
     # ========================================================
 
     def _critical_terms(
@@ -232,21 +467,17 @@ class EvidenceGrader:
         query: str
     ) -> set[str]:
 
-        #
-        # Capture capitalized / proper-name-like tokens.
-        #
-        # This also catches:
-        #
-        # AcmeMart
-        # TechCrunch
-        # CBSSports
-        # BBC
-        # Google
-        #
-
         raw_tokens = re.findall(
-            r"\b[A-Z][A-Za-z0-9]*(?:[-'][A-Za-z0-9]+)*\b",
+
+            (
+                r"\b"
+                r"[A-Z][A-Za-z0-9]*"
+                r"(?:[-'][A-Za-z0-9]+)*"
+                r"\b"
+            ),
+
             query
+            or ""
         )
 
 
@@ -256,9 +487,9 @@ class EvidenceGrader:
         for token in raw_tokens:
 
             normalized = (
-                token
-                .lower()
-                .strip()
+                self._normalize_critical_token(
+                    token
+                )
             )
 
 
@@ -267,13 +498,49 @@ class EvidenceGrader:
                 continue
 
 
-            if len(normalized) <= 1:
+            parts = (
+                self._anchor_parts(
+                    normalized
+                )
+            )
+
+
+            if not parts:
+
+                continue
+
+
+            # ------------------------------------------------
+            # Ignore anchors that collapse entirely to
+            # single-character fragments.
+            # ------------------------------------------------
+
+            if all(
+                len(part) <= 1
+                for part in parts
+            ):
+
+                continue
+
+
+            # ------------------------------------------------
+            # Generic capitalized words should not become
+            # hard entity anchors.
+            # ------------------------------------------------
+
+            if (
+                normalized
+                in
+                CRITICAL_TERM_EXCLUSIONS
+            ):
 
                 continue
 
 
             if (
-                normalized
+                len(parts) == 1
+                and
+                parts[0]
                 in
                 CRITICAL_TERM_EXCLUSIONS
             ):
@@ -304,8 +571,10 @@ class EvidenceGrader:
             return 1.0
 
 
-        text_terms = self._tokenize(
-            text
+        text_terms = (
+            self._tokenize(
+                text
+            )
         )
 
 
@@ -317,10 +586,13 @@ class EvidenceGrader:
 
 
         return (
+
             len(
                 matched_terms
             )
+
             /
+
             len(
                 query_terms
             )
@@ -341,21 +613,13 @@ class EvidenceGrader:
 
         required_documents,
         required_chunks,
-        minimum_query_coverage
+        preferred_query_coverage
 
-        Evidence sufficiency intentionally uses
-        two safety levels:
+        Document/chunk requirements remain HARD.
 
-        SIMPLE:
-            single-document lookup
-
-        HARD:
-            multihop / complex
-
-        MULTIHOP and COMPLEX share the same
-        safety policy because fine-grained
-        classification between them should not
-        change the abstention boundary.
+        Query-term coverage is now a SOFT signal:
+        it contributes strongly to evidence_score but can no
+        longer veto otherwise strong evidence by itself.
         """
 
 
@@ -380,9 +644,7 @@ class EvidenceGrader:
             )
 
 
-        #
         # Conservative fallback.
-        #
 
         return (
             2,
@@ -406,14 +668,9 @@ class EvidenceGrader:
             return 0.0
 
 
-        #
-        # If there is only one critical anchor,
-        # it must be present.
-        #
-        # Example:
-        #
-        # "Which company ... Valve?"
-        #
+        # ----------------------------------------------------
+        # One critical named anchor must be present.
+        # ----------------------------------------------------
 
         if len(
             critical_terms
@@ -462,7 +719,7 @@ class EvidenceGrader:
 
         required_documents, (
             required_chunks
-        ), minimum_coverage = (
+        ), preferred_coverage = (
             self._requirements(
                 query_type
             )
@@ -497,6 +754,12 @@ class EvidenceGrader:
 
         # ====================================================
         # Overall lexical coverage
+        #
+        # IMPORTANT:
+        #
+        # This remains part of evidence_score.
+        #
+        # It is no longer a standalone hard veto.
         # ====================================================
 
         overall_coverage = (
@@ -507,30 +770,46 @@ class EvidenceGrader:
         )
 
 
+        coverage_below_preferred = (
+
+            overall_coverage
+
+            <
+
+            preferred_coverage
+        )
+
+
         # ====================================================
         # Critical anchor coverage
+        #
+        # Unlike broad term coverage, named anchors remain
+        # a hard safety gate.
         # ====================================================
 
         if critical_terms:
 
-            context_terms = (
-                self._tokenize(
-                    context.text
+            matched_critical_terms = {
+
+                anchor
+
+                for anchor
+                in critical_terms
+
+                if self._anchor_present(
+                    context.text,
+                    anchor
                 )
-            )
-
-
-            matched_critical_terms = (
-                critical_terms
-                &
-                context_terms
-            )
+            }
 
 
             missing_critical_terms = (
+
                 critical_terms
+
                 -
-                context_terms
+
+                matched_critical_terms
             )
 
 
@@ -573,7 +852,8 @@ class EvidenceGrader:
 
             item.document_id
 
-            for item in context.items
+            for item
+            in context.items
         }
 
 
@@ -589,6 +869,9 @@ class EvidenceGrader:
 
         # ====================================================
         # Detect weak individual evidence
+        #
+        # Diagnostic only.
+        # It does not veto an answer by itself.
         # ====================================================
 
         weak_citations = []
@@ -642,15 +925,16 @@ class EvidenceGrader:
         # ====================================================
         # Combined score
         #
-        # NOTE:
+        # IMPORTANT:
         #
-        # Critical anchor coverage is intentionally NOT
-        # blended into this score.
+        # Keep the old weighting unchanged for this
+        # controlled experiment.
         #
-        # It acts as a hard safety gate below.
+        # Broad lexical coverage still matters heavily,
+        # but continuously rather than as a brittle veto.
         #
-        # Otherwise a high document/chunk score could
-        # compensate for a missing named entity.
+        # Critical anchors remain outside this score because
+        # they are a separate hard safety condition.
         # ====================================================
 
         evidence_score = (
@@ -697,16 +981,6 @@ class EvidenceGrader:
         )
 
 
-        enough_coverage = (
-
-            overall_coverage
-
-            >=
-
-            minimum_coverage
-        )
-
-
         enough_critical_coverage = (
 
             critical_coverage
@@ -716,6 +990,26 @@ class EvidenceGrader:
             minimum_critical_coverage
         )
 
+
+        enough_evidence_score = (
+
+            evidence_score
+
+            >=
+
+            self.evidence_score_threshold
+        )
+
+
+        # ====================================================
+        # Final decision
+        #
+        # Notice:
+        #
+        # overall_coverage >= preferred_coverage
+        #
+        # is intentionally NOT here anymore.
+        # ====================================================
 
         sufficient = (
 
@@ -727,15 +1021,11 @@ class EvidenceGrader:
 
             and
 
-            enough_coverage
-
-            and
-
             enough_critical_coverage
 
             and
 
-            evidence_score >= 0.70
+            enough_evidence_score
         )
 
 
@@ -770,14 +1060,22 @@ class EvidenceGrader:
             )
 
 
-        if not enough_coverage:
+        # ----------------------------------------------------
+        # Preserve the old prefix because our evaluation
+        # parser already knows how to extract the numbers.
+        #
+        # It is now explicitly diagnostic only.
+        # ----------------------------------------------------
+
+        if coverage_below_preferred:
 
             reasons.append(
 
                 (
                     "Query term coverage is too low: "
                     f"{overall_coverage:.2f} "
-                    f"< {minimum_coverage:.2f}"
+                    f"< {preferred_coverage:.2f} "
+                    "(soft signal only)"
                 )
             )
 
@@ -797,6 +1095,19 @@ class EvidenceGrader:
                     f"coverage={critical_coverage:.2f} "
                     f"< {minimum_critical_coverage:.2f}; "
                     f"missing={missing_display}"
+                )
+            )
+
+
+        if not enough_evidence_score:
+
+            reasons.append(
+
+                (
+                    "Evidence score is too low: "
+                    f"{evidence_score:.2f} "
+                    f"< "
+                    f"{self.evidence_score_threshold:.2f}"
                 )
             )
 
