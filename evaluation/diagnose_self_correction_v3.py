@@ -1,6 +1,6 @@
 import json
 import time
-
+import argparse
 from pathlib import Path
 
 from adaptive_agentic_rag.orchestration.nodes import (
@@ -13,10 +13,21 @@ FROZEN_PATH = Path(
 )
 
 
-OUTPUT_PATH = Path(
-    "evaluation/results/"
-    "self_correction_diagnostic_v3.json"
-)
+def output_path_for_model(
+    model_name: str,
+) -> Path:
+
+    slug = (
+        model_name
+        .replace("/", "__")
+        .replace("\\", "__")
+    )
+
+    return Path(
+        "evaluation/results"
+    ) / (
+        f"self_correction_{slug}.json"
+    )
 
 
 TARGETS = {
@@ -467,7 +478,16 @@ def correction_outcome(
     return (
         "preserved_wrong"
     )
+def parse_args():
 
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument(
+        "--model",
+        default="Qwen/Qwen2.5-1.5B-Instruct",
+    )
+
+    return parser.parse_args()
 
 # ============================================================
 # Main
@@ -478,7 +498,18 @@ def main():
     examples = (
         load_examples()
     )
+    args = parse_args()
+    output_path = (
+        output_path_for_model(
+            args.model
+        )
+    )
+    print(
+        "\nGenerator model:",
+        args.model,
+    )
 
+    examples = load_examples()
 
     targets = (
         find_target_examples(
@@ -491,7 +522,9 @@ def main():
         RAGNodes()
     )
 
-
+    nodes.generator.model_name = (
+        args.model
+    )
     records = []
 
 
@@ -1265,14 +1298,14 @@ def main():
     )
 
 
-    OUTPUT_PATH.parent.mkdir(
+    output_path.parent.mkdir(
         parents=True,
         exist_ok=True,
     )
 
 
     with open(
-        OUTPUT_PATH,
+        output_path,
         "w",
         encoding="utf-8",
     ) as file:
@@ -1296,7 +1329,7 @@ def main():
     )
 
     print(
-        OUTPUT_PATH
+        output_path
     )
 
 
