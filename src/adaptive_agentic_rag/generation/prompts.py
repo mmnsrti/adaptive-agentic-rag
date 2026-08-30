@@ -4,117 +4,160 @@ from adaptive_agentic_rag.generation.context_builder import (
 
 
 # ============================================================
-# Pass 1:
-# Evidence fact proposal
+# Pass 1
+#
+# This is intentionally kept simple.
+#
+# Previous diagnostics showed that Qwen 1.5B follows this
+# contract substantially better than citation-selection or
+# source-selection contracts.
 # ============================================================
 
 SYSTEM_PROMPT = """
 You are an evidence-grounded question-answering assistant.
 
-Use ONLY the provided evidence.
+Use only the provided evidence.
 
-Your task has two parts:
+Your job has TWO separate parts:
 
-1. Propose a short draft answer.
-2. Select a small number of atomic factual claims from the evidence.
+1. Give a direct answer to the user's question.
+2. Extract a small number of factual evidence claims that justify that answer.
 
-IMPORTANT:
-
-The draft answer is NOT trusted yet.
-Another stage will verify the facts and may revise the answer.
+The evidence claims will be verified independently by another model,
+so each fact must be independently checkable.
 
 Rules:
 
 1. Do not use outside knowledge.
 2. Do not invent facts.
-3. Keep DRAFT_ANSWER short.
-4. For yes/no questions, DRAFT_ANSWER must begin with Yes or No.
-5. Produce between 1 and 3 FACTS.
-6. Every FACT must contain exactly one independently verifiable fact.
-7. Every FACT must begin with exactly one evidence citation ID.
-8. The citation ID must refer to the evidence item that directly supports the fact.
-9. The factual text should contain the fact itself, NOT attribution language.
+
+3. Answer the user's question directly.
+
+4. Keep the direct answer very short.
+
+5. For yes/no questions, begin the direct answer with:
+   Yes
+   or
+   No
+
+6. For entity, date, number, or short-answer questions,
+   put the requested value directly in DIRECT_ANSWER.
+
+7. Produce between 1 and 3 evidence facts.
+
+8. Each FACT must express ONE independently verifiable
+   factual statement.
+
+9. Do not combine facts from two different sources
+   in one FACT.
+
+10. Do not put reasoning or conclusions inside FACTS.
+
+11. Do not use:
+    while
+    whereas
+    indicating
+    implying
+    therefore
+    consequently
+
+    inside FACTS.
+
+12. Prefer stating factual content directly.
 
 BAD:
-- [2] The TechCrunch article says that Google has no plans...
+The second TechCrunch article indicates that Google
+has no additional measures planned for YouTube.
 
-GOOD:
-- [2] Google has no additional measures planned for YouTube over the next six months.
+BETTER:
+Google has no additional measures planned for YouTube
+over the next six months.
 
-10. Do not use phrases such as:
-    "the article says"
-    "the report states"
-    "the first article"
-    "the second article"
-    "while"
-    "whereas"
-    "indicating"
-    "implying"
+13. Mention a source name inside a FACT only when the
+    source identity is necessary to distinguish evidence
+    required by the question.
 
-11. For comparison, consistency, contradiction, or multi-source questions:
-    include evidence from EACH side needed for the comparison.
+14. Keep every FACT short and complete.
 
-12. When two different sources are being compared, prefer separate FACTS
-    with separate citation IDs.
+15. Never end with an incomplete sentence.
 
-13. Never combine two evidence sources inside one FACT.
+16. Do not add citations.
 
-14. Do not create a FACT containing a conclusion such as:
-    "therefore they differ"
-    "this indicates a contradiction"
-    "the reports are consistent"
+17. Do not add citation IDs.
 
-Conclusions belong only in DRAFT_ANSWER.
+18. If the provided evidence genuinely cannot support
+    an answer, use:
 
-15. Keep every FACT short and complete.
-16. Never produce an incomplete sentence.
+DIRECT_ANSWER: INSUFFICIENT_EVIDENCE
 
 Return EXACTLY:
 
-DRAFT_ANSWER: <short answer>
+DIRECT_ANSWER: <short direct answer>
 
 FACTS:
-- [<citation id>] <atomic factual claim>
-- [<citation id>] <atomic factual claim>
+- <one atomic factual claim>
+- <one atomic factual claim>
 """.strip()
 
 
 # ============================================================
-# Pass 2:
-# Verified-fact synthesis
+# Pass 2
+#
+# The initial DIRECT_ANSWER is intentionally NOT provided.
+#
+# This prevents anchoring the second pass to the first answer.
+#
+# Pass 2 reasons only over facts that have already survived:
+#
+# Grounding
+# +
+# relevance filtering
 # ============================================================
 
 SYNTHESIS_SYSTEM_PROMPT = """
-You are the final reasoning stage of an evidence-grounded QA system.
+You are the final reasoning stage of an evidence-grounded
+question-answering system.
 
-You will receive:
+You receive:
 
 - the original question
-- an untrusted draft answer
 - factual claims that have already been independently verified
+- source metadata for those verified facts
 
-The draft answer may be wrong.
-
-Your job is to reconsider the question using ONLY the VERIFIED FACTS.
+Answer the original question FROM SCRATCH.
 
 Rules:
 
-1. Ignore any unsupported information from the draft answer.
-2. Use only the verified facts.
-3. Answer the original question directly.
-4. For yes/no questions, begin with Yes or No.
-5. Keep the final answer to one concise sentence.
-6. Do not add citations.
-7. Do not introduce new facts.
-8. If the verified facts are insufficient to answer reliably, return:
+1. Use ONLY the VERIFIED FACTS.
+2. Do not use outside knowledge.
+3. Do not invent facts.
+4. Do not assume any previous answer was correct.
+
+5. Determine whether the VERIFIED FACTS are sufficient
+   to answer the complete question.
+
+6. For a yes/no question, return exactly one of:
+
+FINAL_ANSWER: Yes
+
+FINAL_ANSWER: No
+
+7. For a non-boolean question, return one short direct answer.
+
+8. If the VERIFIED FACTS are insufficient to answer the
+   complete question, return exactly:
 
 FINAL_ANSWER: INSUFFICIENT_EVIDENCE
 
-Otherwise return exactly:
-
-FINAL_ANSWER: <one concise direct answer>
+9. Do not add citations.
+10. Do not explain your reasoning.
+11. Do not introduce new facts.
 """.strip()
 
+
+# ============================================================
+# Pass 1 messages
+# ============================================================
 
 def build_grounded_messages(
     query: str,
@@ -134,21 +177,27 @@ EVIDENCE:
 
 TASK:
 
-Create a short draft answer and 1 to 3 atomic evidence facts.
+Answer the QUESTION using only the EVIDENCE.
 
-Each FACT must begin with the citation ID of the exact evidence item
-that supports it.
+Remember:
 
-For comparison or consistency questions, make sure the selected FACTS
-cover the different sides needed to answer the question.
+- DIRECT_ANSWER must directly answer the question.
+- FACTS are evidence facts, not conclusions.
+- Use between 1 and 3 FACTS.
+- Each FACT must be independently verifiable.
+- Do not combine two sources inside one FACT.
+- Do not add citation IDs or citation markers.
+
+For yes/no questions, DIRECT_ANSWER must begin with
+Yes or No.
 
 Use exactly:
 
-DRAFT_ANSWER: ...
+DIRECT_ANSWER: ...
 
 FACTS:
-- [1] ...
-- [2] ...
+- ...
+- ...
 """.strip()
 
 
@@ -164,18 +213,97 @@ FACTS:
     ]
 
 
+# ============================================================
+# Pass 2 messages
+# ============================================================
+
 def build_synthesis_messages(
     query: str,
-    draft_answer: str | None,
-    verified_facts: list[tuple[int, str]],
+    verified_facts: list[dict],
 ) -> list[dict]:
 
-    facts_text = "\n".join(
-        (
-            f"- [{citation_id}] {fact}"
+    rendered_facts = []
+
+
+    for fact in verified_facts:
+
+        citation_id = (
+            fact[
+                "citation_id"
+            ]
         )
-        for citation_id, fact
-        in verified_facts
+
+        source = (
+            fact.get(
+                "source",
+                ""
+            )
+            or ""
+        )
+
+        title = (
+            fact.get(
+                "title",
+                ""
+            )
+            or ""
+        )
+
+        text = (
+            fact[
+                "text"
+            ]
+        )
+
+
+        metadata_parts = []
+
+
+        if source:
+
+            metadata_parts.append(
+                f"Source: {source}"
+            )
+
+
+        if title:
+
+            metadata_parts.append(
+                f"Title: {title}"
+            )
+
+
+        metadata = (
+            " | ".join(
+                metadata_parts
+            )
+        )
+
+
+        if metadata:
+
+            rendered_facts.append(
+                (
+                    f"[{citation_id}] "
+                    f"{metadata}\n"
+                    f"Fact: {text}"
+                )
+            )
+
+        else:
+
+            rendered_facts.append(
+                (
+                    f"[{citation_id}] "
+                    f"Fact: {text}"
+                )
+            )
+
+
+    facts_text = (
+        "\n\n".join(
+            rendered_facts
+        )
     )
 
 
@@ -185,11 +313,6 @@ QUESTION:
 {query}
 
 
-UNTRUSTED DRAFT ANSWER:
-
-{draft_answer or "None"}
-
-
 VERIFIED FACTS:
 
 {facts_text}
@@ -197,15 +320,24 @@ VERIFIED FACTS:
 
 TASK:
 
-Reconsider the original question.
+Re-answer the QUESTION from scratch.
 
-The draft answer may be wrong.
+Use ONLY VERIFIED FACTS.
 
-Use ONLY the VERIFIED FACTS to produce the final direct answer.
+First determine whether the verified facts cover all parts
+required by the question.
 
-Return exactly:
+For a yes/no question, return exactly:
 
-FINAL_ANSWER: ...
+FINAL_ANSWER: Yes
+
+or:
+
+FINAL_ANSWER: No
+
+If the verified facts do not cover enough of the question:
+
+FINAL_ANSWER: INSUFFICIENT_EVIDENCE
 """.strip()
 
 
