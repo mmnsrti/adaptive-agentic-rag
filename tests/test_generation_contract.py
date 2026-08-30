@@ -102,3 +102,74 @@ def test_legacy_bullet_output_still_parses():
         "First supported fact.",
         "Second supported fact.",
     ]
+
+def test_parse_citation_linked_facts():
+
+    raw = """
+DRAFT_ANSWER: Yes
+
+FACTS:
+- [1] McTominay is Manchester United's top scorer.
+- [2] Haaland can become the overall top scorer in 2023.
+""".strip()
+
+
+    parsed = (
+        GroundedGenerator
+        ._parse_draft(
+            raw
+        )
+    )
+
+
+    assert parsed.direct_answer == "Yes"
+
+    assert (
+        parsed.evidence_facts[
+            0
+        ].citation_id
+        ==
+        1
+    )
+
+    assert (
+        parsed.evidence_facts[
+            0
+        ].text
+        ==
+        "McTominay is Manchester United's top scorer."
+    )
+
+    assert (
+        parsed.evidence_facts[
+            1
+        ].citation_id
+        ==
+        2
+    )
+
+
+def test_unlinked_legacy_fact_is_marked_untrusted():
+
+    raw = """
+DRAFT_ANSWER: Yes
+
+FACTS:
+- Some unsupported legacy fact.
+""".strip()
+
+
+    parsed = (
+        GroundedGenerator
+        ._parse_draft(
+            raw
+        )
+    )
+
+
+    assert (
+        parsed.evidence_facts[
+            0
+        ].citation_id
+        is None
+    )

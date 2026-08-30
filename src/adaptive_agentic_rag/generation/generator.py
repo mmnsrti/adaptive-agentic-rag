@@ -15,10 +15,13 @@ from adaptive_agentic_rag.generation.context_builder import (
 
 from adaptive_agentic_rag.generation.prompts import (
     build_grounded_messages,
+    build_synthesis_messages,
 )
 
 from adaptive_agentic_rag.generation.claim_grounder import (
     ClaimGrounder,
+    ClaimSupport,
+    GroundedClaims,
 )
 
 from adaptive_agentic_rag.generation.relevance_filter import (
@@ -53,19 +56,43 @@ INSUFFICIENT_TOKEN = (
 
 
 # ============================================================
-# Parsed LLM draft
+# Draft structures
 # ============================================================
+
+@dataclass
+class DraftFact:
+
+    text: str
+
+    citation_id: int | None
+
 
 @dataclass
 class ParsedDraft:
 
     direct_answer: str | None
 
-    evidence_claims: list[str]
+    evidence_facts: list[DraftFact]
+
+
+    # --------------------------------------------------------
+    # Backward-compatible diagnostic/test property
+    # --------------------------------------------------------
+
+    @property
+    def evidence_claims(
+        self,
+    ) -> list[str]:
+
+        return [
+            fact.text
+            for fact
+            in self.evidence_facts
+        ]
 
 
 # ============================================================
-# Final generation result
+# Generation result
 # ============================================================
 
 @dataclass
@@ -75,7 +102,11 @@ class GenerationResult:
 
     raw_answer: str | None
 
+    # Final corrected direct answer
     direct_answer: str | None
+
+    # Initial untrusted answer
+    draft_direct_answer: str | None
 
     abstained: bool
 
@@ -87,23 +118,11 @@ class GenerationResult:
 
     model_name: str | None
 
-    # --------------------------------------------------------
-    # Draft metrics
-    # --------------------------------------------------------
-
     draft_claims: int
-
-    # --------------------------------------------------------
-    # Grounding metrics
-    # --------------------------------------------------------
 
     supported_claims: int
 
     unsupported_claims: int
-
-    # --------------------------------------------------------
-    # Relevance filtering metrics
-    # --------------------------------------------------------
 
     relevant_claims: int
 
@@ -117,7 +136,7 @@ class GroundedGenerator:
         reranker,
         model_name: str = DEFAULT_MODEL,
         device: str | None = None,
-        max_relevant_claims: int = 2,
+        max_relevant_claims: int = 3,
     ):
 
         self.model_name = (
@@ -144,10 +163,6 @@ class GroundedGenerator:
         )
 
 
-        # ====================================================
-        # Lazy-loaded generator components
-        # ====================================================
-
         self.tokenizer = None
 
         self.model = None
@@ -156,7 +171,11 @@ class GroundedGenerator:
 
 
         # ====================================================
-        # Reuse the BGE reranker already loaded by retrieval.
+        # Maximum is now 3 because Pass 1 itself generates
+        # at most 3 query-focused facts.
+        #
+        # This prevents top-2 from deleting one side of a
+        # comparison merely because its reranker score is lower.
         # ====================================================
 
         self.relevance_filter = (
@@ -170,7 +189,7 @@ class GroundedGenerator:
 
 
     # ========================================================
-    # Load generator
+    # Model loading
     # ========================================================
 
     def _load_generator(
@@ -222,10 +241,6 @@ class GroundedGenerator:
         self.model.eval()
 
 
-    # ========================================================
-    # Load NLI Grounder
-    # ========================================================
-
     def _load_claim_grounder(
         self,
     ):
@@ -251,25 +266,14 @@ class GroundedGenerator:
 
 
     # ========================================================
-    # Generate structured draft
+    # Shared local generation
     # ========================================================
 
-    def _generate_draft(
+    def _generate_from_messages(
         self,
-        query: str,
-        context: BuiltContext,
+        messages: list[dict],
         max_new_tokens: int,
     ) -> str:
-
-        messages = (
-            build_grounded_messages(
-                query=
-                    query,
-                context=
-                    context,
-            )
-        )
-
 
         prompt = (
             self.tokenizer
@@ -347,7 +351,38 @@ class GroundedGenerator:
 
 
     # ========================================================
-    # Draft cleaning
+    # Pass 1
+    # ========================================================
+
+    def _generate_draft(
+        self,
+        query: str,
+        context: BuiltContext,
+        max_new_tokens: int,
+    ) -> str:
+
+        messages = (
+            build_grounded_messages(
+                query=
+                    query,
+                context=
+                    context,
+            )
+        )
+
+
+        return (
+            self._generate_from_messages(
+                messages=
+                    messages,
+                max_new_tokens=
+                    max_new_tokens,
+            )
+        )
+
+
+    # ========================================================
+    # Cleaning
     # ========================================================
 
     @staticmethod
@@ -381,18 +416,7 @@ class GroundedGenerator:
 
 
     # ========================================================
-    # Parse structured Qwen output
-    #
-    # Expected:
-    #
-    # DIRECT_ANSWER: Yes ...
-    #
-    # FACTS:
-    # - ...
-    # - ...
-    #
-    # We keep a conservative fallback for occasional format
-    # deviations from a small local model.
+    # Pass-1 parser
     # ========================================================
 
     @classmethod
@@ -403,7 +427,7 @@ class GroundedGenerator:
 
         direct_answer = None
 
-        evidence_claims = []
+        evidence_facts = []
 
         inside_facts = False
 
@@ -423,11 +447,14 @@ class GroundedGenerator:
 
 
             # =================================================
-            # Direct answer
+            # New contract
             # =================================================
 
             direct_match = re.match(
-                r"^DIRECT_ANSWER\s*:\s*(.*)$",
+                (
+                    r"^(?:DRAFT_ANSWER|DIRECT_ANSWER)"
+                    r"\s*:\s*(.*)$"
+                ),
                 line,
                 flags=re.IGNORECASE,
             )
@@ -456,35 +483,56 @@ class GroundedGenerator:
                 continue
 
 
-            # =================================================
-            # FACTS header
-            # =================================================
-
-            facts_match = re.match(
-                r"^FACTS\s*:\s*(.*)$",
+            if re.match(
+                r"^FACTS\s*:",
                 line,
                 flags=re.IGNORECASE,
-            )
-
-
-            if facts_match:
+            ):
 
                 inside_facts = True
 
+                continue
 
-                inline_fact = (
+
+            # =================================================
+            # Preferred:
+            #
+            # - [2] Some factual claim.
+            # =================================================
+
+            linked_fact_match = re.match(
+                r"^[-*•]\s*\[(\d+)\]\s*(.+)$",
+                line,
+            )
+
+
+            if linked_fact_match:
+
+                citation_id = int(
+                    linked_fact_match.group(
+                        1
+                    )
+                )
+
+
+                fact_text = (
                     cls._clean_generated_text(
-                        facts_match.group(
-                            1
+                        linked_fact_match.group(
+                            2
                         )
                     )
                 )
 
 
-                if inline_fact:
+                if fact_text:
 
-                    evidence_claims.append(
-                        inline_fact
+                    evidence_facts.append(
+                        DraftFact(
+                            text=
+                                fact_text,
+                            citation_id=
+                                citation_id,
+                        )
                     )
 
 
@@ -492,7 +540,10 @@ class GroundedGenerator:
 
 
             # =================================================
-            # Bullet fact
+            # Legacy fallback:
+            #
+            # keep the fact but mark it as unlinked.
+            # Production will NOT trust an unlinked fact.
             # =================================================
 
             bullet_match = re.match(
@@ -503,7 +554,7 @@ class GroundedGenerator:
 
             if bullet_match:
 
-                fact = (
+                fact_text = (
                     cls._clean_generated_text(
                         bullet_match.group(
                             1
@@ -512,125 +563,408 @@ class GroundedGenerator:
                 )
 
 
-                if fact:
+                if fact_text:
 
-                    evidence_claims.append(
-                        fact
+                    evidence_facts.append(
+                        DraftFact(
+                            text=
+                                fact_text,
+                            citation_id=
+                                None,
+                        )
                     )
 
 
                 continue
 
 
-            # =================================================
-            # Small-model fallback:
-            #
-            # Once FACTS has begun, accept a short standalone
-            # line even if the bullet marker is missing.
-            # =================================================
-
             if inside_facts:
 
-                fact = (
+                fact_text = (
                     cls._clean_generated_text(
                         line
                     )
                 )
 
 
-                if fact:
+                if fact_text:
 
-                    evidence_claims.append(
-                        fact
-                    )
-
-
-        # ====================================================
-        # Legacy fallback:
-        #
-        # If Qwen ignored the new contract completely but
-        # produced ordinary bullet points, keep those bullets.
-        # ====================================================
-
-        if not evidence_claims:
-
-            for raw_line in (
-                raw_answer.splitlines()
-            ):
-
-                bullet_match = re.match(
-                    r"^\s*[-*•]\s*(.+)$",
-                    raw_line,
-                )
-
-
-                if not bullet_match:
-
-                    continue
-
-
-                fact = (
-                    cls._clean_generated_text(
-                        bullet_match.group(
-                            1
+                    evidence_facts.append(
+                        DraftFact(
+                            text=
+                                fact_text,
+                            citation_id=
+                                None,
                         )
                     )
-                )
-
-
-                if fact:
-
-                    evidence_claims.append(
-                        fact
-                    )
 
 
         # ====================================================
-        # Deduplicate preserving order
+        # Deduplicate using citation + text
         # ====================================================
 
-        evidence_claims = list(
-            dict.fromkeys(
-                evidence_claims
+        unique = []
+
+        seen = set()
+
+
+        for fact in evidence_facts:
+
+            key = (
+                fact.citation_id,
+                fact.text,
             )
-        )
+
+
+            if key in seen:
+
+                continue
+
+
+            seen.add(
+                key
+            )
+
+
+            unique.append(
+                fact
+            )
 
 
         return ParsedDraft(
             direct_answer=
                 direct_answer,
-            evidence_claims=
-                evidence_claims,
+            evidence_facts=
+                unique,
         )
 
 
     # ========================================================
-    # Convert parsed facts to the format expected by
-    # ClaimGrounder.
+    # Build citation-locked context
     # ========================================================
 
     @staticmethod
-    def _render_claims_for_grounding(
-        claims: list[str],
-    ) -> str:
+    def _context_for_citation(
+        context: BuiltContext,
+        citation_id: int,
+    ) -> BuiltContext | None:
 
-        return "\n".join(
+        matching_items = [
 
-            f"- {claim}"
+            item
 
-            for claim
-            in claims
+            for item
+            in context.items
+
+            if (
+                item.citation_id
+                ==
+                citation_id
+            )
+        ]
+
+
+        if not matching_items:
+
+            return None
+
+
+        item = (
+            matching_items[
+                0
+            ]
+        )
+
+
+        return BuiltContext(
+            text=
+                item.text,
+            items=[
+                item
+            ],
+            total_words=
+                len(
+                    item.text.split()
+                ),
         )
 
 
     # ========================================================
-    # Final answer construction
-    #
-    # DIRECT ANSWER:
-    # synthesis / requested answer target
-    #
-    # FACTS:
-    # independently grounded support
+    # Ground citation-linked facts
+    # ========================================================
+
+    def _ground_linked_facts(
+        self,
+        parsed: ParsedDraft,
+        context: BuiltContext,
+    ) -> GroundedClaims:
+
+        results = []
+
+
+        for fact in (
+            parsed.evidence_facts
+        ):
+
+            # =================================================
+            # Unlinked facts are not trusted.
+            # =================================================
+
+            if (
+                fact.citation_id
+                is None
+            ):
+
+                results.append(
+                    ClaimSupport(
+                        claim=
+                            fact.text,
+                        supported=
+                            False,
+                        citation_id=
+                            None,
+                        label=
+                            "missing_citation",
+                        entailment_score=
+                            0.0,
+                        supporting_text=
+                            None,
+                        evidence_relevance_score=
+                            None,
+                        premise_mode=
+                            None,
+                    )
+                )
+
+                continue
+
+
+            locked_context = (
+                self._context_for_citation(
+                    context=
+                        context,
+                    citation_id=
+                        fact.citation_id,
+                )
+            )
+
+
+            # =================================================
+            # Invalid citation ID
+            # =================================================
+
+            if (
+                locked_context
+                is None
+            ):
+
+                results.append(
+                    ClaimSupport(
+                        claim=
+                            fact.text,
+                        supported=
+                            False,
+                        citation_id=
+                            None,
+                        label=
+                            "invalid_citation",
+                        entailment_score=
+                            0.0,
+                        supporting_text=
+                            None,
+                        evidence_relevance_score=
+                            None,
+                        premise_mode=
+                            None,
+                    )
+                )
+
+                continue
+
+
+            grounded = (
+                self.claim_grounder
+                .ground(
+                    answer=(
+                        f"- {fact.text}"
+                    ),
+                    context=
+                        locked_context,
+                )
+            )
+
+
+            if not grounded.claims:
+
+                results.append(
+                    ClaimSupport(
+                        claim=
+                            fact.text,
+                        supported=
+                            False,
+                        citation_id=
+                            None,
+                        label=
+                            "no_claim",
+                        entailment_score=
+                            0.0,
+                        supporting_text=
+                            None,
+                        evidence_relevance_score=
+                            None,
+                        premise_mode=
+                            None,
+                    )
+                )
+
+                continue
+
+
+            # =================================================
+            # Prompt requires one atomic claim.
+            #
+            # If the extractor still creates multiple claims,
+            # preserve all of them; every one is checked only
+            # against the cited evidence item.
+            # =================================================
+
+            results.extend(
+                grounded.claims
+            )
+
+
+        supported_count = sum(
+
+            1
+
+            for result
+            in results
+
+            if result.supported
+        )
+
+
+        unsupported_count = (
+            len(
+                results
+            )
+            -
+            supported_count
+        )
+
+
+        return GroundedClaims(
+            claims=
+                results,
+            supported_count=
+                supported_count,
+            unsupported_count=
+                unsupported_count,
+        )
+
+
+    # ========================================================
+    # Pass 2
+    # Grounded self-correction
+    # ========================================================
+
+    def _generate_final_direct_answer(
+        self,
+        query: str,
+        draft_answer: str | None,
+        relevant_claims,
+        max_new_tokens: int = 64,
+    ) -> str | None:
+
+        verified_facts = [
+
+            (
+                claim.citation_id,
+                claim.claim,
+            )
+
+            for claim
+            in relevant_claims
+
+            if (
+                claim.citation_id
+                is not None
+            )
+        ]
+
+
+        if not verified_facts:
+
+            return None
+
+
+        messages = (
+            build_synthesis_messages(
+                query=
+                    query,
+                draft_answer=
+                    draft_answer,
+                verified_facts=
+                    verified_facts,
+            )
+        )
+
+
+        output = (
+            self._generate_from_messages(
+                messages=
+                    messages,
+                max_new_tokens=
+                    max_new_tokens,
+            )
+        )
+
+
+        match = re.search(
+            r"FINAL_ANSWER\s*:\s*(.+)",
+            output,
+            flags=re.IGNORECASE,
+        )
+
+
+        if match:
+
+            answer = (
+                self._clean_generated_text(
+                    match.group(
+                        1
+                    )
+                )
+            )
+
+        else:
+
+            answer = (
+                self._clean_generated_text(
+                    output
+                )
+            )
+
+
+        if not answer:
+
+            return None
+
+
+        if (
+            answer.upper()
+            ==
+            INSUFFICIENT_TOKEN
+        ):
+
+            return None
+
+
+        return answer
+
+
+    # ========================================================
+    # Final answer
     # ========================================================
 
     @staticmethod
@@ -667,39 +1001,24 @@ class GroundedGenerator:
         )
 
 
-        # ====================================================
-        # Direct answer
-        # ====================================================
-
         if direct_answer:
 
-            direct_answer = (
+            line = (
                 direct_answer.strip()
             )
 
 
-            if direct_answer:
+            if citation_suffix:
 
-                line = (
-                    direct_answer
+                line += (
+                    f" {citation_suffix}"
                 )
 
 
-                if citation_suffix:
+            lines.append(
+                line
+            )
 
-                    line += (
-                        f" {citation_suffix}"
-                    )
-
-
-                lines.append(
-                    line
-                )
-
-
-        # ====================================================
-        # Grounded support
-        # ====================================================
 
         for claim in relevant_claims:
 
@@ -729,8 +1048,7 @@ class GroundedGenerator:
     ) -> GenerationResult:
 
         # ====================================================
-        # Gate 1:
-        # Evidence already rejected upstream.
+        # Gate 1
         # ====================================================
 
         if not evidence_sufficient:
@@ -741,6 +1059,8 @@ class GroundedGenerator:
                 raw_answer=
                     None,
                 direct_answer=
+                    None,
+                draft_direct_answer=
                     None,
                 abstained=
                     True,
@@ -765,13 +1085,12 @@ class GroundedGenerator:
             )
 
 
-        # ====================================================
-        # Step 1:
-        # Structured generation
-        # ====================================================
-
         self._load_generator()
 
+
+        # ====================================================
+        # Pass 1
+        # ====================================================
 
         raw_answer = (
             self._generate_draft(
@@ -794,11 +1113,6 @@ class GroundedGenerator:
         )
 
 
-        # ====================================================
-        # Step 2:
-        # Parse direct answer separately from evidence facts.
-        # ====================================================
-
         parsed = (
             self._parse_draft(
                 raw_answer
@@ -811,79 +1125,25 @@ class GroundedGenerator:
         )
 
         print(
-            "Direct answer:",
+            "Draft answer:",
             parsed.direct_answer,
         )
 
-        print(
-            "Evidence claims:",
-            len(
-                parsed.evidence_claims
-            ),
-        )
 
-
-        for claim in (
-            parsed.evidence_claims
+        for fact in (
+            parsed.evidence_facts
         ):
 
             print(
                 "FACT:",
-                claim,
+                fact.citation_id,
+                fact.text,
             )
 
 
-        # ====================================================
-        # Explicit model-side abstention
-        # ====================================================
-
-        if (
-            parsed.direct_answer
-            and
-            parsed.direct_answer
-            .strip()
-            .upper()
-            ==
-            INSUFFICIENT_TOKEN
+        if not (
+            parsed.evidence_facts
         ):
-
-            return GenerationResult(
-                answer=
-                    ABSTENTION_MESSAGE,
-                raw_answer=
-                    raw_answer,
-                direct_answer=
-                    parsed.direct_answer,
-                abstained=
-                    True,
-                cited_ids=
-                    [],
-                invalid_citation_ids=
-                    [],
-                citation_valid=
-                    True,
-                model_name=
-                    self.model_name,
-                draft_claims=
-                    len(
-                        parsed.evidence_claims
-                    ),
-                supported_claims=
-                    0,
-                unsupported_claims=
-                    0,
-                relevant_claims=
-                    0,
-                filtered_irrelevant_claims=
-                    0,
-            )
-
-
-        # ====================================================
-        # No evidence facts produced.
-        # ====================================================
-
-        if not parsed.evidence_claims:
 
             return GenerationResult(
                 answer=
@@ -891,6 +1151,8 @@ class GroundedGenerator:
                 raw_answer=
                     raw_answer,
                 direct_answer=
+                    None,
+                draft_direct_answer=
                     parsed.direct_answer,
                 abstained=
                     True,
@@ -916,37 +1178,21 @@ class GroundedGenerator:
 
 
         # ====================================================
-        # Step 3:
-        # Ground ONLY evidence facts.
-        #
-        # The direct answer is synthesis and must not pollute
-        # atomic factual verification.
+        # Citation-locked grounding
         # ====================================================
 
         self._load_claim_grounder()
 
 
-        grounding_input = (
-            self._render_claims_for_grounding(
-                parsed.evidence_claims
-            )
-        )
-
-
         grounded_claims = (
-            self.claim_grounder.ground(
-                answer=
-                    grounding_input,
+            self._ground_linked_facts(
+                parsed=
+                    parsed,
                 context=
                     context,
             )
         )
 
-
-        # ====================================================
-        # Gate 2:
-        # No factual support survived.
-        # ====================================================
 
         if (
             grounded_claims.supported_count
@@ -960,6 +1206,8 @@ class GroundedGenerator:
                 raw_answer=
                     raw_answer,
                 direct_answer=
+                    None,
+                draft_direct_answer=
                     parsed.direct_answer,
                 abstained=
                     True,
@@ -973,7 +1221,7 @@ class GroundedGenerator:
                     self.model_name,
                 draft_claims=
                     len(
-                        parsed.evidence_claims
+                        parsed.evidence_facts
                     ),
                 supported_claims=
                     0,
@@ -989,8 +1237,7 @@ class GroundedGenerator:
 
 
         # ====================================================
-        # Step 4:
-        # Relevance filter over supported FACTS only.
+        # Relevance
         # ====================================================
 
         relevance_result = (
@@ -1003,58 +1250,6 @@ class GroundedGenerator:
         )
 
 
-        print(
-            "\n===== CLAIM RELEVANCE ====="
-        )
-
-
-        print(
-            "Relevant claims:",
-            len(
-                relevance_result
-                .relevant_claims
-            ),
-        )
-
-
-        print(
-            "Filtered irrelevant claims:",
-            len(
-                relevance_result
-                .filtered_claims
-            ),
-        )
-
-
-        for claim in (
-            relevance_result
-            .relevant_claims
-        ):
-
-            print(
-                "KEEP:",
-                claim.relevance_score,
-                claim.claim,
-            )
-
-
-        for claim in (
-            relevance_result
-            .filtered_claims
-        ):
-
-            print(
-                "FILTER:",
-                claim.relevance_score,
-                claim.claim,
-            )
-
-
-        # ====================================================
-        # Gate 3:
-        # Supported facts existed but none answered the query.
-        # ====================================================
-
         if not (
             relevance_result
             .relevant_claims
@@ -1066,6 +1261,8 @@ class GroundedGenerator:
                 raw_answer=
                     raw_answer,
                 direct_answer=
+                    None,
+                draft_direct_answer=
                     parsed.direct_answer,
                 abstained=
                     True,
@@ -1079,7 +1276,7 @@ class GroundedGenerator:
                     self.model_name,
                 draft_claims=
                     len(
-                        parsed.evidence_claims
+                        parsed.evidence_facts
                     ),
                 supported_claims=(
                     grounded_claims
@@ -1101,40 +1298,27 @@ class GroundedGenerator:
 
 
         # ====================================================
-        # Step 5:
-        # Direct answer + grounded evidence facts.
+        # Pass 2:
+        # grounded self-correction
         # ====================================================
 
-        final_answer = (
-            self._build_grounded_answer(
-                direct_answer=
+        final_direct_answer = (
+            self._generate_final_direct_answer(
+                query=
+                    query,
+                draft_answer=
                     parsed.direct_answer,
                 relevant_claims=(
                     relevance_result
                     .relevant_claims
                 ),
+                max_new_tokens=
+                    64,
             )
         )
 
 
-        # ====================================================
-        # Step 6:
-        # Citation validation.
-        # ====================================================
-
-        citation_validation = (
-            validate_citations(
-                answer=
-                    final_answer,
-                context=
-                    context,
-            )
-        )
-
-
-        if not (
-            citation_validation.valid
-        ):
+        if not final_direct_answer:
 
             return GenerationResult(
                 answer=
@@ -1142,24 +1326,22 @@ class GroundedGenerator:
                 raw_answer=
                     raw_answer,
                 direct_answer=
+                    None,
+                draft_direct_answer=
                     parsed.direct_answer,
                 abstained=
                     True,
-                cited_ids=(
-                    citation_validation
-                    .cited_ids
-                ),
-                invalid_citation_ids=(
-                    citation_validation
-                    .invalid_ids
-                ),
+                cited_ids=
+                    [],
+                invalid_citation_ids=
+                    [],
                 citation_valid=
                     False,
                 model_name=
                     self.model_name,
                 draft_claims=
                     len(
-                        parsed.evidence_claims
+                        parsed.evidence_facts
                     ),
                 supported_claims=(
                     grounded_claims
@@ -1184,9 +1366,96 @@ class GroundedGenerator:
             )
 
 
-        # ====================================================
-        # Success
-        # ====================================================
+        print(
+            "\n===== SELF-CORRECTED ANSWER ====="
+        )
+
+        print(
+            "Draft:",
+            parsed.direct_answer,
+        )
+
+        print(
+            "Final:",
+            final_direct_answer,
+        )
+
+
+        final_answer = (
+            self._build_grounded_answer(
+                direct_answer=
+                    final_direct_answer,
+                relevant_claims=(
+                    relevance_result
+                    .relevant_claims
+                ),
+            )
+        )
+
+
+        citation_validation = (
+            validate_citations(
+                answer=
+                    final_answer,
+                context=
+                    context,
+            )
+        )
+
+
+        if not (
+            citation_validation.valid
+        ):
+
+            return GenerationResult(
+                answer=
+                    GROUNDING_FAILURE_MESSAGE,
+                raw_answer=
+                    raw_answer,
+                direct_answer=
+                    final_direct_answer,
+                draft_direct_answer=
+                    parsed.direct_answer,
+                abstained=
+                    True,
+                cited_ids=(
+                    citation_validation
+                    .cited_ids
+                ),
+                invalid_citation_ids=(
+                    citation_validation
+                    .invalid_ids
+                ),
+                citation_valid=
+                    False,
+                model_name=
+                    self.model_name,
+                draft_claims=
+                    len(
+                        parsed.evidence_facts
+                    ),
+                supported_claims=(
+                    grounded_claims
+                    .supported_count
+                ),
+                unsupported_claims=(
+                    grounded_claims
+                    .unsupported_count
+                ),
+                relevant_claims=(
+                    len(
+                        relevance_result
+                        .relevant_claims
+                    )
+                ),
+                filtered_irrelevant_claims=(
+                    len(
+                        relevance_result
+                        .filtered_claims
+                    )
+                ),
+            )
+
 
         return GenerationResult(
             answer=
@@ -1194,6 +1463,8 @@ class GroundedGenerator:
             raw_answer=
                 raw_answer,
             direct_answer=
+                final_direct_answer,
+            draft_direct_answer=
                 parsed.direct_answer,
             abstained=
                 False,
@@ -1211,7 +1482,7 @@ class GroundedGenerator:
                 self.model_name,
             draft_claims=
                 len(
-                    parsed.evidence_claims
+                    parsed.evidence_facts
                 ),
             supported_claims=(
                 grounded_claims
