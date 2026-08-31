@@ -11,8 +11,8 @@
     "null_abstentions": 5,
     "null_abstention_rate": 1.0,
     "smoke_answer_scored": 15,
-    "smoke_answer_correct": 3,
-    "smoke_answer_accuracy": 0.2,
+    "smoke_answer_correct": 4,
+    "smoke_answer_accuracy": 0.26666666666666666,
     "runtime_grader_passes": 17,
     "runtime_grader_pass_rate": 0.85,
     "answered_runtime_failures": 0,
@@ -25,11 +25,11 @@
     "rewrite_rate": 0.45,
     "rewrite_rescues": 0,
     "rewrite_rescue_rate": 0.0,
-    "mean_case_seconds": 85.54807612499935,
-    "p95_case_seconds": 307.51327257500196,
-    "mean_generation_seconds_including_cold_start": 66.759664014999,
-    "mean_generation_seconds_warm_provisional": 70.27332972105184,
-    "p95_generation_seconds_warm_provisional": 327.6619551000029,
+    "mean_case_seconds": 17.081297509999786,
+    "p95_case_seconds": 31.494805765002095,
+    "mean_generation_seconds_including_cold_start": 10.444416394998916,
+    "mean_generation_seconds_warm_provisional": 10.99412179999873,
+    "p95_generation_seconds_warm_provisional": 26.729638949994104,
     "by_question_type": {
       "comparison_query": {
         "count": 5,
@@ -60,8 +60,8 @@
         "answered": 3,
         "abstained": 2,
         "smoke_scored": 5,
-        "smoke_correct": 2,
-        "smoke_accuracy": 0.4
+        "smoke_correct": 3,
+        "smoke_accuracy": 0.6
       }
     }
   },
@@ -108,11 +108,11 @@
         "Correctly abstained when evidence was insufficient."
       ],
       "smoke_answer_correct": false,
-      "route_seconds": 0.00023830000282032415,
-      "initial_retrieval_seconds": 2.5554151000033016,
-      "rewrite_retrieval_seconds": 1.6706056999973953,
-      "generation_seconds": 1.5599995094817132e-05,
-      "case_seconds": 4.239204299999983
+      "route_seconds": 0.0002206999997724779,
+      "initial_retrieval_seconds": 2.903235900004802,
+      "rewrite_retrieval_seconds": 1.3295597000033013,
+      "generation_seconds": 1.3700002455152571e-05,
+      "case_seconds": 4.244973000000755
     },
     {
       "id": "eval_59af1023e6cf",
@@ -156,11 +156,11 @@
         "Generation abstained even though evidence was considered sufficient."
       ],
       "smoke_answer_correct": false,
-      "route_seconds": 9.649999992689118e-05,
-      "initial_retrieval_seconds": 2.679662199996528,
+      "route_seconds": 0.00015600000187987462,
+      "initial_retrieval_seconds": 2.3671796999988146,
       "rewrite_retrieval_seconds": 0.0,
-      "generation_seconds": 277.979450800005,
-      "case_seconds": 281.2341411000016
+      "generation_seconds": 19.560683199997584,
+      "case_seconds": 22.267621399994823
     },
     {
       "id": "eval_5cd0e3b824db",
@@ -203,11 +203,11 @@
         "Correctly abstained when evidence was insufficient."
       ],
       "smoke_answer_correct": false,
-      "route_seconds": 0.0003025999976671301,
-      "initial_retrieval_seconds": 164.3025170999972,
-      "rewrite_retrieval_seconds": 9.286979299999075,
-      "generation_seconds": 5.399997462518513e-06,
-      "case_seconds": 173.59884320000128
+      "route_seconds": 0.0002310999989276752,
+      "initial_retrieval_seconds": 1.344078800000716,
+      "rewrite_retrieval_seconds": 1.4157875000018976,
+      "generation_seconds": 5.800000508315861e-06,
+      "case_seconds": 2.767902100000356
     },
     {
       "id": "eval_c5a0d98021ee",
@@ -253,11 +253,11 @@
         "Final answer passed runtime grounding and relevance checks."
       ],
       "smoke_answer_correct": false,
-      "route_seconds": 0.00013159999798517674,
-      "initial_retrieval_seconds": 31.731738200003747,
+      "route_seconds": 0.00011390000145183876,
+      "initial_retrieval_seconds": 1.65491320000001,
       "rewrite_retrieval_seconds": 0.0,
-      "generation_seconds": 774.8044937999948,
-      "case_seconds": 806.8167706000022
+      "generation_seconds": 19.8488495000056,
+      "case_seconds": 21.71848759999557
     },
     {
       "id": "eval_ff33914e9156",
@@ -306,11 +306,11 @@
         "Final answer passed runtime grounding and relevance checks."
       ],
       "smoke_answer_correct": true,
-      "route_seconds": 0.00012100000458303839,
-      "initial_retrieval_seconds": 51.45893259999866,
+      "route_seconds": 8.510000043315813e-05,
+      "initial_retrieval_seconds": 4.3139689000017825,
       "rewrite_retrieval_seconds": 0.0,
-      "generation_seconds": 48.798394800003734,
-      "case_seconds": 100.54198170000018
+      "generation_seconds": 14.639641499998106,
+      "case_seconds": 19.106515300001774
     },
     {
       "id": "eval_1e7d390adde0",
@@ -353,11 +353,11 @@
         "Correctly abstained when evidence was insufficient."
       ],
       "smoke_answer_correct": false,
-      "route_seconds": 0.00020470000163186342,
-      "initial_retrieval_seconds": 5.582517700000608,
-      "rewrite_retrieval_seconds": 5.4598071000000346,
-      "generation_seconds": 2.9000002541579306e-06,
-      "case_seconds": 11.046038299995416
+      "route_seconds": 0.0001140000022132881,
+      "initial_retrieval_seconds": 5.430530199999339,
+      "rewrite_retrieval_seconds": 4.986854000002495,
+      "generation_seconds": 3.9000005926936865e-06,
+      "case_seconds": 10.421096199999738
     },
     {
       "id": "eval_4e23afea1f81",
@@ -404,11 +404,11 @@
         "1 unsupported draft claim(s) were removed before the final answer."
       ],
       "smoke_answer_correct": false,
-      "route_seconds": 0.00015660000644857064,
-      "initial_retrieval_seconds": 6.798597500004689,
+      "route_seconds": 0.00011150000500492752,
+      "initial_retrieval_seconds": 4.835079200005566,
       "rewrite_retrieval_seconds": 0.0,
-      "generation_seconds": 18.637149499998486,
-      "case_seconds": 25.559846799995285
+      "generation_seconds": 26.189385399993625,
+      "case_seconds": 31.218624200002523
     },
     {
       "id": "eval_5c7fab04046b",
@@ -450,11 +450,11 @@
         "Generation abstained even though evidence was considered sufficient."
       ],
       "smoke_answer_correct": false,
-      "route_seconds": 0.00011600000289035961,
-      "initial_retrieval_seconds": 6.360972700000275,
+      "route_seconds": 0.0001373999984934926,
+      "initial_retrieval_seconds": 5.241557499997725,
       "rewrite_retrieval_seconds": 0.0,
-      "generation_seconds": 77.79648089999682,
-      "case_seconds": 84.16380119999667
+      "generation_seconds": 25.47893699999986,
+      "case_seconds": 30.722474900001544
     },
     {
       "id": "eval_eb1a6bb45cb4",
@@ -501,11 +501,11 @@
         "1 unsupported draft claim(s) were removed before the final answer."
       ],
       "smoke_answer_correct": false,
-      "route_seconds": 7.779999577905983e-05,
-      "initial_retrieval_seconds": 12.05603240000346,
+      "route_seconds": 0.00014540000120177865,
+      "initial_retrieval_seconds": 4.857040700000653,
       "rewrite_retrieval_seconds": 0.0,
-      "generation_seconds": 18.89612810000108,
-      "case_seconds": 31.045634099995368
+      "generation_seconds": 31.591920899998513,
+      "case_seconds": 36.74225549999392
     },
     {
       "id": "eval_f3e9235ece5a",
@@ -555,11 +555,11 @@
         "1 unsupported draft claim(s) were removed before the final answer."
       ],
       "smoke_answer_correct": false,
-      "route_seconds": 0.00010099999781232327,
-      "initial_retrieval_seconds": 4.685130999998364,
+      "route_seconds": 0.0001055999964592047,
+      "initial_retrieval_seconds": 7.1284579999992275,
       "rewrite_retrieval_seconds": 0.0,
-      "generation_seconds": 27.711337799999455,
-      "case_seconds": 32.49132829999871
+      "generation_seconds": 20.660593900000094,
+      "case_seconds": 27.996073599999363
     },
     {
       "id": "eval_093af83d0219",
@@ -607,11 +607,11 @@
         "Final answer passed runtime grounding and relevance checks."
       ],
       "smoke_answer_correct": true,
-      "route_seconds": 4.350000381236896e-05,
-      "initial_retrieval_seconds": 5.57886540000618,
+      "route_seconds": 8.160000288626179e-05,
+      "initial_retrieval_seconds": 7.382519099999627,
       "rewrite_retrieval_seconds": 0.0,
-      "generation_seconds": 20.092643600000883,
-      "case_seconds": 25.789525799998955
+      "generation_seconds": 14.291000899997016,
+      "case_seconds": 21.777314999999362
     },
     {
       "id": "eval_5f40fab8ea55",
@@ -632,8 +632,8 @@
       "rewrite_rescued": false,
       "final_evidence_sufficient": true,
       "final_evidence_score": 0.7412,
-      "answer": "The reporting style regarding live score updates and highlights from NFL games by Sporting News did not remain consistently the same between the articles featuring \"Jaguars vs. Saints\" on October 19, 2023, and \"Chiefs vs. Packers\" on December 3, 2023. [2][1]\n- The live score update and highlight excerpt for \"Chiefs vs. Packers\" also mentioned a player achieving a first down. [2]\n- The live score update and highlight excerpt for \"Jaguars vs. Saints\" mentioned a player achieving a first down. [1]",
-      "direct_answer": "The reporting style regarding live score updates and highlights from NFL games by Sporting News did not remain consistently the same between the articles featuring \"Jaguars vs. Saints\" on October 19, 2023, and \"Chiefs vs. Packers\" on December 3, 2023.",
+      "answer": "Yes [2][1]\n- The live score update and highlight excerpt for \"Chiefs vs. Packers\" also mentioned a player achieving a first down. [2]\n- The live score update and highlight excerpt for \"Jaguars vs. Saints\" mentioned a player achieving a first down. [1]",
+      "direct_answer": "Yes",
       "raw_answer": "DIRECT_ANSWER: The reporting style regarding live score updates and highlights from NFL games by Sporting News did not remain consistently the same between the articles featuring \"Jaguars vs. Saints\" on October 19, 2023, and \"Chiefs vs. Packers\" on December 3, 2023.\n\nFACTS:\n- The live score update and highlight excerpt for \"Jaguars vs. Saints\" mentioned a player achieving a first down.\n- The live score update and highlight excerpt for \"Chiefs vs. Packers\" also mentioned a player achieving a first down.",
       "abstained": false,
       "draft_claims": 2,
@@ -654,16 +654,16 @@
       "dataset_evidence_citation_recall": 1.0,
       "runtime_grader_passed": true,
       "runtime_supported_claim_ratio": 1.0,
-      "runtime_relevance_score": 0.9579,
+      "runtime_relevance_score": 0.846,
       "runtime_reasons": [
         "Final answer passed runtime grounding and relevance checks."
       ],
-      "smoke_answer_correct": false,
-      "route_seconds": 0.00010630000178935006,
-      "initial_retrieval_seconds": 5.267531299999973,
+      "smoke_answer_correct": true,
+      "route_seconds": 0.00010959999781334773,
+      "initial_retrieval_seconds": 5.61791240000457,
       "rewrite_retrieval_seconds": 0.0,
-      "generation_seconds": 23.807605900001363,
-      "case_seconds": 29.231623699997726
+      "generation_seconds": 12.811279499997909,
+      "case_seconds": 18.597516300003917
     },
     {
       "id": "eval_733c08d301e8",
@@ -706,11 +706,11 @@
         "Correctly abstained when evidence was insufficient."
       ],
       "smoke_answer_correct": false,
-      "route_seconds": 9.29000016185455e-05,
-      "initial_retrieval_seconds": 4.6400259000001824,
-      "rewrite_retrieval_seconds": 4.366655700003321,
-      "generation_seconds": 4.399997123982757e-06,
-      "case_seconds": 9.472835100001248
+      "route_seconds": 8.890000026440248e-05,
+      "initial_retrieval_seconds": 5.104765199997928,
+      "rewrite_retrieval_seconds": 4.914540000005218,
+      "generation_seconds": 8.299997716676444e-06,
+      "case_seconds": 10.515113599998585
     },
     {
       "id": "eval_b80b5654cdcc",
@@ -758,11 +758,11 @@
         "1 unsupported draft claim(s) were removed before the final answer."
       ],
       "smoke_answer_correct": true,
-      "route_seconds": 5.199999577598646e-05,
-      "initial_retrieval_seconds": 1.6006456999966758,
+      "route_seconds": 5.499999679159373e-05,
+      "initial_retrieval_seconds": 1.955370600000606,
       "rewrite_retrieval_seconds": 0.0,
-      "generation_seconds": 23.50662100000045,
-      "case_seconds": 25.205205500002194
+      "generation_seconds": 9.981159800001478,
+      "case_seconds": 12.052811200002907
     },
     {
       "id": "eval_be412cb54feb",
@@ -805,11 +805,11 @@
         "Correctly abstained when evidence was insufficient."
       ],
       "smoke_answer_correct": false,
-      "route_seconds": 8.350000280188397e-05,
-      "initial_retrieval_seconds": 4.163316699996358,
-      "rewrite_retrieval_seconds": 3.993820499999856,
-      "generation_seconds": 3.1000017770566046e-06,
-      "case_seconds": 8.16122030000406
+      "route_seconds": 0.00010629999451339245,
+      "initial_retrieval_seconds": 4.91871070000343,
+      "rewrite_retrieval_seconds": 5.0189616000061505,
+      "generation_seconds": 3.999994078185409e-06,
+      "case_seconds": 9.94070329999522
     },
     {
       "id": "eval_2fa0f63fd209",
@@ -848,11 +848,11 @@
         "Correctly abstained when evidence was insufficient."
       ],
       "smoke_answer_correct": null,
-      "route_seconds": 8.789999992586672e-05,
-      "initial_retrieval_seconds": 5.017535999999382,
-      "rewrite_retrieval_seconds": 4.633784400000877,
-      "generation_seconds": 3.999994078185409e-06,
-      "case_seconds": 9.655442299997958
+      "route_seconds": 0.0001982000030693598,
+      "initial_retrieval_seconds": 6.990762599998561,
+      "rewrite_retrieval_seconds": 6.266866899997694,
+      "generation_seconds": 5.49999822396785e-06,
+      "case_seconds": 13.262565100005304
     },
     {
       "id": "eval_36827e3d0adf",
@@ -891,11 +891,11 @@
         "Generation abstained even though evidence was considered sufficient."
       ],
       "smoke_answer_correct": null,
-      "route_seconds": 7.779999577905983e-05,
-      "initial_retrieval_seconds": 3.4144406000050367,
+      "route_seconds": 8.349999552592635e-05,
+      "initial_retrieval_seconds": 4.21585480000067,
       "rewrite_retrieval_seconds": 0.0,
-      "generation_seconds": 23.162928400000965,
-      "case_seconds": 26.579801200001384
+      "generation_seconds": 13.83481749999919,
+      "case_seconds": 18.052544400001352
     },
     {
       "id": "eval_52bfece07a6c",
@@ -934,11 +934,11 @@
         "Correctly abstained when evidence was insufficient."
       ],
       "smoke_answer_correct": null,
-      "route_seconds": 8.189999789465219e-05,
-      "initial_retrieval_seconds": 3.9231068000008236,
-      "rewrite_retrieval_seconds": 3.60858670000016,
-      "generation_seconds": 3.2000025385059416e-06,
-      "case_seconds": 7.551859799998056
+      "route_seconds": 0.00012789999891538173,
+      "initial_retrieval_seconds": 4.9723009999943315,
+      "rewrite_retrieval_seconds": 4.336582500000077,
+      "generation_seconds": 4.29999636253342e-06,
+      "case_seconds": 9.344094799998857
     },
     {
       "id": "eval_5457d2a4c687",
@@ -977,11 +977,11 @@
         "Correctly abstained when evidence was insufficient."
       ],
       "smoke_answer_correct": null,
-      "route_seconds": 0.000112900001113303,
-      "initial_retrieval_seconds": 4.477989600003639,
-      "rewrite_retrieval_seconds": 4.708826000001864,
-      "generation_seconds": 3.999994078185409e-06,
-      "case_seconds": 9.192323799994483
+      "route_seconds": 0.00010149999434361234,
+      "initial_retrieval_seconds": 5.0162240999998176,
+      "rewrite_retrieval_seconds": 5.350549200004025,
+      "generation_seconds": 6.70000008540228e-06,
+      "case_seconds": 10.371937399999297
     },
     {
       "id": "eval_f1e3e6ebe75c",
@@ -1020,11 +1020,11 @@
         "Correctly abstained when evidence was insufficient."
       ],
       "smoke_answer_correct": null,
-      "route_seconds": 0.00012229999992996454,
-      "initial_retrieval_seconds": 4.784976800001459,
-      "rewrite_retrieval_seconds": 4.592370799997298,
-      "generation_seconds": 3.0999945010989904e-06,
-      "case_seconds": 9.384095400004298
+      "route_seconds": 0.00016290000348817557,
+      "initial_retrieval_seconds": 5.416810800001258,
+      "rewrite_retrieval_seconds": 5.081367200000386,
+      "generation_seconds": 6.599999323952943e-06,
+      "case_seconds": 10.50532530000055
     }
   ]
 }

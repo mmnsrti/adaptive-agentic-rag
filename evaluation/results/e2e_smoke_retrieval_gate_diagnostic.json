@@ -5,24 +5,24 @@
     "null": 5,
     "mean_initial_retrieval_gold_recall": 0.8444444444444444,
     "mean_initial_context_gold_recall": 0.8444444444444444,
-    "initial_gate_accepts_answerable": 9,
-    "final_gate_accepts_answerable": 9,
-    "complete_gold_context_rejected": 3,
-    "high_gold_context_rejected": 4,
-    "rewrite_attempts": 10,
+    "initial_gate_accepts_answerable": 10,
+    "final_gate_accepts_answerable": 10,
+    "complete_gold_context_rejected": 2,
+    "high_gold_context_rejected": 3,
+    "rewrite_attempts": 9,
     "rewrite_rescues": 0,
-    "rewrite_retrieval_improved": 1,
+    "rewrite_retrieval_improved": 0,
     "rewrite_retrieval_harmed": 0,
     "rewrite_retrieval_unchanged": 5,
-    "mean_rewrite_retrieval_recall_delta": 0.041666666666666664,
-    "mean_rewrite_context_recall_delta": 0.041666666666666664,
+    "mean_rewrite_retrieval_recall_delta": 0.0,
+    "mean_rewrite_context_recall_delta": 0.0,
     "null_correct_rejects": 4,
     "null_false_accepts": 1,
     "failure_categories": {
       "grader_reject_high_gold_context": 1,
+      "initial_gate_accept": 10,
       "retrieval_miss_candidate": 2,
-      "initial_gate_accept": 9,
-      "grader_reject_complete_gold_context": 3,
+      "grader_reject_complete_gold_context": 2,
       "null_correct_reject": 4,
       "null_false_accept": 1
     }
@@ -73,7 +73,21 @@
       "initial_evidence_reasons": [
         "Query term coverage is too low: 0.57 < 0.60 (soft signal only)",
         "Evidence score is too low: 0.76 < 0.78",
-        "Potentially weak evidence citations: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]"
+        "Potentially weak evidence citations: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",
+        "explicit_source_coverage=satisfied",
+        "required_sources=['The Verge', 'TechCrunch']",
+        "covered_sources=['The Verge', 'TechCrunch']",
+        "semantic_rescue_attempted=true",
+        "semantic_rescue_sufficient=false",
+        "semantic_rescue=insufficient",
+        "semantic_rescue_threshold=-6.127460241317749",
+        "semantic_rescue_required_fraction=0.75",
+        "semantic_rescue_requirement_count=3",
+        "semantic_rescue_supported_requirements=0",
+        "semantic_rescue_required_requirements=3",
+        "semantic_rescue_missing_query_sources=[]",
+        "semantic_rescue_supporting_document_ids=[]",
+        "evidence_path=constrained_semantic_rescue_reject"
       ],
       "rewrite_attempted": true,
       "rewritten_query": "Who is the individual under 30 who was once considered the trustworthy face of the cryptocurrency industry according to The Verge, and is alleged by the prosecution for committing fraud for wealth and influence as reported by TechCrunch, and was also reported by The Verge to have permitted withdrawals from a trading account up to the limit of total trading revenue? supporting evidence",
@@ -109,7 +123,21 @@
       "final_evidence_reasons": [
         "Query term coverage is too low: 0.50 < 0.60 (soft signal only)",
         "Evidence score is too low: 0.72 < 0.78",
-        "Potentially weak evidence citations: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]"
+        "Potentially weak evidence citations: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",
+        "explicit_source_coverage=satisfied",
+        "required_sources=['The Verge', 'TechCrunch']",
+        "covered_sources=['The Verge', 'TechCrunch']",
+        "semantic_rescue_attempted=true",
+        "semantic_rescue_sufficient=false",
+        "semantic_rescue=insufficient",
+        "semantic_rescue_threshold=-6.127460241317749",
+        "semantic_rescue_required_fraction=0.75",
+        "semantic_rescue_requirement_count=3",
+        "semantic_rescue_supported_requirements=0",
+        "semantic_rescue_required_requirements=3",
+        "semantic_rescue_missing_query_sources=[]",
+        "semantic_rescue_supporting_document_ids=[]",
+        "evidence_path=constrained_semantic_rescue_reject"
       ],
       "rewrite_retrieval_recall_delta": 0.0,
       "rewrite_context_recall_delta": 0.0,
@@ -156,53 +184,81 @@
       "initial_retrieval_gold_recall": 0.25,
       "initial_context_gold_recall": 0.25,
       "initial_context_gold_complete": false,
-      "initial_evidence_sufficient": false,
+      "initial_evidence_sufficient": true,
       "initial_evidence_score": 0.6603,
       "initial_evidence_reasons": [
         "Query term coverage is too low: 0.38 < 0.60 (soft signal only)",
         "Evidence score is too low: 0.66 < 0.78",
-        "Potentially weak evidence citations: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]"
+        "Potentially weak evidence citations: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",
+        "explicit_source_coverage=satisfied",
+        "required_sources=[]",
+        "covered_sources=[]",
+        "semantic_rescue_attempted=true",
+        "semantic_rescue_sufficient=true",
+        "semantic_rescue=sufficient",
+        "semantic_rescue_threshold=-6.127460241317749",
+        "semantic_rescue_required_fraction=0.75",
+        "semantic_rescue_requirement_count=4",
+        "semantic_rescue_supported_requirements=4",
+        "semantic_rescue_required_requirements=3",
+        "semantic_rescue_missing_query_sources=[]",
+        "semantic_rescue_supporting_document_ids=['doc_0226', 'doc_0529', 'doc_0053']",
+        "evidence_path=constrained_semantic_rescue"
       ],
-      "rewrite_attempted": true,
-      "rewritten_query": "Who is the individual whose legal team and the government's attorneys are presenting conflicting narratives in court, who acknowledged being aware of a significant financial discrepancy post a judge's inquiry, and is accused of instructing a subordinate to use billions of customer funds to settle debts, all while facing allegations of committing fraud for personal gain? supporting evidence",
+      "rewrite_attempted": false,
+      "rewritten_query": null,
       "final_retrieved_document_ids": [
         "doc_0226",
         "doc_0529",
         "doc_0031",
-        "doc_0009",
-        "doc_0293",
+        "doc_0097",
         "doc_0175",
-        "doc_0053",
-        "doc_0086",
+        "doc_0293",
+        "doc_0121",
         "doc_0030",
-        "doc_0121"
+        "doc_0053",
+        "doc_0086"
       ],
       "final_context_document_ids": [
         "doc_0226",
         "doc_0529",
         "doc_0031",
-        "doc_0009",
-        "doc_0293",
+        "doc_0097",
         "doc_0175",
-        "doc_0053",
-        "doc_0086",
+        "doc_0293",
+        "doc_0121",
         "doc_0030",
-        "doc_0121"
+        "doc_0053",
+        "doc_0086"
       ],
-      "final_retrieval_gold_recall": 0.5,
-      "final_context_gold_recall": 0.5,
+      "final_retrieval_gold_recall": 0.25,
+      "final_context_gold_recall": 0.25,
       "final_context_gold_complete": false,
-      "final_evidence_sufficient": false,
-      "final_evidence_score": 0.6441,
+      "final_evidence_sufficient": true,
+      "final_evidence_score": 0.6603,
       "final_evidence_reasons": [
-        "Query term coverage is too low: 0.35 < 0.60 (soft signal only)",
-        "Evidence score is too low: 0.64 < 0.78",
-        "Potentially weak evidence citations: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]"
+        "Query term coverage is too low: 0.38 < 0.60 (soft signal only)",
+        "Evidence score is too low: 0.66 < 0.78",
+        "Potentially weak evidence citations: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",
+        "explicit_source_coverage=satisfied",
+        "required_sources=[]",
+        "covered_sources=[]",
+        "semantic_rescue_attempted=true",
+        "semantic_rescue_sufficient=true",
+        "semantic_rescue=sufficient",
+        "semantic_rescue_threshold=-6.127460241317749",
+        "semantic_rescue_required_fraction=0.75",
+        "semantic_rescue_requirement_count=4",
+        "semantic_rescue_supported_requirements=4",
+        "semantic_rescue_required_requirements=3",
+        "semantic_rescue_missing_query_sources=[]",
+        "semantic_rescue_supporting_document_ids=['doc_0226', 'doc_0529', 'doc_0053']",
+        "evidence_path=constrained_semantic_rescue"
       ],
-      "rewrite_retrieval_recall_delta": 0.25,
-      "rewrite_context_recall_delta": 0.25,
+      "rewrite_retrieval_recall_delta": null,
+      "rewrite_context_recall_delta": null,
       "rewrite_rescued": false,
-      "failure_category": "retrieval_miss_candidate"
+      "failure_category": "initial_gate_accept"
     },
     {
       "id": "eval_5cd0e3b824db",
@@ -246,7 +302,21 @@
       "initial_evidence_reasons": [
         "Query term coverage is too low: 0.53 < 0.60 (soft signal only)",
         "Evidence score is too low: 0.74 < 0.78",
-        "Potentially weak evidence citations: [2, 3, 4, 5, 6, 7, 8, 9]"
+        "Potentially weak evidence citations: [2, 3, 4, 5, 6, 7, 8, 9]",
+        "explicit_source_coverage=satisfied",
+        "required_sources=['TechCrunch', 'The Verge']",
+        "covered_sources=['TechCrunch', 'The Verge']",
+        "semantic_rescue_attempted=true",
+        "semantic_rescue_sufficient=false",
+        "semantic_rescue=insufficient",
+        "semantic_rescue_threshold=-6.127460241317749",
+        "semantic_rescue_required_fraction=0.75",
+        "semantic_rescue_requirement_count=1",
+        "semantic_rescue_supported_requirements=0",
+        "semantic_rescue_required_requirements=1",
+        "semantic_rescue_missing_query_sources=[]",
+        "semantic_rescue_supporting_document_ids=[]",
+        "evidence_path=constrained_semantic_rescue_reject"
       ],
       "rewrite_attempted": true,
       "rewritten_query": "Which company, covered by The Verge and TechCrunch, has influenced the internet's appearance, local search result rankings, and is accused of harming news publishers' bottom lines through its practices? supporting evidence",
@@ -282,7 +352,21 @@
       "final_evidence_reasons": [
         "Query term coverage is too low: 0.58 < 0.60 (soft signal only)",
         "Evidence score is too low: 0.77 < 0.78",
-        "Potentially weak evidence citations: [1, 4, 5, 6, 7, 8, 9, 10]"
+        "Potentially weak evidence citations: [1, 4, 5, 6, 7, 8, 9, 10]",
+        "explicit_source_coverage=satisfied",
+        "required_sources=['TechCrunch', 'The Verge']",
+        "covered_sources=['TechCrunch', 'The Verge']",
+        "semantic_rescue_attempted=true",
+        "semantic_rescue_sufficient=false",
+        "semantic_rescue=insufficient",
+        "semantic_rescue_threshold=-6.127460241317749",
+        "semantic_rescue_required_fraction=0.75",
+        "semantic_rescue_requirement_count=1",
+        "semantic_rescue_supported_requirements=0",
+        "semantic_rescue_required_requirements=1",
+        "semantic_rescue_missing_query_sources=[]",
+        "semantic_rescue_supporting_document_ids=[]",
+        "evidence_path=constrained_semantic_rescue_reject"
       ],
       "rewrite_retrieval_recall_delta": 0.0,
       "rewrite_context_recall_delta": 0.0,
@@ -327,7 +411,11 @@
       "initial_evidence_score": 0.85,
       "initial_evidence_reasons": [
         "Evidence appears sufficient.",
-        "Potentially weak evidence citations: [2, 3, 4, 5, 6, 7, 8]"
+        "Potentially weak evidence citations: [2, 3, 4, 5, 6, 7, 8]",
+        "explicit_source_coverage=satisfied",
+        "required_sources=['The Roar | Sports Writers Blog']",
+        "covered_sources=['The Roar | Sports Writers Blog']",
+        "evidence_path=v2"
       ],
       "rewrite_attempted": false,
       "rewritten_query": null,
@@ -358,7 +446,11 @@
       "final_evidence_score": 0.85,
       "final_evidence_reasons": [
         "Evidence appears sufficient.",
-        "Potentially weak evidence citations: [2, 3, 4, 5, 6, 7, 8]"
+        "Potentially weak evidence citations: [2, 3, 4, 5, 6, 7, 8]",
+        "explicit_source_coverage=satisfied",
+        "required_sources=['The Roar | Sports Writers Blog']",
+        "covered_sources=['The Roar | Sports Writers Blog']",
+        "evidence_path=v2"
       ],
       "rewrite_retrieval_recall_delta": null,
       "rewrite_context_recall_delta": null,
@@ -401,7 +493,11 @@
       "initial_evidence_sufficient": true,
       "initial_evidence_score": 0.8625,
       "initial_evidence_reasons": [
-        "Evidence appears sufficient."
+        "Evidence appears sufficient.",
+        "explicit_source_coverage=satisfied",
+        "required_sources=['TechCrunch']",
+        "covered_sources=['TechCrunch']",
+        "evidence_path=v2"
       ],
       "rewrite_attempted": false,
       "rewritten_query": null,
@@ -429,7 +525,11 @@
       "final_evidence_sufficient": true,
       "final_evidence_score": 0.8625,
       "final_evidence_reasons": [
-        "Evidence appears sufficient."
+        "Evidence appears sufficient.",
+        "explicit_source_coverage=satisfied",
+        "required_sources=['TechCrunch']",
+        "covered_sources=['TechCrunch']",
+        "evidence_path=v2"
       ],
       "rewrite_retrieval_recall_delta": null,
       "rewrite_context_recall_delta": null,
@@ -474,7 +574,21 @@
       "initial_evidence_reasons": [
         "Query term coverage is too low: 0.56 < 0.60 (soft signal only)",
         "Evidence score is too low: 0.76 < 0.78",
-        "Potentially weak evidence citations: [1, 2, 3, 4, 5, 6, 7]"
+        "Potentially weak evidence citations: [1, 2, 3, 4, 5, 6, 7]",
+        "explicit_source_coverage=satisfied",
+        "required_sources=['The Verge', 'TechCrunch']",
+        "covered_sources=['The Verge', 'TechCrunch']",
+        "semantic_rescue_attempted=true",
+        "semantic_rescue_sufficient=false",
+        "semantic_rescue=insufficient",
+        "semantic_rescue_threshold=-6.127460241317749",
+        "semantic_rescue_required_fraction=0.75",
+        "semantic_rescue_requirement_count=2",
+        "semantic_rescue_supported_requirements=0",
+        "semantic_rescue_required_requirements=2",
+        "semantic_rescue_missing_query_sources=[]",
+        "semantic_rescue_supporting_document_ids=[]",
+        "evidence_path=constrained_semantic_rescue_reject"
       ],
       "rewrite_attempted": true,
       "rewritten_query": "Does the article from The Verge suggest that Google's influence on the internet's appearance is a different aspect of its impact compared to the financial influence on platforms described in the TechCrunch article about Google's spending, and is the anticompetitive behavior towards news publishers mentioned in another TechCrunch article a separate issue from these influences? supporting evidence",
@@ -502,7 +616,21 @@
       "final_evidence_reasons": [
         "Query term coverage is too low: 0.48 < 0.60 (soft signal only)",
         "Evidence score is too low: 0.71 < 0.78",
-        "Potentially weak evidence citations: [1, 2, 3, 4, 5, 6]"
+        "Potentially weak evidence citations: [1, 2, 3, 4, 5, 6]",
+        "explicit_source_coverage=satisfied",
+        "required_sources=['The Verge', 'TechCrunch']",
+        "covered_sources=['The Verge', 'TechCrunch']",
+        "semantic_rescue_attempted=true",
+        "semantic_rescue_sufficient=false",
+        "semantic_rescue=insufficient",
+        "semantic_rescue_threshold=-6.127460241317749",
+        "semantic_rescue_required_fraction=0.75",
+        "semantic_rescue_requirement_count=2",
+        "semantic_rescue_supported_requirements=0",
+        "semantic_rescue_required_requirements=2",
+        "semantic_rescue_missing_query_sources=[]",
+        "semantic_rescue_supporting_document_ids=[]",
+        "evidence_path=constrained_semantic_rescue_reject"
       ],
       "rewrite_retrieval_recall_delta": 0.0,
       "rewrite_context_recall_delta": 0.0,
@@ -551,7 +679,11 @@
       "initial_evidence_score": 0.835,
       "initial_evidence_reasons": [
         "Evidence appears sufficient.",
-        "Potentially weak evidence citations: [1, 3, 5, 7, 10]"
+        "Potentially weak evidence citations: [1, 3, 5, 7, 10]",
+        "explicit_source_coverage=satisfied",
+        "required_sources=['Wired', 'Music Business Worldwide']",
+        "covered_sources=['Wired', 'Music Business Worldwide']",
+        "evidence_path=v2"
       ],
       "rewrite_attempted": false,
       "rewritten_query": null,
@@ -586,7 +718,11 @@
       "final_evidence_score": 0.835,
       "final_evidence_reasons": [
         "Evidence appears sufficient.",
-        "Potentially weak evidence citations: [1, 3, 5, 7, 10]"
+        "Potentially weak evidence citations: [1, 3, 5, 7, 10]",
+        "explicit_source_coverage=satisfied",
+        "required_sources=['Wired', 'Music Business Worldwide']",
+        "covered_sources=['Wired', 'Music Business Worldwide']",
+        "evidence_path=v2"
       ],
       "rewrite_retrieval_recall_delta": null,
       "rewrite_context_recall_delta": null,
@@ -635,7 +771,11 @@
       "initial_evidence_score": 0.7974,
       "initial_evidence_reasons": [
         "Evidence appears sufficient.",
-        "Potentially weak evidence citations: [2, 3, 4, 8]"
+        "Potentially weak evidence citations: [2, 3, 4, 8]",
+        "explicit_source_coverage=satisfied",
+        "required_sources=['The Guardian']",
+        "covered_sources=['The Guardian']",
+        "evidence_path=v2"
       ],
       "rewrite_attempted": false,
       "rewritten_query": null,
@@ -670,7 +810,11 @@
       "final_evidence_score": 0.7974,
       "final_evidence_reasons": [
         "Evidence appears sufficient.",
-        "Potentially weak evidence citations: [2, 3, 4, 8]"
+        "Potentially weak evidence citations: [2, 3, 4, 8]",
+        "explicit_source_coverage=satisfied",
+        "required_sources=['The Guardian']",
+        "covered_sources=['The Guardian']",
+        "evidence_path=v2"
       ],
       "rewrite_retrieval_recall_delta": null,
       "rewrite_context_recall_delta": null,
@@ -718,7 +862,11 @@
       "initial_evidence_sufficient": true,
       "initial_evidence_score": 0.846,
       "initial_evidence_reasons": [
-        "Evidence appears sufficient."
+        "Evidence appears sufficient.",
+        "explicit_source_coverage=satisfied",
+        "required_sources=['Fortune', 'TechCrunch']",
+        "covered_sources=['Fortune', 'TechCrunch']",
+        "evidence_path=v2"
       ],
       "rewrite_attempted": false,
       "rewritten_query": null,
@@ -752,7 +900,11 @@
       "final_evidence_sufficient": true,
       "final_evidence_score": 0.846,
       "final_evidence_reasons": [
-        "Evidence appears sufficient."
+        "Evidence appears sufficient.",
+        "explicit_source_coverage=satisfied",
+        "required_sources=['Fortune', 'TechCrunch']",
+        "covered_sources=['Fortune', 'TechCrunch']",
+        "evidence_path=v2"
       ],
       "rewrite_retrieval_recall_delta": null,
       "rewrite_context_recall_delta": null,
@@ -802,7 +954,11 @@
       "initial_evidence_score": 0.8221,
       "initial_evidence_reasons": [
         "Evidence appears sufficient.",
-        "Potentially weak evidence citations: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]"
+        "Potentially weak evidence citations: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",
+        "explicit_source_coverage=satisfied",
+        "required_sources=['Mashable', 'The Sydney Morning Herald', 'Cnbc | World Business News Leader']",
+        "covered_sources=['Mashable', 'The Sydney Morning Herald', 'Cnbc | World Business News Leader']",
+        "evidence_path=v2"
       ],
       "rewrite_attempted": false,
       "rewritten_query": null,
@@ -837,7 +993,11 @@
       "final_evidence_score": 0.8221,
       "final_evidence_reasons": [
         "Evidence appears sufficient.",
-        "Potentially weak evidence citations: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]"
+        "Potentially weak evidence citations: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",
+        "explicit_source_coverage=satisfied",
+        "required_sources=['Mashable', 'The Sydney Morning Herald', 'Cnbc | World Business News Leader']",
+        "covered_sources=['Mashable', 'The Sydney Morning Herald', 'Cnbc | World Business News Leader']",
+        "evidence_path=v2"
       ],
       "rewrite_retrieval_recall_delta": null,
       "rewrite_context_recall_delta": null,
@@ -882,7 +1042,11 @@
       "initial_evidence_score": 0.8581,
       "initial_evidence_reasons": [
         "Evidence appears sufficient.",
-        "Potentially weak evidence citations: [3, 4, 5, 6, 7, 8]"
+        "Potentially weak evidence citations: [3, 4, 5, 6, 7, 8]",
+        "explicit_source_coverage=satisfied",
+        "required_sources=['The Roar | Sports Writers Blog', 'Sporting News']",
+        "covered_sources=['The Roar | Sports Writers Blog', 'Sporting News']",
+        "evidence_path=v2"
       ],
       "rewrite_attempted": false,
       "rewritten_query": null,
@@ -913,7 +1077,11 @@
       "final_evidence_score": 0.8581,
       "final_evidence_reasons": [
         "Evidence appears sufficient.",
-        "Potentially weak evidence citations: [3, 4, 5, 6, 7, 8]"
+        "Potentially weak evidence citations: [3, 4, 5, 6, 7, 8]",
+        "explicit_source_coverage=satisfied",
+        "required_sources=['The Roar | Sports Writers Blog', 'Sporting News']",
+        "covered_sources=['The Roar | Sports Writers Blog', 'Sporting News']",
+        "evidence_path=v2"
       ],
       "rewrite_retrieval_recall_delta": null,
       "rewrite_context_recall_delta": null,
@@ -948,43 +1116,71 @@
       "initial_retrieval_gold_recall": 1.0,
       "initial_context_gold_recall": 1.0,
       "initial_context_gold_complete": true,
-      "initial_evidence_sufficient": false,
+      "initial_evidence_sufficient": true,
       "initial_evidence_score": 0.7412,
       "initial_evidence_reasons": [
         "Query term coverage is too low: 0.53 < 0.60 (soft signal only)",
         "Evidence score is too low: 0.74 < 0.78",
-        "Potentially weak evidence citations: [3, 4, 5]"
+        "Potentially weak evidence citations: [3, 4, 5]",
+        "explicit_source_coverage=satisfied",
+        "required_sources=['Sporting News']",
+        "covered_sources=['Sporting News']",
+        "semantic_rescue_attempted=true",
+        "semantic_rescue_sufficient=true",
+        "semantic_rescue=sufficient",
+        "semantic_rescue_threshold=-6.127460241317749",
+        "semantic_rescue_required_fraction=0.75",
+        "semantic_rescue_requirement_count=3",
+        "semantic_rescue_supported_requirements=3",
+        "semantic_rescue_required_requirements=3",
+        "semantic_rescue_missing_query_sources=[]",
+        "semantic_rescue_supporting_document_ids=['doc_0035', 'doc_0034', 'doc_0489']",
+        "evidence_path=constrained_semantic_rescue"
       ],
-      "rewrite_attempted": true,
-      "rewritten_query": "Has the reporting style regarding live score updates and highlights from NFL games by Sporting News remained consistent between the article featuring \"Jaguars vs. Saints\" on October 19, 2023, and the one covering \"Chiefs vs. Packers\" on December 3, 2023, considering the excerpts mentioning a player achieving a first down comparison",
+      "rewrite_attempted": false,
+      "rewritten_query": null,
       "final_retrieved_document_ids": [
         "doc_0035",
         "doc_0034",
-        "doc_0282",
-        "doc_0439",
-        "doc_0489"
+        "doc_0294",
+        "doc_0489",
+        "doc_0439"
       ],
       "final_context_document_ids": [
         "doc_0035",
         "doc_0034",
-        "doc_0282",
-        "doc_0439",
-        "doc_0489"
+        "doc_0294",
+        "doc_0489",
+        "doc_0439"
       ],
       "final_retrieval_gold_recall": 1.0,
       "final_context_gold_recall": 1.0,
       "final_context_gold_complete": true,
-      "final_evidence_sufficient": false,
+      "final_evidence_sufficient": true,
       "final_evidence_score": 0.7412,
       "final_evidence_reasons": [
         "Query term coverage is too low: 0.53 < 0.60 (soft signal only)",
         "Evidence score is too low: 0.74 < 0.78",
-        "Potentially weak evidence citations: [4, 5]"
+        "Potentially weak evidence citations: [3, 4, 5]",
+        "explicit_source_coverage=satisfied",
+        "required_sources=['Sporting News']",
+        "covered_sources=['Sporting News']",
+        "semantic_rescue_attempted=true",
+        "semantic_rescue_sufficient=true",
+        "semantic_rescue=sufficient",
+        "semantic_rescue_threshold=-6.127460241317749",
+        "semantic_rescue_required_fraction=0.75",
+        "semantic_rescue_requirement_count=3",
+        "semantic_rescue_supported_requirements=3",
+        "semantic_rescue_required_requirements=3",
+        "semantic_rescue_missing_query_sources=[]",
+        "semantic_rescue_supporting_document_ids=['doc_0035', 'doc_0034', 'doc_0489']",
+        "evidence_path=constrained_semantic_rescue"
       ],
-      "rewrite_retrieval_recall_delta": 0.0,
-      "rewrite_context_recall_delta": 0.0,
+      "rewrite_retrieval_recall_delta": null,
+      "rewrite_context_recall_delta": null,
       "rewrite_rescued": false,
-      "failure_category": "grader_reject_complete_gold_context"
+      "failure_category": "initial_gate_accept"
     },
     {
       "id": "eval_733c08d301e8",
@@ -1022,7 +1218,21 @@
       "initial_evidence_reasons": [
         "Query term coverage is too low: 0.43 < 0.60 (soft signal only)",
         "Evidence score is too low: 0.69 < 0.78",
-        "Potentially weak evidence citations: [1, 2, 3, 4, 5, 6]"
+        "Potentially weak evidence citations: [1, 2, 3, 4, 5, 6]",
+        "explicit_source_coverage=satisfied",
+        "required_sources=['The Age', 'TechCrunch']",
+        "covered_sources=['The Age', 'TechCrunch']",
+        "semantic_rescue_attempted=true",
+        "semantic_rescue_sufficient=false",
+        "semantic_rescue=insufficient",
+        "semantic_rescue_threshold=-6.127460241317749",
+        "semantic_rescue_required_fraction=0.75",
+        "semantic_rescue_requirement_count=3",
+        "semantic_rescue_supported_requirements=2",
+        "semantic_rescue_required_requirements=3",
+        "semantic_rescue_missing_query_sources=[]",
+        "semantic_rescue_supporting_document_ids=['doc_0033']",
+        "evidence_path=constrained_semantic_rescue_reject"
       ],
       "rewrite_attempted": true,
       "rewritten_query": "After the report by The Age on October 22, 2023, suggesting people suspect Google of foul play, did TechCrunch's reporting on October 31, 2023, and December 15, 2023, regarding Google's antitrust issues and the impact on news publishers show a consistent perspective on Google's market behavior? supporting evidence",
@@ -1050,7 +1260,21 @@
       "final_evidence_reasons": [
         "Query term coverage is too low: 0.50 < 0.60 (soft signal only)",
         "Evidence score is too low: 0.72 < 0.78",
-        "Potentially weak evidence citations: [1, 2, 3, 4, 5, 6]"
+        "Potentially weak evidence citations: [1, 2, 3, 4, 5, 6]",
+        "explicit_source_coverage=satisfied",
+        "required_sources=['The Age', 'TechCrunch']",
+        "covered_sources=['The Age', 'TechCrunch']",
+        "semantic_rescue_attempted=true",
+        "semantic_rescue_sufficient=false",
+        "semantic_rescue=insufficient",
+        "semantic_rescue_threshold=-6.127460241317749",
+        "semantic_rescue_required_fraction=0.75",
+        "semantic_rescue_requirement_count=3",
+        "semantic_rescue_supported_requirements=2",
+        "semantic_rescue_required_requirements=3",
+        "semantic_rescue_missing_query_sources=[]",
+        "semantic_rescue_supporting_document_ids=['doc_0033']",
+        "evidence_path=constrained_semantic_rescue_reject"
       ],
       "rewrite_retrieval_recall_delta": 0.0,
       "rewrite_context_recall_delta": 0.0,
@@ -1095,7 +1319,11 @@
       "initial_evidence_sufficient": true,
       "initial_evidence_score": 0.89,
       "initial_evidence_reasons": [
-        "Evidence appears sufficient."
+        "Evidence appears sufficient.",
+        "explicit_source_coverage=satisfied",
+        "required_sources=['The Independent - Life and Style']",
+        "covered_sources=['The Independent - Life and Style']",
+        "evidence_path=v2"
       ],
       "rewrite_attempted": false,
       "rewritten_query": null,
@@ -1125,7 +1353,11 @@
       "final_evidence_sufficient": true,
       "final_evidence_score": 0.89,
       "final_evidence_reasons": [
-        "Evidence appears sufficient."
+        "Evidence appears sufficient.",
+        "explicit_source_coverage=satisfied",
+        "required_sources=['The Independent - Life and Style']",
+        "covered_sources=['The Independent - Life and Style']",
+        "evidence_path=v2"
       ],
       "rewrite_retrieval_recall_delta": null,
       "rewrite_context_recall_delta": null,
@@ -1167,14 +1399,20 @@
       "initial_retrieval_gold_recall": 0.6666666666666666,
       "initial_context_gold_recall": 0.6666666666666666,
       "initial_context_gold_complete": false,
-      "initial_evidence_sufficient": true,
+      "initial_evidence_sufficient": false,
       "initial_evidence_score": 0.78,
       "initial_evidence_reasons": [
         "Evidence appears sufficient.",
-        "Potentially weak evidence citations: [4, 5, 7, 8]"
+        "Potentially weak evidence citations: [4, 5, 7, 8]",
+        "Explicit source coverage failed.",
+        "required_sources=['The Age', 'The Verge', 'TechCrunch']",
+        "available_sources=['TechCrunch', 'The Verge']",
+        "covered_sources=['The Verge', 'TechCrunch']",
+        "missing_sources=['The Age']",
+        "evidence_path=explicit_source_coverage_reject"
       ],
-      "rewrite_attempted": false,
-      "rewritten_query": null,
+      "rewrite_attempted": true,
+      "rewritten_query": "Has the portrayal of Google's market practices in reports by The Age after October 22, 2023, remained consistent with the depiction in The Verge's coverage of the Epic v. Google case, and with TechCrunch's report on the class action antitrust suit filed against Google? supporting evidence",
       "final_retrieved_document_ids": [
         "doc_0033",
         "doc_0355",
@@ -1182,8 +1420,7 @@
         "doc_0170",
         "doc_0299",
         "doc_0237",
-        "doc_0042",
-        "doc_0014"
+        "doc_0042"
       ],
       "final_context_document_ids": [
         "doc_0033",
@@ -1192,22 +1429,27 @@
         "doc_0170",
         "doc_0299",
         "doc_0237",
-        "doc_0042",
-        "doc_0014"
+        "doc_0042"
       ],
       "final_retrieval_gold_recall": 0.6666666666666666,
       "final_context_gold_recall": 0.6666666666666666,
       "final_context_gold_complete": false,
-      "final_evidence_sufficient": true,
+      "final_evidence_sufficient": false,
       "final_evidence_score": 0.78,
       "final_evidence_reasons": [
         "Evidence appears sufficient.",
-        "Potentially weak evidence citations: [4, 5, 7, 8]"
+        "Potentially weak evidence citations: [4, 5, 7]",
+        "Explicit source coverage failed.",
+        "required_sources=['The Age', 'The Verge', 'TechCrunch']",
+        "available_sources=['TechCrunch', 'The Verge']",
+        "covered_sources=['The Verge', 'TechCrunch']",
+        "missing_sources=['The Age']",
+        "evidence_path=explicit_source_coverage_reject"
       ],
-      "rewrite_retrieval_recall_delta": null,
-      "rewrite_context_recall_delta": null,
+      "rewrite_retrieval_recall_delta": 0.0,
+      "rewrite_context_recall_delta": 0.0,
       "rewrite_rescued": false,
-      "failure_category": "initial_gate_accept"
+      "failure_category": "retrieval_miss_candidate"
     },
     {
       "id": "eval_2fa0f63fd209",
@@ -1250,7 +1492,13 @@
         "Query term coverage is too low: 0.22 < 0.60 (soft signal only)",
         "Critical query anchors are missing from the evidence: coverage=0.67 < 0.75; missing=['cnn']",
         "Evidence score is too low: 0.57 < 0.78",
-        "Potentially weak evidence citations: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]"
+        "Potentially weak evidence citations: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",
+        "Explicit source coverage failed.",
+        "required_sources=['a CNN report']",
+        "available_sources=['TechCrunch', 'The Verge', 'The Independent - Life and Style', 'Polygon', 'Science News For Students', 'BBC News - Entertainment & Arts']",
+        "covered_sources=[]",
+        "missing_sources=['a CNN report']",
+        "evidence_path=explicit_source_coverage_reject"
       ],
       "rewrite_attempted": true,
       "rewritten_query": "Considering the environmental initiatives discussed in a Bloomberg article and the new seasonal drink flavors introduced according to a CNN report, which letter represents both the first character of the initiative aimed at reducing waste at Starbucks and the initial of the primary spice used in Starbucks' latest autumn-themed beverage? supporting evidence",
@@ -1287,7 +1535,13 @@
         "Query term coverage is too low: 0.22 < 0.60 (soft signal only)",
         "Critical query anchors are missing from the evidence: coverage=0.67 < 0.75; missing=['cnn']",
         "Evidence score is too low: 0.57 < 0.78",
-        "Potentially weak evidence citations: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]"
+        "Potentially weak evidence citations: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",
+        "Explicit source coverage failed.",
+        "required_sources=['a CNN report']",
+        "available_sources=['The Independent - Life and Style', 'The Verge', 'TechCrunch', 'Polygon', 'Science News For Students']",
+        "covered_sources=[]",
+        "missing_sources=['a CNN report']",
+        "evidence_path=explicit_source_coverage_reject"
       ],
       "rewrite_retrieval_recall_delta": null,
       "rewrite_context_recall_delta": null,
@@ -1333,7 +1587,11 @@
       "initial_evidence_score": 0.7963,
       "initial_evidence_reasons": [
         "Evidence appears sufficient.",
-        "Potentially weak evidence citations: [1, 3, 4, 5, 6, 7, 9, 10]"
+        "Potentially weak evidence citations: [1, 3, 4, 5, 6, 7, 9, 10]",
+        "explicit_source_coverage=satisfied",
+        "required_sources=[]",
+        "covered_sources=[]",
+        "evidence_path=v2"
       ],
       "rewrite_attempted": false,
       "rewritten_query": null,
@@ -1368,7 +1626,11 @@
       "final_evidence_score": 0.7963,
       "final_evidence_reasons": [
         "Evidence appears sufficient.",
-        "Potentially weak evidence citations: [1, 3, 4, 5, 6, 7, 9, 10]"
+        "Potentially weak evidence citations: [1, 3, 4, 5, 6, 7, 9, 10]",
+        "explicit_source_coverage=satisfied",
+        "required_sources=[]",
+        "covered_sources=[]",
+        "evidence_path=v2"
       ],
       "rewrite_retrieval_recall_delta": null,
       "rewrite_context_recall_delta": null,
@@ -1416,7 +1678,21 @@
         "Query term coverage is too low: 0.41 < 0.60 (soft signal only)",
         "Critical query anchors are missing from the evidence: coverage=0.67 < 0.75; missing=['bahraini']",
         "Evidence score is too low: 0.68 < 0.78",
-        "Potentially weak evidence citations: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]"
+        "Potentially weak evidence citations: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",
+        "explicit_source_coverage=satisfied",
+        "required_sources=[]",
+        "covered_sources=[]",
+        "semantic_rescue_attempted=true",
+        "semantic_rescue_sufficient=false",
+        "semantic_rescue=insufficient",
+        "semantic_rescue_threshold=-6.127460241317749",
+        "semantic_rescue_required_fraction=0.75",
+        "semantic_rescue_requirement_count=2",
+        "semantic_rescue_supported_requirements=1",
+        "semantic_rescue_required_requirements=2",
+        "semantic_rescue_missing_query_sources=[]",
+        "semantic_rescue_supporting_document_ids=['doc_0298']",
+        "evidence_path=constrained_semantic_rescue_reject"
       ],
       "rewrite_attempted": true,
       "rewritten_query": "Considering the economic reforms discussed in a Bloomberg article and the cultural festival highlighted by Reuters, which letter of the alphabet begins the name of the Bahraini city that is both a focal point for these economic changes and the host of the cultural event? supporting evidence",
@@ -1453,7 +1729,21 @@
         "Query term coverage is too low: 0.41 < 0.60 (soft signal only)",
         "Critical query anchors are missing from the evidence: coverage=0.67 < 0.75; missing=['bahraini']",
         "Evidence score is too low: 0.68 < 0.78",
-        "Potentially weak evidence citations: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]"
+        "Potentially weak evidence citations: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",
+        "explicit_source_coverage=satisfied",
+        "required_sources=[]",
+        "covered_sources=[]",
+        "semantic_rescue_attempted=true",
+        "semantic_rescue_sufficient=false",
+        "semantic_rescue=insufficient",
+        "semantic_rescue_threshold=-6.127460241317749",
+        "semantic_rescue_required_fraction=0.75",
+        "semantic_rescue_requirement_count=2",
+        "semantic_rescue_supported_requirements=1",
+        "semantic_rescue_required_requirements=2",
+        "semantic_rescue_missing_query_sources=[]",
+        "semantic_rescue_supporting_document_ids=['doc_0298']",
+        "evidence_path=constrained_semantic_rescue_reject"
       ],
       "rewrite_retrieval_recall_delta": null,
       "rewrite_context_recall_delta": null,
@@ -1501,7 +1791,13 @@
         "Query term coverage is too low: 0.59 < 0.60 (soft signal only)",
         "Critical query anchors are missing from the evidence: coverage=0.50 < 0.75; missing=['kao', 'min']",
         "Evidence score is too low: 0.77 < 0.78",
-        "Potentially weak evidence citations: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]"
+        "Potentially weak evidence citations: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",
+        "Explicit source coverage failed.",
+        "required_sources=['Forbes']",
+        "available_sources=['The Age', 'Business World', 'Fortune', 'TechCrunch', 'Business Line', 'The Independent - Life and Style', 'Engadget']",
+        "covered_sources=[]",
+        "missing_sources=['Forbes']",
+        "evidence_path=explicit_source_coverage_reject"
       ],
       "rewrite_attempted": true,
       "rewritten_query": "Considering the information from an article by Forbes about Min Kao's philanthropic efforts and another by Bloomberg discussing his business strategies, which university, known for its engineering program and having received significant donations from Min Kao, is also the institution where a business school case study was developed based on his company's market expansion tactics? supporting evidence",
@@ -1538,7 +1834,13 @@
         "Query term coverage is too low: 0.50 < 0.60 (soft signal only)",
         "Critical query anchors are missing from the evidence: coverage=0.50 < 0.75; missing=['kao', 'min']",
         "Evidence score is too low: 0.72 < 0.78",
-        "Potentially weak evidence citations: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]"
+        "Potentially weak evidence citations: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",
+        "Explicit source coverage failed.",
+        "required_sources=['Forbes']",
+        "available_sources=['The Age', 'The Sydney Morning Herald', 'TechCrunch', 'Music Business Worldwide', 'Fortune', 'Business Line', 'The Independent - Life and Style']",
+        "covered_sources=[]",
+        "missing_sources=['Forbes']",
+        "evidence_path=explicit_source_coverage_reject"
       ],
       "rewrite_retrieval_recall_delta": null,
       "rewrite_context_recall_delta": null,
@@ -1586,7 +1888,13 @@
         "Query term coverage is too low: 0.52 < 0.60 (soft signal only)",
         "Critical query anchors are missing from the evidence: coverage=0.43 < 0.75; missing=['akhtar', 'english', 'hindustan', 'zoya']",
         "Evidence score is too low: 0.73 < 0.78",
-        "Potentially weak evidence citations: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]"
+        "Potentially weak evidence citations: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",
+        "Explicit source coverage failed.",
+        "required_sources=['a Hindustan Times']",
+        "available_sources=['The Guardian', 'Polygon', 'Fortune', 'The Sydney Morning Herald', 'The Independent - Life and Style', 'Zee Business']",
+        "covered_sources=[]",
+        "missing_sources=['a Hindustan Times']",
+        "evidence_path=explicit_source_coverage_reject"
       ],
       "rewrite_attempted": true,
       "rewritten_query": "Considering the information from a Times of India article stating that Zoya Akhtar's film was selected for an international film festival, and a Hindustan Times report detailing her collaboration with a famous Hollywood actor for her next project, which character from the English alphabet is common to the initials of the international film festival and the first name of the Hollywood actor? supporting evidence",
@@ -1623,7 +1931,13 @@
         "Query term coverage is too low: 0.48 < 0.60 (soft signal only)",
         "Critical query anchors are missing from the evidence: coverage=0.29 < 0.75; missing=['akhtar', 'english', 'hindustan', 'times', 'zoya']",
         "Evidence score is too low: 0.72 < 0.78",
-        "Potentially weak evidence citations: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]"
+        "Potentially weak evidence citations: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",
+        "Explicit source coverage failed.",
+        "required_sources=['a Hindustan Times']",
+        "available_sources=['Fortune', 'The Guardian', 'The Independent - Life and Style', 'Polygon', 'The Sydney Morning Herald', 'Zee Business']",
+        "covered_sources=[]",
+        "missing_sources=['a Hindustan Times']",
+        "evidence_path=explicit_source_coverage_reject"
       ],
       "rewrite_retrieval_recall_delta": null,
       "rewrite_context_recall_delta": null,
