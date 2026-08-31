@@ -4,32 +4,32 @@
     "total_cases": 20,
     "answerable_cases": 15,
     "null_cases": 5,
-    "answerable_answered": 9,
-    "answer_rate": 0.6,
-    "false_abstentions": 6,
-    "false_abstention_rate": 0.4,
+    "answerable_answered": 8,
+    "answer_rate": 0.5333333333333333,
+    "false_abstentions": 7,
+    "false_abstention_rate": 0.4666666666666667,
     "null_abstentions": 5,
     "null_abstention_rate": 1.0,
     "smoke_answer_scored": 15,
     "smoke_answer_correct": 3,
     "smoke_answer_accuracy": 0.2,
-    "runtime_grader_passes": 17,
-    "runtime_grader_pass_rate": 0.85,
+    "runtime_grader_passes": 16,
+    "runtime_grader_pass_rate": 0.8,
     "answered_runtime_failures": 0,
     "runtime_unsupported_proxy_rate": 0.0,
-    "citation_valid_answered": 9,
+    "citation_valid_answered": 8,
     "citation_validity_rate": 1.0,
-    "mean_dataset_evidence_citation_precision": 0.7777777777777778,
-    "mean_dataset_evidence_citation_recall": 0.48148148148148145,
+    "mean_dataset_evidence_citation_precision": 0.75,
+    "mean_dataset_evidence_citation_recall": 0.5,
     "rewrite_attempts": 8,
     "rewrite_rate": 0.4,
     "rewrite_rescues": 0,
     "rewrite_rescue_rate": 0.0,
-    "mean_case_seconds": 15.018736020000143,
-    "p95_case_seconds": 35.032920299998295,
-    "mean_generation_seconds_including_cold_start": 9.79924544500027,
-    "mean_generation_seconds_warm_provisional": 10.314994842105463,
-    "p95_generation_seconds_warm_provisional": 30.325538339997365,
+    "mean_case_seconds": 47.59069290499974,
+    "p95_case_seconds": 85.65159940999965,
+    "mean_generation_seconds_including_cold_start": 30.985628434999672,
+    "mean_generation_seconds_warm_provisional": 32.6164505315786,
+    "p95_generation_seconds_warm_provisional": 71.05974520999806,
     "by_question_type": {
       "comparison_query": {
         "count": 5,
@@ -57,8 +57,8 @@
       },
       "temporal_query": {
         "count": 5,
-        "answered": 4,
-        "abstained": 1,
+        "answered": 3,
+        "abstained": 2,
         "smoke_scored": 5,
         "smoke_correct": 2,
         "smoke_accuracy": 0.4
@@ -108,11 +108,11 @@
         "Correctly abstained when evidence was insufficient."
       ],
       "smoke_answer_correct": false,
-      "route_seconds": 0.00021710000146413222,
-      "initial_retrieval_seconds": 1.604482700000517,
-      "rewrite_retrieval_seconds": 0.8357058000001416,
-      "generation_seconds": 6.900001608300954e-06,
-      "case_seconds": 2.444908299999952
+      "route_seconds": 0.0002158999996026978,
+      "initial_retrieval_seconds": 1.992634199999884,
+      "rewrite_retrieval_seconds": 1.0411115000024438,
+      "generation_seconds": 8.600000001024455e-06,
+      "case_seconds": 3.0388304999978573
     },
     {
       "id": "eval_59af1023e6cf",
@@ -156,11 +156,11 @@
         "Generation abstained even though evidence was considered sufficient."
       ],
       "smoke_answer_correct": false,
-      "route_seconds": 9.429999772692099e-05,
-      "initial_retrieval_seconds": 1.2205873999992036,
+      "route_seconds": 0.00010370000018156134,
+      "initial_retrieval_seconds": 1.5132493999990402,
       "rewrite_retrieval_seconds": 0.0,
-      "generation_seconds": 14.530622900001617,
-      "case_seconds": 16.029376800001046
+      "generation_seconds": 26.003141700002743,
+      "case_seconds": 27.836271200001647
     },
     {
       "id": "eval_5cd0e3b824db",
@@ -203,11 +203,11 @@
         "Correctly abstained when evidence was insufficient."
       ],
       "smoke_answer_correct": false,
-      "route_seconds": 0.0001325999983237125,
-      "initial_retrieval_seconds": 0.793479899999511,
-      "rewrite_retrieval_seconds": 0.8220313999991049,
-      "generation_seconds": 3.5999983083456755e-06,
-      "case_seconds": 1.6190193000002182
+      "route_seconds": 0.0001480999999330379,
+      "initial_retrieval_seconds": 5.997110399999656,
+      "rewrite_retrieval_seconds": 5.9106283000000985,
+      "generation_seconds": 4.499997885432094e-06,
+      "case_seconds": 11.912175299999944
     },
     {
       "id": "eval_c5a0d98021ee",
@@ -253,11 +253,11 @@
         "Final answer passed runtime grounding and relevance checks."
       ],
       "smoke_answer_correct": false,
-      "route_seconds": 7.229999755509198e-05,
-      "initial_retrieval_seconds": 0.9403840999984823,
+      "route_seconds": 7.420000110869296e-05,
+      "initial_retrieval_seconds": 10.123301900002843,
       "rewrite_retrieval_seconds": 0.0,
-      "generation_seconds": 12.461147099998925,
-      "case_seconds": 13.496864799999457
+      "generation_seconds": 56.16405680000025,
+      "case_seconds": 66.38011560000086
     },
     {
       "id": "eval_ff33914e9156",
@@ -306,11 +306,11 @@
         "Final answer passed runtime grounding and relevance checks."
       ],
       "smoke_answer_correct": true,
-      "route_seconds": 8.24999988253694e-05,
-      "initial_retrieval_seconds": 3.0047747999997227,
+      "route_seconds": 7.209999967017211e-05,
+      "initial_retrieval_seconds": 9.936853499999415,
       "rewrite_retrieval_seconds": 0.0,
-      "generation_seconds": 11.361756300000707,
-      "case_seconds": 14.460213199999998
+      "generation_seconds": 48.659806800002116,
+      "case_seconds": 58.7450127000011
     },
     {
       "id": "eval_1e7d390adde0",
@@ -353,11 +353,11 @@
         "Correctly abstained when evidence was insufficient."
       ],
       "smoke_answer_correct": false,
-      "route_seconds": 0.00012129999959142879,
-      "initial_retrieval_seconds": 4.131980799997109,
-      "rewrite_retrieval_seconds": 4.0372152000018104,
-      "generation_seconds": 3.4000004234258085e-06,
-      "case_seconds": 8.171885199997632
+      "route_seconds": 0.00010029999975813553,
+      "initial_retrieval_seconds": 15.277578600002016,
+      "rewrite_retrieval_seconds": 14.504461000000447,
+      "generation_seconds": 4.800000169780105e-06,
+      "case_seconds": 29.785904999997
     },
     {
       "id": "eval_4e23afea1f81",
@@ -404,11 +404,11 @@
         "1 unsupported draft claim(s) were removed before the final answer."
       ],
       "smoke_answer_correct": false,
-      "route_seconds": 9.819999831961468e-05,
-      "initial_retrieval_seconds": 4.642264099999011,
+      "route_seconds": 0.00014250000094762072,
+      "initial_retrieval_seconds": 14.71890230000281,
       "rewrite_retrieval_seconds": 0.0,
-      "generation_seconds": 24.830475900002057,
-      "case_seconds": 29.577680999998847
+      "generation_seconds": 46.25160120000146,
+      "case_seconds": 61.08974809999927
     },
     {
       "id": "eval_5c7fab04046b",
@@ -450,11 +450,11 @@
         "Generation abstained even though evidence was considered sufficient."
       ],
       "smoke_answer_correct": false,
-      "route_seconds": 0.00010660000043571927,
-      "initial_retrieval_seconds": 3.852967399998306,
+      "route_seconds": 9.73999995039776e-05,
+      "initial_retrieval_seconds": 14.601899699999194,
       "rewrite_retrieval_seconds": 0.0,
-      "generation_seconds": 31.134600000001228,
-      "case_seconds": 34.98906789999819
+      "generation_seconds": 76.77153769999859,
+      "case_seconds": 91.37505889999738
     },
     {
       "id": "eval_eb1a6bb45cb4",
@@ -501,11 +501,11 @@
         "1 unsupported draft claim(s) were removed before the final answer."
       ],
       "smoke_answer_correct": false,
-      "route_seconds": 0.0001432999997632578,
-      "initial_retrieval_seconds": 5.519901599996956,
+      "route_seconds": 8.10999990790151e-05,
+      "initial_retrieval_seconds": 14.806067000001349,
       "rewrite_retrieval_seconds": 0.0,
-      "generation_seconds": 30.235642599996936,
-      "case_seconds": 35.866115900000295
+      "generation_seconds": 70.42510159999802,
+      "case_seconds": 85.35036469999977
     },
     {
       "id": "eval_f3e9235ece5a",
@@ -555,11 +555,11 @@
         "1 unsupported draft claim(s) were removed before the final answer."
       ],
       "smoke_answer_correct": false,
-      "route_seconds": 9.760000102687627e-05,
-      "initial_retrieval_seconds": 5.064503500001592,
+      "route_seconds": 0.00018220000129076652,
+      "initial_retrieval_seconds": 17.093223700001545,
       "rewrite_retrieval_seconds": 0.0,
-      "generation_seconds": 13.516489400000864,
-      "case_seconds": 18.698198100002628
+      "generation_seconds": 47.1760695999983,
+      "case_seconds": 64.42685299999721
     },
     {
       "id": "eval_093af83d0219",
@@ -607,11 +607,11 @@
         "Final answer passed runtime grounding and relevance checks."
       ],
       "smoke_answer_correct": true,
-      "route_seconds": 4.320000152802095e-05,
-      "initial_retrieval_seconds": 6.248114400001214,
+      "route_seconds": 6.27999979769811e-05,
+      "initial_retrieval_seconds": 18.619879400001082,
       "rewrite_retrieval_seconds": 0.0,
-      "generation_seconds": 13.236823399998684,
-      "case_seconds": 19.587171500003024
+      "generation_seconds": 44.82208840000021,
+      "case_seconds": 63.631088699999964
     },
     {
       "id": "eval_5f40fab8ea55",
@@ -659,11 +659,11 @@
         "Final answer passed runtime grounding and relevance checks."
       ],
       "smoke_answer_correct": false,
-      "route_seconds": 8.189999789465219e-05,
-      "initial_retrieval_seconds": 5.949716600000102,
+      "route_seconds": 0.00014390000069397502,
+      "initial_retrieval_seconds": 20.470869599997968,
       "rewrite_retrieval_seconds": 0.0,
-      "generation_seconds": 14.867607399999542,
-      "case_seconds": 21.01329540000006
+      "generation_seconds": 61.55695559999731,
+      "case_seconds": 83.48416780000116
     },
     {
       "id": "eval_733c08d301e8",
@@ -706,11 +706,11 @@
         "Correctly abstained when evidence was insufficient."
       ],
       "smoke_answer_correct": false,
-      "route_seconds": 9.209999916492961e-05,
-      "initial_retrieval_seconds": 4.810246199998801,
-      "rewrite_retrieval_seconds": 4.6322218000022986,
-      "generation_seconds": 3.7999998312443495e-06,
-      "case_seconds": 9.90177390000099
+      "route_seconds": 8.510000043315813e-05,
+      "initial_retrieval_seconds": 13.368726600001537,
+      "rewrite_retrieval_seconds": 15.120795900002122,
+      "generation_seconds": 5.099998816149309e-06,
+      "case_seconds": 33.97673729999951
     },
     {
       "id": "eval_b80b5654cdcc",
@@ -758,11 +758,11 @@
         "1 unsupported draft claim(s) were removed before the final answer."
       ],
       "smoke_answer_correct": true,
-      "route_seconds": 5.3499999921768904e-05,
-      "initial_retrieval_seconds": 1.7803863999979512,
+      "route_seconds": 5.6400000175926834e-05,
+      "initial_retrieval_seconds": 4.7278745000003255,
       "rewrite_retrieval_seconds": 0.0,
-      "generation_seconds": 9.862499899998511,
-      "case_seconds": 11.792526699999144
+      "generation_seconds": 52.89753449999989,
+      "case_seconds": 57.734595900001295
     },
     {
       "id": "eval_be412cb54feb",
@@ -784,37 +784,32 @@
       "rewrite_rescued": false,
       "final_evidence_sufficient": true,
       "final_evidence_score": 0.78,
-      "answer": "No [1]\n- The Age reported a class action lawsuit against Google, accusing it of anticompetitive behavior related to AI and other technologies. [1]",
+      "answer": "I couldn't find enough supported and relevant claims in the retrieved evidence to answer reliably.",
       "direct_answer": "No",
       "raw_answer": "DIRECT_ANSWER: No\n\nFACTS:\n- The Age reported a class action lawsuit against Google, accusing it of anticompetitive behavior related to AI and other technologies.\n- The Verge covered the Epic v. Google case, focusing on the dispute over the app store and the potential for a larger antitrust lawsuit.\n- TechCrunch reported on Google's search query revenues and the ongoing antitrust trials involving Google and Apple.",
-      "abstained": false,
+      "abstained": true,
       "draft_claims": 3,
-      "supported_claims": 1,
-      "unsupported_claims": 2,
-      "relevant_claims": 1,
+      "supported_claims": 0,
+      "unsupported_claims": 3,
+      "relevant_claims": 0,
       "filtered_irrelevant_claims": 0,
-      "citation_valid": true,
-      "cited_ids": [
-        1
-      ],
-      "cited_document_ids": [
-        "doc_0033"
-      ],
-      "dataset_evidence_citation_precision": 1.0,
-      "dataset_evidence_citation_recall": 0.3333333333333333,
-      "runtime_grader_passed": true,
-      "runtime_supported_claim_ratio": 1.0,
-      "runtime_relevance_score": 0.6928,
+      "citation_valid": false,
+      "cited_ids": [],
+      "cited_document_ids": [],
+      "dataset_evidence_citation_precision": 0.0,
+      "dataset_evidence_citation_recall": 0.0,
+      "runtime_grader_passed": false,
+      "runtime_supported_claim_ratio": 0.0,
+      "runtime_relevance_score": null,
       "runtime_reasons": [
-        "Final answer passed runtime grounding and relevance checks.",
-        "2 unsupported draft claim(s) were removed before the final answer."
+        "Generation abstained even though evidence was considered sufficient."
       ],
       "smoke_answer_correct": false,
-      "route_seconds": 8.24999988253694e-05,
-      "initial_retrieval_seconds": 4.398063399999955,
+      "route_seconds": 0.00014379999993252568,
+      "initial_retrieval_seconds": 11.292481899999984,
       "rewrite_retrieval_seconds": 0.0,
-      "generation_seconds": 10.85941350000212,
-      "case_seconds": 15.36755120000089
+      "generation_seconds": 47.14445930000147,
+      "case_seconds": 58.43814789999669
     },
     {
       "id": "eval_2fa0f63fd209",
@@ -853,11 +848,11 @@
         "Correctly abstained when evidence was insufficient."
       ],
       "smoke_answer_correct": null,
-      "route_seconds": 9.330000102636404e-05,
-      "initial_retrieval_seconds": 4.650799199996982,
-      "rewrite_retrieval_seconds": 4.446639300000243,
-      "generation_seconds": 4.2000028770416975e-06,
-      "case_seconds": 9.124469500002306
+      "route_seconds": 9.040000077220611e-05,
+      "initial_retrieval_seconds": 13.048262599997543,
+      "rewrite_retrieval_seconds": 13.23363049999898,
+      "generation_seconds": 3.899996954714879e-06,
+      "case_seconds": 26.48608249999961
     },
     {
       "id": "eval_36827e3d0adf",
@@ -896,11 +891,11 @@
         "Generation abstained even though evidence was considered sufficient."
       ],
       "smoke_answer_correct": null,
-      "route_seconds": 7.32000007701572e-05,
-      "initial_retrieval_seconds": 3.070644600000378,
+      "route_seconds": 8.850000085658394e-05,
+      "initial_retrieval_seconds": 9.694919999998092,
       "rewrite_retrieval_seconds": 0.0,
-      "generation_seconds": 9.087798299999122,
-      "case_seconds": 12.159770499998558
+      "generation_seconds": 41.84017820000008,
+      "case_seconds": 51.5366036000014
     },
     {
       "id": "eval_52bfece07a6c",
@@ -939,11 +934,11 @@
         "Correctly abstained when evidence was insufficient."
       ],
       "smoke_answer_correct": null,
-      "route_seconds": 7.729999924777076e-05,
-      "initial_retrieval_seconds": 3.598591799996939,
-      "rewrite_retrieval_seconds": 3.3044291000005614,
-      "generation_seconds": 3.6000019463244826e-06,
-      "case_seconds": 6.922311800000898
+      "route_seconds": 7.800000093993731e-05,
+      "initial_retrieval_seconds": 9.78642299999774,
+      "rewrite_retrieval_seconds": 9.822164600001997,
+      "generation_seconds": 3.7999998312443495e-06,
+      "case_seconds": 19.642600700000912
     },
     {
       "id": "eval_5457d2a4c687",
@@ -982,11 +977,11 @@
         "Correctly abstained when evidence was insufficient."
       ],
       "smoke_answer_correct": null,
-      "route_seconds": 9.59999997576233e-05,
-      "initial_retrieval_seconds": 4.257534899999882,
-      "rewrite_retrieval_seconds": 4.727519500000199,
-      "generation_seconds": 3.4000004234258085e-06,
-      "case_seconds": 9.92639280000003
+      "route_seconds": 0.00010549999933573417,
+      "initial_retrieval_seconds": 12.390733699998236,
+      "rewrite_retrieval_seconds": 13.570709899999201,
+      "generation_seconds": 3.7999998312443495e-06,
+      "case_seconds": 29.18627970000307
     },
     {
       "id": "eval_f1e3e6ebe75c",
@@ -1025,11 +1020,11 @@
         "Correctly abstained when evidence was insufficient."
       ],
       "smoke_answer_correct": null,
-      "route_seconds": 9.630000204197131e-05,
-      "initial_retrieval_seconds": 4.933579000000464,
-      "rewrite_retrieval_seconds": 4.282130100000359,
-      "generation_seconds": 3.2999996619764715e-06,
-      "case_seconds": 9.226126599998679
+      "route_seconds": 9.970000246539712e-05,
+      "initial_retrieval_seconds": 13.77379529999962,
+      "rewrite_retrieval_seconds": 13.97456659999807,
+      "generation_seconds": 2.7999994927085936e-06,
+      "case_seconds": 27.757218999999168
     }
   ]
 }
