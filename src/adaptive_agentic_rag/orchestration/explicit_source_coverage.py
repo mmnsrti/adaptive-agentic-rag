@@ -59,17 +59,9 @@ class ExplicitSourceCoverageGuard:
 
 
         if not source:
+
             return set()
 
-
-        # Example:
-        #
-        # Cnbc | World Business News Leader
-        #
-        # →
-        #
-        # full identity
-        # primary identity = Cnbc
 
         primary = (
             source
@@ -99,52 +91,258 @@ class ExplicitSourceCoverageGuard:
 
         for alias in aliases:
 
-            if alias.startswith(
+            if not alias.startswith(
                 "the "
             ):
 
-                without_the = (
-                    alias[4:]
-                    .strip()
+                continue
+
+
+            without_the = (
+                alias[
+                    4:
+                ]
+                .strip()
+            )
+
+
+            words = (
+                without_the.split()
+            )
+
+
+            # ------------------------------------------------
+            # Safe multi-token aliases:
+            #
+            # The Sydney Morning Herald
+            # -> Sydney Morning Herald
+            # ------------------------------------------------
+
+            if (
+                len(
+                    words
+                )
+                >=
+                2
+            ):
+
+                expanded.add(
+                    without_the
                 )
 
 
-                # Safe:
-                #
-                # The Sydney Morning Herald
-                # → Sydney Morning Herald
-                #
-                # Unsafe:
-                #
-                # The Age
-                # → Age
+            # ------------------------------------------------
+            # Allow distinctive long single-token publisher
+            # names.
+            #
+            # The Guardian -> Guardian
+            # The Verge    -> Verge
+            #
+            # But:
+            #
+            # The Age -> NO "Age"
+            # ------------------------------------------------
 
-                if (
-                    len(
-                        without_the.split()
-                    )
-                    >=
-                    2
-                ):
+            elif (
+                len(
+                    words
+                )
+                ==
+                1
+                and
+                len(
+                    words[
+                        0
+                    ]
+                )
+                >=
+                5
+            ):
 
-                    expanded.add(
-                        without_the
-                    )
+                expanded.add(
+                    without_the
+                )
 
 
         return {
             alias
-            for alias in expanded
+
+            for alias
+            in expanded
+
             if alias
         }
+
+
+    # ========================================================
+    # Referential phrases
+    #
+    # These describe another article/source grammatically.
+    # They are NOT publisher names.
+    # ========================================================
+
+    @classmethod
+    def _is_reference_phrase(
+        cls,
+        candidate: str,
+    ) -> bool:
+
+        normalized = (
+            cls._normalize(
+                candidate
+            )
+        )
+
+
+        if not normalized:
+
+            return True
+
+
+        # ----------------------------------------------------
+        # Strong prefix references.
+        #
+        # Important:
+        #
+        # This intentionally rejects the ENTIRE captured
+        # phrase, not just "both".
+        #
+        # Example:
+        #
+        # according to both sources played the lead guitarist
+        #
+        # regex candidate:
+        #
+        #     both sources played the lead guitarist
+        #
+        # This is grammatical spillover, not a publisher.
+        # ----------------------------------------------------
+
+        if re.match(
+            (
+                r"^(?:"
+                r"both|these|those"
+                r")"
+                r"\s+"
+                r"(?:news\s+)?"
+                r"sources?"
+                r"\b"
+            ),
+            normalized,
+            flags=re.IGNORECASE,
+        ):
+
+            return True
+
+
+        if re.match(
+            (
+                r"^(?:the\s+)?"
+                r"same"
+                r"\s+"
+                r"(?:news\s+)?"
+                r"source"
+                r"\b"
+            ),
+            normalized,
+            flags=re.IGNORECASE,
+        ):
+
+            return True
+
+
+        patterns = [
+
+            # the subsequent
+            # subsequent report
+
+            (
+                r"^(?:the\s+)?"
+                r"subsequent"
+                r"(?:\s+(?:article|report|coverage|update))?"
+                r"$"
+            ),
+
+            # the other
+            # other article
+
+            (
+                r"^(?:the\s+)?"
+                r"other"
+                r"(?:\s+(?:article|report|coverage|update))?"
+                r"$"
+            ),
+
+            # the earlier / their subsequent
+
+            (
+                r"^(?:"
+                r"the|their"
+                r")\s+"
+                r"(?:"
+                r"earlier|later|subsequent"
+                r")"
+                r"(?:\s+(?:article|report|coverage|update))?"
+                r"$"
+            ),
+
+            # according to another
+
+            (
+                r"^(?:"
+                r"according\s+to\s+"
+                r")?"
+                r"another"
+                r"$"
+            ),
+
+            # the information collected
+
+            (
+                r"^the\s+"
+                r"(?:"
+                r"information|data|details|findings"
+                r")"
+                r"\b.*$"
+            ),
+
+            # contradict the earlier
+            # compared to their subsequent
+
+            (
+                r"^(?:"
+                r"contradict|contradicts|contradicted|"
+                r"compare|compared"
+                r")"
+                r"\b.*"
+                r"(?:"
+                r"earlier|later|subsequent"
+                r")"
+                r"$"
+            ),
+        ]
+
+
+        return any(
+            re.fullmatch(
+                pattern,
+                normalized,
+                flags=re.IGNORECASE,
+            )
+            is not None
+
+            for pattern
+            in patterns
+        )
 
 
     # ========================================================
     # Candidate cleanup
     # ========================================================
 
-    @staticmethod
+    @classmethod
     def _clean_candidate(
+        cls,
         candidate: str,
     ) -> str:
 
@@ -168,20 +366,40 @@ class ExplicitSourceCoverageGuard:
         )
 
 
-        # ----------------------------------------------------
-        # Remove question prefixes.
+        # ====================================================
+        # Reject reference phrases BEFORE removing words such
+        # as "both".
         #
-        # Does the Fortune
-        # → Fortune
-        # ----------------------------------------------------
+        # This fixes:
+        #
+        # both sources played ...
+        # these sources ...
+        # the same source ...
+        # ====================================================
+
+        if (
+            cls._is_reference_phrase(
+                candidate
+            )
+        ):
+
+            return ""
+
+
+        # ====================================================
+        # Remove question prefixes
+        # ====================================================
 
         candidate = re.sub(
             (
                 r"^(?:"
-                r"does|did|has|have|had|"
+                r"does|do|did|"
+                r"has|have|had|"
                 r"was|were|is|are|"
                 r"can|could|would|should|will"
-                r")\s+the\s+"
+                r")"
+                r"\s+"
+                r"(?:the\s+)?"
             ),
             "",
             candidate,
@@ -189,27 +407,231 @@ class ExplicitSourceCoverageGuard:
         )
 
 
-        # ----------------------------------------------------
-        # Remove discourse/connective prefixes.
-        #
-        # while The Sydney Morning Herald
-        # → The Sydney Morning Herald
-        #
-        # and TechCrunch
-        # → TechCrunch
-        # ----------------------------------------------------
+        # ====================================================
+        # Remove discourse prefixes
+        # ====================================================
 
         candidate = re.sub(
             (
                 r"^(?:"
                 r"while|whereas|but|"
                 r"and with|and|"
-                r"another"
-                r")\s+"
+                r"in contrast to|"
+                r"compared to|"
+                r"compared with|"
+                r"versus|vs\.?"
+                r")"
+                r"\s+"
+                r"(?:the\s+)?"
             ),
             "",
             candidate,
             flags=re.IGNORECASE,
+        )
+
+
+        # ====================================================
+        # Remove source-list wrappers
+        # ====================================================
+
+        wrapper_patterns = [
+
+            (
+                r"^(?:"
+                r"different\s+"
+                r")?"
+                r"(?:"
+                r"articles?|"
+                r"reports?|"
+                r"coverage|"
+                r"reporting|"
+                r"updates?"
+                r")"
+                r"\s+"
+                r"(?:from|by)"
+                r"\s+"
+            ),
+
+            (
+                r"^(?:a|an)"
+                r"\s+"
+                r"(?:analysis|study)"
+                r"\s+"
+                r"(?:from|by)"
+                r"\s+"
+            ),
+
+            (
+                r"^(?:a|an)"
+                r"\s+"
+                r"(?:analysis|study)"
+                r"\s+"
+                r"reported\s+by\s+"
+                r"(?:sources?\s+)?"
+                r"including"
+                r"\s+"
+            ),
+
+            (
+                r"^sources?\s+including\s+"
+            ),
+
+            (
+                r"^according\s+to\s+"
+            ),
+        ]
+
+
+        for _ in range(
+            4
+        ):
+
+            before = (
+                candidate
+            )
+
+
+            for pattern in (
+                wrapper_patterns
+            ):
+
+                candidate = re.sub(
+                    pattern,
+                    "",
+                    candidate,
+                    flags=re.IGNORECASE,
+                )
+
+
+            if (
+                candidate
+                ==
+                before
+            ):
+
+                break
+
+
+        candidate = candidate.strip()
+
+
+        # ====================================================
+        # Check reference phrases AGAIN after wrapper cleanup.
+        #
+        # Example:
+        #
+        # according to both sources
+        # -> both sources
+        # -> reject
+        # ====================================================
+
+        if (
+            cls._is_reference_phrase(
+                candidate
+            )
+        ):
+
+            return ""
+
+
+        # ====================================================
+        # Leading "both" is safe only when followed by actual
+        # publisher candidates:
+        #
+        # both Hacker News and Zee Business
+        # -> Hacker News and Zee Business
+        #
+        # "both sources ..." was already rejected above.
+        # ====================================================
+
+        candidate = re.sub(
+            r"^both\s+",
+            "",
+            candidate,
+            flags=re.IGNORECASE,
+        )
+
+
+        # ====================================================
+        # Trim descriptive tails accidentally attached to a
+        # publisher identity.
+        # ====================================================
+
+        trailing_terminators = (
+            r"between|"
+            r"published|"
+            r"defending|defended|defends|"
+            r"claiming|claimed|claims|"
+            r"suggesting|suggested|suggests|"
+            r"indicating|indicated|indicates|"
+            r"discussing|discussed|discusses|"
+            r"detailing|detailed|details|"
+            r"focusing|focused|focuses|"
+            r"covering|covered|covers|"
+            r"showing|showed|shows|"
+            r"mentioning|mentioned|mentions|"
+            r"describing|described|describes|"
+            r"arguing|argued|argues|"
+            r"stating|stated|states|"
+            r"explaining|explained|explains|"
+            r"contrasting|contrasted|contrasts|"
+            r"contradicting|contradicted|contradicts|"
+            r"remaining|remained|remains|remain"
+        )
+
+
+        candidate = re.sub(
+            (
+                r"\s+"
+                r"(?:"
+                +
+                trailing_terminators
+                +
+                r")"
+                r"\b.*$"
+            ),
+            "",
+            candidate,
+            flags=re.IGNORECASE,
+        )
+
+
+        candidate = re.sub(
+            (
+                r"\s+both\s+"
+                r"(?:"
+                r"suggest|suggests|suggested|"
+                r"indicate|indicates|indicated|"
+                r"report|reports|reported|"
+                r"discuss|discusses|discussed"
+                r")"
+                r"\b.*$"
+            ),
+            "",
+            candidate,
+            flags=re.IGNORECASE,
+        )
+
+
+        candidate = candidate.strip(
+            " \t\r\n"
+            "\"'“”‘’"
+            ".,;:()[]{}"
+        )
+
+
+        candidate = re.sub(
+            r"[’']s$",
+            "",
+            candidate,
+            flags=re.IGNORECASE,
+        )
+
+
+        candidate = re.sub(
+            r"\s+",
+            " ",
+            candidate,
         )
 
 
@@ -220,21 +642,6 @@ class ExplicitSourceCoverageGuard:
 
     # ========================================================
     # Candidate plausibility
-    #
-    # This prevents grammar around an article/report mention
-    # from being mistaken for a publisher.
-    #
-    # Example:
-    #
-    # "Between the report from 'The Roar' ..."
-    #
-    # A permissive regex may also capture:
-    #
-    #     "Between the"
-    #
-    # before the word "report".
-    #
-    # That is grammatical structure, NOT a source.
     # ========================================================
 
     @classmethod
@@ -250,6 +657,16 @@ class ExplicitSourceCoverageGuard:
 
 
         if not candidate:
+
+            return False
+
+
+        if (
+            cls._is_reference_phrase(
+                candidate
+            )
+        ):
+
             return False
 
 
@@ -261,6 +678,7 @@ class ExplicitSourceCoverageGuard:
 
 
         if not normalized:
+
             return False
 
 
@@ -270,20 +688,53 @@ class ExplicitSourceCoverageGuard:
 
 
         if not words:
+
             return False
 
 
-        # Publisher/source names in this dataset are compact.
-        # A large captured phrase means regex spillover.
+        if (
+            len(
+                words
+            )
+            >
+            10
+        ):
 
-        if len(words) > 10:
             return False
 
 
-        # ----------------------------------------------------
-        # Grammar/question/discourse words cannot begin a
-        # publisher candidate after cleanup.
-        # ----------------------------------------------------
+        if words[
+            0
+        ].isdigit():
+
+            return False
+
+
+        months = {
+            "january",
+            "february",
+            "march",
+            "april",
+            "may",
+            "june",
+            "july",
+            "august",
+            "september",
+            "october",
+            "november",
+            "december",
+        }
+
+
+        if (
+            words[
+                0
+            ]
+            in months
+        ):
+
+            return False
+
 
         forbidden_leading_words = {
             "between",
@@ -317,36 +768,78 @@ class ExplicitSourceCoverageGuard:
             "and",
             "but",
             "or",
+            "in",
+            "regarding",
+            "according",
+            "both",
+            "these",
+            "those",
+            "different",
+            "articles",
+            "article",
+            "reports",
+            "report",
+            "coverage",
+            "analysis",
+            "study",
+            "sources",
+            "source",
         }
 
 
         if (
-            words[0]
-            in
-            forbidden_leading_words
+            words[
+                0
+            ]
+            in forbidden_leading_words
         ):
+
             return False
 
 
-        # ----------------------------------------------------
-        # Captures ending with an article/determiner are
-        # almost certainly incomplete grammar fragments.
-        #
-        # "Between the"
-        # "Does the"
-        # ----------------------------------------------------
+        if (
+            len(
+                words
+            )
+            >=
+            2
+            and
+            words[
+                0
+            ]
+            ==
+            "the"
+            and
+            words[
+                1
+            ]
+            in {
+                "subsequent",
+                "other",
+                "same",
+                "information",
+                "data",
+                "details",
+                "findings",
+            }
+        ):
 
-        if words[-1] in {
-            "the",
-            "a",
-            "an",
-        }:
             return False
 
 
-        # ----------------------------------------------------
-        # Generic reporting words alone are not publishers.
-        # ----------------------------------------------------
+        if (
+            words[
+                -1
+            ]
+            in {
+                "the",
+                "a",
+                "an",
+            }
+        ):
+
+            return False
+
 
         generic_only = {
             "article",
@@ -357,19 +850,24 @@ class ExplicitSourceCoverageGuard:
             "update",
             "updates",
             "source",
+            "sources",
             "news",
         }
 
 
         if (
-            len(words)
+            len(
+                words
+            )
             ==
             1
             and
-            words[0]
-            in
-            generic_only
+            words[
+                0
+            ]
+            in generic_only
         ):
+
             return False
 
 
@@ -378,9 +876,6 @@ class ExplicitSourceCoverageGuard:
 
     # ========================================================
     # Candidate registration
-    #
-    # Centralizes cleanup + validation so every regex path
-    # receives the same protection.
     # ========================================================
 
     @classmethod
@@ -402,6 +897,7 @@ class ExplicitSourceCoverageGuard:
                 candidate
             )
         ):
+
             return
 
 
@@ -434,26 +930,9 @@ class ExplicitSourceCoverageGuard:
         candidates = []
 
 
-        # ====================================================
-        # Common grammatical words that terminate a source
-        # phrase.
-        #
-        # Examples:
-        #
-        # reports by The Age remained consistent ...
-        # article from TechCrunch focuses on ...
-        # report by Reuters showed ...
-        #
-        # Without these terminators:
-        #
-        # "The Age remained consistent"
-        #
-        # could either fail extraction or be captured as part
-        # of the publisher name.
-        # ====================================================
-
         source_terminators = (
-            r"on|after|before|about|regarding|"
+            r"on|after|before|about|regarding|between|"
+            r"published|played|"
             r"suggesting|suggested|suggests|"
             r"detailing|detailed|"
             r"focusing|focused|focuses|"
@@ -463,6 +942,11 @@ class ExplicitSourceCoverageGuard:
             r"showing|showed|shows|"
             r"mentioning|mentioned|mentions|"
             r"describing|described|describes|"
+            r"defending|defended|defends|"
+            r"claiming|claimed|claims|"
+            r"arguing|argued|argues|"
+            r"stating|stated|states|"
+            r"explaining|explained|explains|"
             r"remaining|remained|remains|remain|"
             r"being|"
             r"which|who|that|while|whereas|"
@@ -473,11 +957,7 @@ class ExplicitSourceCoverageGuard:
 
         # ====================================================
         # A)
-        #
-        # report from The Roar
-        # article by Forbes
-        # reports by The Age remained ...
-        # coverage from TechCrunch
+        # report/article/coverage FROM/BY source
         # ====================================================
 
         after_marker_pattern = re.compile(
@@ -493,7 +973,7 @@ class ExplicitSourceCoverageGuard:
                 r"(?:from|by)"
                 r"\s+"
                 r"(?P<source>"
-                r"[^,;?]{1,100}?"
+                r"[^,;?]{1,120}?"
                 r")"
                 r"(?="
                 r",|;|\?|$|"
@@ -509,8 +989,7 @@ class ExplicitSourceCoverageGuard:
 
 
         for match in (
-            after_marker_pattern
-            .finditer(
+            after_marker_pattern.finditer(
                 query
             )
         ):
@@ -525,9 +1004,7 @@ class ExplicitSourceCoverageGuard:
 
         # ====================================================
         # B)
-        #
-        # according to Reuters,
-        # according to CNBC on ...
+        # according to source
         # ====================================================
 
         according_pattern = re.compile(
@@ -535,7 +1012,7 @@ class ExplicitSourceCoverageGuard:
                 r"\b"
                 r"according\s+to\s+"
                 r"(?P<source>"
-                r"[^,;?]{1,100}?"
+                r"[^,;?]{1,120}?"
                 r")"
                 r"(?="
                 r",|;|\?|$|"
@@ -551,8 +1028,7 @@ class ExplicitSourceCoverageGuard:
 
 
         for match in (
-            according_pattern
-            .finditer(
+            according_pattern.finditer(
                 query
             )
         ):
@@ -566,25 +1042,41 @@ class ExplicitSourceCoverageGuard:
 
 
         # ====================================================
+        # Compact publisher grammar
+        # ====================================================
+
+        source_name_pattern = (
+            r"(?:The\s+)?"
+            r"[A-Z][A-Za-z0-9&.]*"
+            r"(?:"
+            r"\s+(?:"
+            r"[A-Z][A-Za-z0-9&.]*|"
+            r"and|of|for"
+            r")"
+            r"|"
+            r"\s*\|\s*"
+            r"[A-Z][A-Za-z0-9&.]*"
+            r"|"
+            r"\s*-\s*"
+            r"(?:"
+            r"[A-Z][A-Za-z0-9&.]*|"
+            r"and|of|for"
+            r")"
+            r"){0,8}"
+        )
+
+
+        # ====================================================
         # C)
-        #
-        # The Verge's coverage
-        # TechCrunch's report
-        # Fortune's reporting
+        # Source's report / coverage
         # ====================================================
 
         possessive_pattern = re.compile(
             (
                 r"(?P<source>"
-                r"(?:"
-                r"[A-Z][A-Za-z0-9&|.-]*"
-                r"(?:"
-                r"\s+|"
-                r"\s*\|\s*|"
-                r"\s*-\s*"
-                r")"
-                r"){0,7}"
-                r"[A-Z][A-Za-z0-9&|.-]*"
+                +
+                source_name_pattern
+                +
                 r")"
                 r"[’']s"
                 r"\s+"
@@ -598,8 +1090,7 @@ class ExplicitSourceCoverageGuard:
 
 
         for match in (
-            possessive_pattern
-            .finditer(
+            possessive_pattern.finditer(
                 query
             )
         ):
@@ -614,35 +1105,25 @@ class ExplicitSourceCoverageGuard:
 
         # ====================================================
         # D)
-        #
-        # Fortune article suggests ...
-        # The Guardian article ...
-        #
-        # _add_candidate() protects us from grammatical
-        # fragments such as:
-        #
-        # Between the report ...
-        # → "Between the" is rejected.
+        # Source article / Source report
         # ====================================================
 
         before_marker_pattern = re.compile(
             (
-                r"(?:^|[,;])"
-                r"\s*"
                 r"(?P<source>"
-                r"[^,;?]{1,100}?"
+                +
+                source_name_pattern
+                +
                 r")"
                 r"\s+"
                 r"(?:article|report)"
                 r"\b"
-            ),
-            flags=re.IGNORECASE,
+            )
         )
 
 
         for match in (
-            before_marker_pattern
-            .finditer(
+            before_marker_pattern.finditer(
                 query
             )
         ):
@@ -657,16 +1138,14 @@ class ExplicitSourceCoverageGuard:
 
         # ====================================================
         # E)
-        #
-        # 'The Guardian' article
-        # 'The Roar | Sports Writers Blog' report
+        # quoted source
         # ====================================================
 
         quoted_pattern = re.compile(
             (
                 r"[\"'“”‘’]"
                 r"(?P<source>"
-                r"[^\"'“”‘’]{2,100}"
+                r"[^\"'“”‘’]{2,120}"
                 r")"
                 r"[\"'“”‘’]"
                 r"\s+"
@@ -680,8 +1159,7 @@ class ExplicitSourceCoverageGuard:
 
 
         for match in (
-            quoted_pattern
-            .finditer(
+            quoted_pattern.finditer(
                 query
             )
         ):
@@ -703,7 +1181,9 @@ class ExplicitSourceCoverageGuard:
         seen = set()
 
 
-        for candidate in candidates:
+        for candidate in (
+            candidates
+        ):
 
             key = (
                 cls._normalize(
@@ -745,6 +1225,7 @@ class ExplicitSourceCoverageGuard:
     ) -> list[str]:
 
         if context is None:
+
             return []
 
 
@@ -763,7 +1244,9 @@ class ExplicitSourceCoverageGuard:
         seen = set()
 
 
-        for item in items:
+        for item in (
+            items
+        ):
 
             source = (
                 getattr(
@@ -776,6 +1259,7 @@ class ExplicitSourceCoverageGuard:
 
 
             if not source:
+
                 continue
 
 
@@ -785,6 +1269,7 @@ class ExplicitSourceCoverageGuard:
 
 
             if key in seen:
+
                 continue
 
 
@@ -802,11 +1287,24 @@ class ExplicitSourceCoverageGuard:
 
 
     # ========================================================
-    # Candidate → actual context source
+    # Exact candidate -> actual context source
+    #
+    # IMPORTANT:
+    #
+    # Exact matching is separated from fuzzy grammatical
+    # matching.
+    #
+    # This prevents:
+    #
+    # "TechCrunch and The Verge"
+    #
+    # from prematurely matching only:
+    #
+    # "TechCrunch"
     # ========================================================
 
     @classmethod
-    def _match_available_source(
+    def _match_available_source_exact(
         cls,
         *,
         candidate: str,
@@ -821,25 +1319,22 @@ class ExplicitSourceCoverageGuard:
 
 
         if not candidate_normalized:
+
             return None
 
 
         matches = []
 
 
-        for source in available_sources:
+        for source in (
+            available_sources
+        ):
 
             for alias in (
                 cls._source_aliases(
                     source
                 )
             ):
-
-                if not alias:
-                    continue
-
-
-                # Exact source identity.
 
                 if (
                     candidate_normalized
@@ -849,68 +1344,18 @@ class ExplicitSourceCoverageGuard:
 
                     matches.append(
                         (
-                            len(alias),
+                            len(
+                                alias
+                            ),
                             source,
                         )
                     )
 
-                    continue
-
-
-                candidate_words = (
-                    candidate_normalized.split()
-                )
-
-
-                alias_words = (
-                    alias.split()
-                )
-
-
-                # Allow a small amount of grammatical capture
-                # around an otherwise exact publisher alias.
-
-                if (
-                    len(alias_words)
-                    >=
-                    1
-                    and
-                    len(candidate_words)
-                    <=
-                    len(alias_words)
-                    +
-                    3
-                ):
-
-                    pattern = (
-                        r"(?:^|\s)"
-                        +
-                        re.escape(
-                            alias
-                        )
-                        +
-                        r"(?:$|\s)"
-                    )
-
-
-                    if re.search(
-                        pattern,
-                        candidate_normalized,
-                    ):
-
-                        matches.append(
-                            (
-                                len(alias),
-                                source,
-                            )
-                        )
-
 
         if not matches:
+
             return None
 
-
-        # Longest alias wins.
 
         matches.sort(
             reverse=True
@@ -918,13 +1363,449 @@ class ExplicitSourceCoverageGuard:
 
 
         return (
-            matches[0][1]
+            matches[
+                0
+            ][
+                1
+            ]
         )
 
 
     # ========================================================
-    # Detect available context source mentioned anywhere
-    # in query.
+    # Candidate -> actual context source
+    #
+    # Allows limited grammatical spillover.
+    # ========================================================
+
+    @classmethod
+    def _match_available_source(
+        cls,
+        *,
+        candidate: str,
+        available_sources: list[str],
+    ) -> str | None:
+
+        exact_match = (
+            cls._match_available_source_exact(
+                candidate=
+                    candidate,
+
+                available_sources=
+                    available_sources,
+            )
+        )
+
+
+        if exact_match is not None:
+
+            return exact_match
+
+
+        candidate_normalized = (
+            cls._normalize(
+                candidate
+            )
+        )
+
+
+        if not candidate_normalized:
+
+            return None
+
+
+        matches = []
+
+
+        candidate_words = (
+            candidate_normalized.split()
+        )
+
+
+        for source in (
+            available_sources
+        ):
+
+            for alias in (
+                cls._source_aliases(
+                    source
+                )
+            ):
+
+                if not alias:
+
+                    continue
+
+
+                alias_words = (
+                    alias.split()
+                )
+
+
+                if (
+                    len(
+                        candidate_words
+                    )
+                    >
+                    (
+                        len(
+                            alias_words
+                        )
+                        +
+                        3
+                    )
+                ):
+
+                    continue
+
+
+                pattern = (
+                    r"(?:^|\s)"
+                    +
+                    re.escape(
+                        alias
+                    )
+                    +
+                    r"(?:$|\s)"
+                )
+
+
+                if re.search(
+                    pattern,
+                    candidate_normalized,
+                ):
+
+                    matches.append(
+                        (
+                            len(
+                                alias
+                            ),
+                            source,
+                        )
+                    )
+
+
+        if not matches:
+
+            return None
+
+
+        matches.sort(
+            reverse=True
+        )
+
+
+        return (
+            matches[
+                0
+            ][
+                1
+            ]
+        )
+
+
+    # ========================================================
+    # Compound source candidate
+    # ========================================================
+
+    @classmethod
+    def _split_compound_candidate(
+        cls,
+        candidate: str,
+    ) -> list[str]:
+
+        candidate = (
+            cls._clean_candidate(
+                candidate
+            )
+        )
+
+
+        if not candidate:
+
+            return []
+
+
+        # ----------------------------------------------------
+        # Pipe/hyphen publisher identities remain atomic.
+        #
+        # The Independent - Life and Style
+        # ----------------------------------------------------
+
+        if (
+            "|"
+            in candidate
+            or
+            " - "
+            in candidate
+        ):
+
+            return [
+                candidate
+            ]
+
+
+        raw_parts = re.split(
+            r"\s+and\s+",
+            candidate,
+            flags=re.IGNORECASE,
+        )
+
+
+        if (
+            len(
+                raw_parts
+            )
+            <=
+            1
+        ):
+
+            return [
+                candidate
+            ]
+
+
+        parts = []
+
+
+        for raw_part in (
+            raw_parts
+        ):
+
+            part = (
+                cls._clean_candidate(
+                    raw_part
+                )
+            )
+
+
+            if not (
+                cls._is_plausible_source_candidate(
+                    part
+                )
+            ):
+
+                continue
+
+
+            parts.append(
+                part
+            )
+
+
+        if (
+            len(
+                parts
+            )
+            >=
+            2
+        ):
+
+            return parts
+
+
+        return [
+            candidate
+        ]
+
+
+    # ========================================================
+    # Resolve one candidate
+    #
+    # ORDER IS IMPORTANT:
+    #
+    # 1. exact whole publisher
+    # 2. compound publisher list
+    # 3. fuzzy singular publisher
+    # 4. real-looking missing publisher
+    # ========================================================
+
+    @classmethod
+    def _resolve_candidate(
+        cls,
+        *,
+        candidate: str,
+        available_sources: list[str],
+    ) -> tuple[
+        list[str],
+        list[str],
+        list[str],
+    ]:
+
+        candidate = (
+            cls._clean_candidate(
+                candidate
+            )
+        )
+
+
+        if not (
+            cls._is_plausible_source_candidate(
+                candidate
+            )
+        ):
+
+            return (
+                [],
+                [],
+                [],
+            )
+
+
+        # ====================================================
+        # 1. Exact whole match
+        #
+        # Protects true names which contain "and".
+        # ====================================================
+
+        exact_match = (
+            cls._match_available_source_exact(
+                candidate=
+                    candidate,
+
+                available_sources=
+                    available_sources,
+            )
+        )
+
+
+        if exact_match is not None:
+
+            return (
+                [
+                    exact_match
+                ],
+                [
+                    exact_match
+                ],
+                [],
+            )
+
+
+        # ====================================================
+        # 2. Compound list
+        #
+        # TechCrunch and The Verge
+        #
+        # This MUST happen before fuzzy whole matching.
+        # ====================================================
+
+        parts = (
+            cls._split_compound_candidate(
+                candidate
+            )
+        )
+
+
+        if (
+            len(
+                parts
+            )
+            >
+            1
+        ):
+
+            required = []
+
+            covered = []
+
+            missing = []
+
+
+            for part in (
+                parts
+            ):
+
+                matched_part = (
+                    cls._match_available_source(
+                        candidate=
+                            part,
+
+                        available_sources=
+                            available_sources,
+                    )
+                )
+
+
+                if matched_part is not None:
+
+                    required.append(
+                        matched_part
+                    )
+
+                    covered.append(
+                        matched_part
+                    )
+
+
+                else:
+
+                    required.append(
+                        part
+                    )
+
+                    missing.append(
+                        part
+                    )
+
+
+            return (
+                required,
+                covered,
+                missing,
+            )
+
+
+        # ====================================================
+        # 3. Fuzzy singular publisher match
+        # ====================================================
+
+        fuzzy_match = (
+            cls._match_available_source(
+                candidate=
+                    candidate,
+
+                available_sources=
+                    available_sources,
+            )
+        )
+
+
+        if fuzzy_match is not None:
+
+            return (
+                [
+                    fuzzy_match
+                ],
+                [
+                    fuzzy_match
+                ],
+                [],
+            )
+
+
+        # ====================================================
+        # 4. Singular explicit publisher missing from context
+        #
+        # Example:
+        #
+        # The Age
+        #
+        # This is the safety-critical Case15 path.
+        # ====================================================
+
+        return (
+            [
+                candidate
+            ],
+            [],
+            [
+                candidate
+            ],
+        )
+
+
+    # ========================================================
+    # Detect available context source mentioned in query
     # ========================================================
 
     @classmethod
@@ -949,6 +1830,7 @@ class ExplicitSourceCoverageGuard:
         ):
 
             if not alias:
+
                 continue
 
 
@@ -975,7 +1857,7 @@ class ExplicitSourceCoverageGuard:
 
 
     # ========================================================
-    # Stable source-list deduplication
+    # Stable deduplication
     # ========================================================
 
     @classmethod
@@ -989,7 +1871,9 @@ class ExplicitSourceCoverageGuard:
         seen = set()
 
 
-        for value in values:
+        for value in (
+            values
+        ):
 
             key = (
                 cls._normalize(
@@ -999,10 +1883,12 @@ class ExplicitSourceCoverageGuard:
 
 
             if not key:
+
                 continue
 
 
             if key in seen:
+
                 continue
 
 
@@ -1052,13 +1938,19 @@ class ExplicitSourceCoverageGuard:
 
 
         # ====================================================
-        # Resolve syntactically extracted source references.
+        # Resolve syntactically extracted source references
         # ====================================================
 
-        for candidate in extracted:
+        for candidate in (
+            extracted
+        ):
 
-            matched = (
-                self._match_available_source(
+            (
+                candidate_required,
+                candidate_covered,
+                candidate_missing,
+            ) = (
+                self._resolve_candidate(
                     candidate=
                         candidate,
 
@@ -1068,40 +1960,31 @@ class ExplicitSourceCoverageGuard:
             )
 
 
-            if matched is not None:
-
-                required_sources.append(
-                    matched
-                )
+            required_sources.extend(
+                candidate_required
+            )
 
 
-                covered_sources.append(
-                    matched
-                )
+            covered_sources.extend(
+                candidate_covered
+            )
 
 
-            else:
-
-                required_sources.append(
-                    candidate
-                )
-
-
-                missing_sources.append(
-                    candidate
-                )
+            missing_sources.extend(
+                candidate_missing
+            )
 
 
         # ====================================================
-        # Add known context sources explicitly appearing
+        # Add actual context sources explicitly mentioned
         # anywhere in the query.
         #
-        # Since they already exist in context, they can only
-        # increase required/covered coverage, never create a
-        # false missing source.
+        # This can only increase required + covered.
         # ====================================================
 
-        for source in available_sources:
+        for source in (
+            available_sources
+        ):
 
             if (
                 self._query_mentions_available_source(
@@ -1142,6 +2025,40 @@ class ExplicitSourceCoverageGuard:
                 missing_sources
             )
         )
+
+
+        # ====================================================
+        # Covered identity can never simultaneously remain
+        # missing.
+        # ====================================================
+
+        covered_aliases = set()
+
+
+        for source in (
+            covered_sources
+        ):
+
+            covered_aliases.update(
+                self._source_aliases(
+                    source
+                )
+            )
+
+
+        missing_sources = [
+            source
+
+            for source
+            in missing_sources
+
+            if (
+                self._normalize(
+                    source
+                )
+                not in covered_aliases
+            )
+        ]
 
 
         satisfied = (

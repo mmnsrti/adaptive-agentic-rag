@@ -1,22 +1,35 @@
+import ast
 import json
 
+from collections import Counter
 from pathlib import Path
+
+from adaptive_agentic_rag.orchestration.graph import (
+    route_after_evidence,
+)
 
 from adaptive_agentic_rag.orchestration.nodes import (
     RAGNodes,
 )
 
 
+# ============================================================
+# Configuration
+# ============================================================
+
 DATASET_PATH = Path(
     "evaluation/datasets/"
-    "frozen_e2e_smoke_20.json"
+    "frozen_eval_500.json"
 )
 
 
 OUTPUT_PATH = Path(
     "evaluation/results/"
-    "e2e_smoke_retrieval_gate_diagnostic.json"
+    "adaptive_retry_frozen500_diagnostic.json"
 )
+
+
+MAX_RETRIES = 1
 
 
 # ============================================================
@@ -31,9 +44,52 @@ def load_examples():
         encoding="utf-8",
     ) as file:
 
-        return json.load(
+        payload = json.load(
             file
         )
+
+
+    if isinstance(
+        payload,
+        list,
+    ):
+
+        return payload
+
+
+    if isinstance(
+        payload,
+        dict,
+    ):
+
+        for key in (
+            "examples",
+            "records",
+            "data",
+        ):
+
+            candidate = (
+                payload.get(
+                    key
+                )
+            )
+
+
+            if isinstance(
+                candidate,
+                list,
+            ):
+
+                return candidate
+
+
+    raise ValueError(
+        (
+            "Unsupported frozen evaluation "
+            f"dataset structure: "
+            f"{type(payload).__name__}"
+        )
+    )
 
 
 # ============================================================
@@ -111,6 +167,15 @@ def unique_document_ids_from_context(
     return output
 
 
+# ============================================================
+# Gold diagnostics
+#
+# IMPORTANT:
+#
+# Gold information is used ONLY for offline analysis.
+# It is never used by AdaptiveRetryPolicy.
+# ============================================================
+
 def gold_recall(
     predicted_ids,
     gold_ids,
@@ -179,8 +244,10 @@ def mean(
 
     values = [
         value
+
         for value
         in values
+
         if value is not None
     ]
 
@@ -202,10 +269,158 @@ def mean(
 
 
 # ============================================================
-# Failure classification
+# Evidence-reason telemetry
 # ============================================================
 
-def classify_initial_failure(
+def reason_value(
+    reasons,
+    prefix,
+):
+
+    for reason in (
+        reasons
+        or []
+    ):
+
+        if not isinstance(
+            reason,
+            str,
+        ):
+
+            continue
+
+
+        if reason.startswith(
+            prefix
+        ):
+
+            return (
+                reason[
+                    len(
+                        prefix
+                    ):
+                ]
+                .strip()
+            )
+
+
+    return None
+
+
+def reason_list(
+    reasons,
+    prefix,
+):
+
+    raw_value = (
+        reason_value(
+            reasons=
+                reasons,
+
+            prefix=
+                prefix,
+        )
+    )
+
+
+    if raw_value is None:
+
+        return []
+
+
+    try:
+
+        parsed = (
+            ast.literal_eval(
+                raw_value
+            )
+        )
+
+    except (
+        ValueError,
+        SyntaxError,
+    ):
+
+        return []
+
+
+    if not isinstance(
+        parsed,
+        list,
+    ):
+
+        return []
+
+
+    return [
+        str(
+            value
+        )
+
+        for value
+        in parsed
+    ]
+
+
+def extract_evidence_telemetry(
+    reasons,
+):
+
+    reasons = list(
+        reasons
+        or []
+    )
+
+
+    return {
+        "evidence_path":
+            reason_value(
+                reasons=
+                    reasons,
+
+                prefix=
+                    "evidence_path=",
+            ),
+
+        "required_sources":
+            reason_list(
+                reasons=
+                    reasons,
+
+                prefix=
+                    "required_sources=",
+            ),
+
+        "covered_sources":
+            reason_list(
+                reasons=
+                    reasons,
+
+                prefix=
+                    "covered_sources=",
+            ),
+
+        "missing_sources":
+            reason_list(
+                reasons=
+                    reasons,
+
+                prefix=
+                    "missing_sources=",
+            ),
+    }
+
+
+# ============================================================
+# Gold-side failure taxonomy
+#
+# This taxonomy is diagnostic only.
+#
+# Production routing does NOT use gold recall.
+# ============================================================
+
+def classify_gold_failure(
+    *,
     retrieval_recall,
     context_recall,
     context_complete,
@@ -264,6 +479,70 @@ def classify_initial_failure(
 
 
 # ============================================================
+# Production-side classification
+# ============================================================
+
+def classify_production_state(
+    *,
+    null_example,
+    initial_sufficient,
+    initial_route,
+    gold_failure_category,
+):
+
+    if null_example:
+
+        if initial_sufficient:
+
+            return (
+                "null_false_accept"
+            )
+
+
+        if (
+            initial_route
+            ==
+            "rewrite"
+        ):
+
+            return (
+                "null_retry_candidate"
+            )
+
+
+        return (
+            "null_correct_reject"
+        )
+
+
+    if initial_sufficient:
+
+        return (
+            "initial_gate_accept"
+        )
+
+
+    if (
+        initial_route
+        ==
+        "rewrite"
+    ):
+
+        return (
+            "production_retry_candidate"
+        )
+
+
+    return (
+        "production_abstain__"
+        +
+        str(
+            gold_failure_category
+        )
+    )
+
+
+# ============================================================
 # One example
 # ============================================================
 
@@ -294,16 +573,15 @@ def run_example(
 
 
     # ========================================================
-    # IMPORTANT:
-    #
-    # Correct frozen-eval field.
+    # Frozen-eval schema
     # ========================================================
 
-    gold_document_ids = (
+    gold_document_ids = list(
         example.get(
             "evidence_document_ids",
             [],
         )
+        or []
     )
 
 
@@ -316,11 +594,14 @@ def run_example(
 
         "retry_count":
             0,
+
+        "max_retries":
+            MAX_RETRIES,
     }
 
 
     # ========================================================
-    # Route
+    # Route query
     # ========================================================
 
     state.update(
@@ -345,7 +626,7 @@ def run_example(
 
 
     # ========================================================
-    # Original retrieval
+    # Retrieval attempt 0
     # ========================================================
 
     state.update(
@@ -364,6 +645,10 @@ def run_example(
     )
 
 
+    # ========================================================
+    # Context attempt 0
+    # ========================================================
+
     state.update(
         nodes.build_context(
             state
@@ -380,6 +665,10 @@ def run_example(
     )
 
 
+    # ========================================================
+    # Evidence Gate attempt 0
+    # ========================================================
+
     state.update(
         nodes.grade_evidence(
             state
@@ -387,7 +676,7 @@ def run_example(
     )
 
 
-    initial_sufficient = (
+    initial_sufficient = bool(
         state[
             "evidence_sufficient"
         ]
@@ -401,17 +690,31 @@ def run_example(
     )
 
 
-    initial_reasons = (
-        state[
-            "evidence_reasons"
-        ]
+    initial_reasons = list(
+        state.get(
+            "evidence_reasons",
+            [],
+        )
+        or []
     )
 
+
+    initial_telemetry = (
+        extract_evidence_telemetry(
+            initial_reasons
+        )
+    )
+
+
+    # ========================================================
+    # Gold diagnostics
+    # ========================================================
 
     initial_retrieval_recall = (
         gold_recall(
             predicted_ids=
                 initial_retrieved_ids,
+
             gold_ids=
                 gold_document_ids,
         )
@@ -422,6 +725,7 @@ def run_example(
         gold_recall(
             predicted_ids=
                 initial_context_ids,
+
             gold_ids=
                 gold_document_ids,
         )
@@ -432,6 +736,7 @@ def run_example(
         complete_gold(
             predicted_ids=
                 initial_context_ids,
+
             gold_ids=
                 gold_document_ids,
         )
@@ -439,7 +744,68 @@ def run_example(
 
 
     # ========================================================
-    # Rewrite
+    # Production AdaptiveRetryPolicy decision
+    #
+    # This is the SAME routing function used by LangGraph.
+    # ========================================================
+
+    initial_route = (
+        route_after_evidence(
+            state
+        )
+    )
+
+
+    # ========================================================
+    # Gold-side failure category
+    # ========================================================
+
+    gold_failure_category = None
+
+
+    if (
+        not null_example
+        and
+        not initial_sufficient
+    ):
+
+        gold_failure_category = (
+            classify_gold_failure(
+                retrieval_recall=
+                    initial_retrieval_recall,
+
+                context_recall=
+                    initial_context_recall,
+
+                context_complete=
+                    initial_context_complete,
+            )
+        )
+
+
+    # ========================================================
+    # Production-side category
+    # ========================================================
+
+    production_category = (
+        classify_production_state(
+            null_example=
+                null_example,
+
+            initial_sufficient=
+                initial_sufficient,
+
+            initial_route=
+                initial_route,
+
+            gold_failure_category=
+                gold_failure_category,
+        )
+    )
+
+
+    # ========================================================
+    # Defaults before optional retry
     # ========================================================
 
     rewrite_attempted = False
@@ -478,11 +844,27 @@ def run_example(
         initial_reasons
     )
 
+    final_telemetry = (
+        initial_telemetry
+    )
 
-    if not initial_sufficient:
+
+    # ========================================================
+    # Policy-approved retry ONLY
+    # ========================================================
+
+    if (
+        initial_route
+        ==
+        "rewrite"
+    ):
 
         rewrite_attempted = True
 
+
+        # ----------------------------------------------------
+        # Query rewrite
+        # ----------------------------------------------------
 
         state.update(
             nodes.rewrite_query(
@@ -497,6 +879,10 @@ def run_example(
             ]
         )
 
+
+        # ----------------------------------------------------
+        # Retrieval retry
+        # ----------------------------------------------------
 
         state.update(
             nodes.retrieve(
@@ -514,6 +900,10 @@ def run_example(
         )
 
 
+        # ----------------------------------------------------
+        # Context retry
+        # ----------------------------------------------------
+
         state.update(
             nodes.build_context(
                 state
@@ -530,6 +920,10 @@ def run_example(
         )
 
 
+        # ----------------------------------------------------
+        # Evidence re-grade
+        # ----------------------------------------------------
+
         state.update(
             nodes.grade_evidence(
                 state
@@ -537,7 +931,7 @@ def run_example(
         )
 
 
-        final_sufficient = (
+        final_sufficient = bool(
             state[
                 "evidence_sufficient"
             ]
@@ -551,17 +945,31 @@ def run_example(
         )
 
 
-        final_reasons = (
-            state[
-                "evidence_reasons"
-            ]
+        final_reasons = list(
+            state.get(
+                "evidence_reasons",
+                [],
+            )
+            or []
         )
 
+
+        final_telemetry = (
+            extract_evidence_telemetry(
+                final_reasons
+            )
+        )
+
+
+        # ----------------------------------------------------
+        # Gold diagnostics after retry
+        # ----------------------------------------------------
 
         final_retrieval_recall = (
             gold_recall(
                 predicted_ids=
                     final_retrieved_ids,
+
                 gold_ids=
                     gold_document_ids,
             )
@@ -572,6 +980,7 @@ def run_example(
             gold_recall(
                 predicted_ids=
                     final_context_ids,
+
                 gold_ids=
                     gold_document_ids,
             )
@@ -582,6 +991,7 @@ def run_example(
             complete_gold(
                 predicted_ids=
                     final_context_ids,
+
                 gold_ids=
                     gold_document_ids,
             )
@@ -589,86 +999,123 @@ def run_example(
 
 
     # ========================================================
-    # Failure category
+    # Final production route
     # ========================================================
 
-    failure_category = None
+    final_route = (
+        route_after_evidence(
+            state
+        )
+    )
 
 
-    if null_example:
+    if (
+        final_route
+        ==
+        "rewrite"
+    ):
 
-        failure_category = (
-            "null_false_accept"
-            if final_sufficient
-            else "null_correct_reject"
+        raise RuntimeError(
+            (
+                "AdaptiveRetryPolicy requested another "
+                "rewrite after retry budget should have "
+                "been exhausted."
+            )
         )
 
 
-    elif not initial_sufficient:
+    # ========================================================
+    # Deltas
+    # ========================================================
 
-        failure_category = (
-            classify_initial_failure(
-                retrieval_recall=
-                    initial_retrieval_recall,
-                context_recall=
-                    initial_context_recall,
-                context_complete=
-                    initial_context_complete,
+    rewrite_retrieval_delta = None
+
+    rewrite_context_delta = None
+
+    rewrite_score_delta = None
+
+
+    if rewrite_attempted:
+
+        if (
+            initial_retrieval_recall
+            is not None
+            and
+            final_retrieval_recall
+            is not None
+        ):
+
+            rewrite_retrieval_delta = (
+                final_retrieval_recall
+                -
+                initial_retrieval_recall
             )
+
+
+        if (
+            initial_context_recall
+            is not None
+            and
+            final_context_recall
+            is not None
+        ):
+
+            rewrite_context_delta = (
+                final_context_recall
+                -
+                initial_context_recall
+            )
+
+
+        if (
+            initial_score
+            is not None
+            and
+            final_score
+            is not None
+        ):
+
+            rewrite_score_delta = (
+                final_score
+                -
+                initial_score
+            )
+
+
+    # ========================================================
+    # Retry outcome
+    # ========================================================
+
+    if not rewrite_attempted:
+
+        retry_outcome = (
+            "not_retried"
+        )
+
+
+    elif final_sufficient:
+
+        retry_outcome = (
+            "retry_rescued"
         )
 
 
     else:
 
-        failure_category = (
-            "initial_gate_accept"
+        retry_outcome = (
+            "retry_not_rescued"
         )
 
 
-    rewrite_recall_delta = None
-
-    rewrite_context_delta = None
-
-
-    if (
-        rewrite_attempted
-        and
-        initial_retrieval_recall
-        is not None
-        and
-        final_retrieval_recall
-        is not None
-    ):
-
-        rewrite_recall_delta = (
-            final_retrieval_recall
-            -
-            initial_retrieval_recall
-        )
-
-
-    if (
-        rewrite_attempted
-        and
-        initial_context_recall
-        is not None
-        and
-        final_context_recall
-        is not None
-    ):
-
-        rewrite_context_delta = (
-            final_context_recall
-            -
-            initial_context_recall
-        )
-
+    # ========================================================
+    # Record
+    # ========================================================
 
     return {
         "id":
-            example[
+            example.get(
                 "id"
-            ],
+            ),
 
         "question":
             question,
@@ -684,6 +1131,13 @@ def run_example(
         "gold_document_ids":
             gold_document_ids,
 
+        "is_null":
+            null_example,
+
+        # ----------------------------------------------------
+        # Router
+        # ----------------------------------------------------
+
         "router_query_type":
             router_query_type,
 
@@ -691,7 +1145,7 @@ def run_example(
             retrieval_strategy,
 
         # ----------------------------------------------------
-        # Initial
+        # Initial retrieval/context
         # ----------------------------------------------------
 
         "initial_retrieved_document_ids":
@@ -709,6 +1163,10 @@ def run_example(
         "initial_context_gold_complete":
             initial_context_complete,
 
+        # ----------------------------------------------------
+        # Initial evidence
+        # ----------------------------------------------------
+
         "initial_evidence_sufficient":
             initial_sufficient,
 
@@ -717,6 +1175,39 @@ def run_example(
 
         "initial_evidence_reasons":
             initial_reasons,
+
+        "initial_evidence_path":
+            initial_telemetry[
+                "evidence_path"
+            ],
+
+        "initial_required_sources":
+            initial_telemetry[
+                "required_sources"
+            ],
+
+        "initial_covered_sources":
+            initial_telemetry[
+                "covered_sources"
+            ],
+
+        "initial_missing_sources":
+            initial_telemetry[
+                "missing_sources"
+            ],
+
+        # ----------------------------------------------------
+        # Production control policy
+        # ----------------------------------------------------
+
+        "initial_route":
+            initial_route,
+
+        "production_category":
+            production_category,
+
+        "gold_failure_category":
+            gold_failure_category,
 
         # ----------------------------------------------------
         # Rewrite
@@ -727,6 +1218,26 @@ def run_example(
 
         "rewritten_query":
             rewritten_query,
+
+        "retry_count":
+            state.get(
+                "retry_count",
+                0,
+            ),
+
+        "retry_outcome":
+            retry_outcome,
+
+        "rewrite_rescued":
+            (
+                rewrite_attempted
+                and
+                final_sufficient
+            ),
+
+        # ----------------------------------------------------
+        # Final retrieval/context
+        # ----------------------------------------------------
 
         "final_retrieved_document_ids":
             final_retrieved_ids,
@@ -743,6 +1254,10 @@ def run_example(
         "final_context_gold_complete":
             final_context_complete,
 
+        # ----------------------------------------------------
+        # Final evidence
+        # ----------------------------------------------------
+
         "final_evidence_sufficient":
             final_sufficient,
 
@@ -752,22 +1267,110 @@ def run_example(
         "final_evidence_reasons":
             final_reasons,
 
+        "final_evidence_path":
+            final_telemetry[
+                "evidence_path"
+            ],
+
+        "final_required_sources":
+            final_telemetry[
+                "required_sources"
+            ],
+
+        "final_covered_sources":
+            final_telemetry[
+                "covered_sources"
+            ],
+
+        "final_missing_sources":
+            final_telemetry[
+                "missing_sources"
+            ],
+
+        "final_route":
+            final_route,
+
+        # ----------------------------------------------------
+        # Retry deltas
+        # ----------------------------------------------------
+
         "rewrite_retrieval_recall_delta":
-            rewrite_recall_delta,
+            rewrite_retrieval_delta,
 
         "rewrite_context_recall_delta":
             rewrite_context_delta,
 
-        "rewrite_rescued":
-            (
-                rewrite_attempted
-                and
-                final_sufficient
-            ),
-
-        "failure_category":
-            failure_category,
+        "rewrite_evidence_score_delta":
+            rewrite_score_delta,
     }
+
+
+# ============================================================
+# Summary helpers
+# ============================================================
+
+def count_delta(
+    records,
+    key,
+    direction,
+):
+
+    count = 0
+
+
+    for record in records:
+
+        value = (
+            record.get(
+                key
+            )
+        )
+
+
+        if value is None:
+
+            continue
+
+
+        if (
+            direction == "positive"
+            and
+            value > 0
+        ):
+
+            count += 1
+
+
+        elif (
+            direction == "negative"
+            and
+            value < 0
+        ):
+
+            count += 1
+
+
+        elif (
+            direction == "zero"
+            and
+            value == 0
+        ):
+
+            count += 1
+
+
+    return count
+
+
+def counter_dict(
+    values,
+):
+
+    return dict(
+        Counter(
+            values
+        )
+    )
 
 
 # ============================================================
@@ -778,120 +1381,126 @@ def summarize(
     records,
 ):
 
+    total = (
+        len(
+            records
+        )
+    )
+
+
     answerable = [
         record
+
         for record
         in records
-        if (
-            record[
-                "question_type"
-            ]
-            !=
-            "null_query"
-        )
+
+        if not record[
+            "is_null"
+        ]
     ]
 
 
     null_examples = [
         record
+
         for record
         in records
-        if (
-            record[
-                "question_type"
-            ]
-            ==
-            "null_query"
-        )
+
+        if record[
+            "is_null"
+        ]
     ]
 
 
-    rewrites = [
+    initial_rejects_answerable = [
         record
+
+        for record
+        in answerable
+
+        if not record[
+            "initial_evidence_sufficient"
+        ]
+    ]
+
+
+    retry_candidates = [
+        record
+
         for record
         in records
+
         if (
             record[
-                "rewrite_attempted"
-            ]
-        )
-    ]
-
-
-    rewrite_improved_retrieval = [
-        record
-        for record
-        in rewrites
-        if (
-            record[
-                "rewrite_retrieval_recall_delta"
-            ]
-            is not None
-            and
-            record[
-                "rewrite_retrieval_recall_delta"
-            ]
-            >
-            0
-        )
-    ]
-
-
-    rewrite_harmed_retrieval = [
-        record
-        for record
-        in rewrites
-        if (
-            record[
-                "rewrite_retrieval_recall_delta"
-            ]
-            is not None
-            and
-            record[
-                "rewrite_retrieval_recall_delta"
-            ]
-            <
-            0
-        )
-    ]
-
-
-    rewrite_equal_retrieval = [
-        record
-        for record
-        in rewrites
-        if (
-            record[
-                "rewrite_retrieval_recall_delta"
+                "initial_route"
             ]
             ==
-            0
+            "rewrite"
         )
+    ]
+
+
+    answerable_retry_candidates = [
+        record
+
+        for record
+        in retry_candidates
+
+        if not record[
+            "is_null"
+        ]
+    ]
+
+
+    null_retry_candidates = [
+        record
+
+        for record
+        in retry_candidates
+
+        if record[
+            "is_null"
+        ]
+    ]
+
+
+    rewrite_rescues = [
+        record
+
+        for record
+        in retry_candidates
+
+        if record[
+            "rewrite_rescued"
+        ]
     ]
 
 
     complete_context_rejected = [
         record
+
         for record
         in answerable
+
         if (
             record[
                 "initial_context_gold_complete"
             ]
             is True
             and
-            record[
+            not record[
                 "initial_evidence_sufficient"
             ]
-            is False
         )
     ]
 
 
     high_context_rejected = [
         record
+
         for record
         in answerable
+
         if (
             record[
                 "initial_context_gold_recall"
@@ -904,43 +1513,199 @@ def summarize(
             >=
             0.75
             and
-            record[
+            not record[
                 "initial_evidence_sufficient"
             ]
-            is False
         )
     ]
 
 
-    categories = {}
+    # ========================================================
+    # Missing-source diagnostics for retry candidates
+    # ========================================================
+
+    missing_source_count_distribution = (
+        Counter()
+    )
 
 
-    for record in records:
+    missing_source_frequency = (
+        Counter()
+    )
 
-        category = (
+
+    required_source_count_distribution = (
+        Counter()
+    )
+
+
+    evidence_path_distribution = (
+        Counter()
+    )
+
+
+    for record in (
+        retry_candidates
+    ):
+
+        missing_sources = (
             record[
-                "failure_category"
+                "initial_missing_sources"
             ]
         )
 
 
-        categories[
-            category
-        ] = (
-            categories.get(
-                category,
-                0,
-            )
-            +
-            1
+        required_sources = (
+            record[
+                "initial_required_sources"
+            ]
         )
 
 
+        missing_source_count_distribution[
+            str(
+                len(
+                    missing_sources
+                )
+            )
+            +
+            "_missing"
+        ] += 1
+
+
+        required_source_count_distribution[
+            str(
+                len(
+                    required_sources
+                )
+            )
+            +
+            "_required"
+        ] += 1
+
+
+        for source in (
+            missing_sources
+        ):
+
+            missing_source_frequency[
+                source
+            ] += 1
+
+
+        evidence_path_distribution[
+            str(
+                record[
+                    "initial_evidence_path"
+                ]
+            )
+        ] += 1
+
+
+    # ========================================================
+    # Question-type route breakdown
+    # ========================================================
+
+    route_by_question_type = {}
+
+
+    for question_type in sorted(
+        set(
+            record[
+                "question_type"
+            ]
+
+            for record
+            in records
+        )
+    ):
+
+        subset = [
+            record
+
+            for record
+            in records
+
+            if (
+                record[
+                    "question_type"
+                ]
+                ==
+                question_type
+            )
+        ]
+
+
+        route_by_question_type[
+            question_type
+        ] = {
+            "count":
+                len(
+                    subset
+                ),
+
+            "generate":
+                sum(
+                    1
+
+                    for record
+                    in subset
+
+                    if (
+                        record[
+                            "initial_route"
+                        ]
+                        ==
+                        "generate"
+                    )
+                ),
+
+            "rewrite":
+                sum(
+                    1
+
+                    for record
+                    in subset
+
+                    if (
+                        record[
+                            "initial_route"
+                        ]
+                        ==
+                        "rewrite"
+                    )
+                ),
+
+            "abstain":
+                sum(
+                    1
+
+                    for record
+                    in subset
+
+                    if (
+                        record[
+                            "initial_route"
+                        ]
+                        ==
+                        "abstain"
+                    )
+                ),
+        }
+
+
+    # ========================================================
+    # Summary
+    # ========================================================
+
     return {
-        "total":
-            len(
-                records
+        "dataset":
+            str(
+                DATASET_PATH
             ),
+
+        "total":
+            total,
 
         "answerable":
             len(
@@ -952,12 +1717,17 @@ def summarize(
                 null_examples
             ),
 
+        # ----------------------------------------------------
+        # Retrieval/context baseline
+        # ----------------------------------------------------
+
         "mean_initial_retrieval_gold_recall":
             mean(
                 [
                     record[
                         "initial_retrieval_gold_recall"
                     ]
+
                     for record
                     in answerable
                 ]
@@ -969,33 +1739,31 @@ def summarize(
                     record[
                         "initial_context_gold_recall"
                     ]
+
                     for record
                     in answerable
                 ]
             ),
 
+        # ----------------------------------------------------
+        # Evidence Gate
+        # ----------------------------------------------------
+
         "initial_gate_accepts_answerable":
             sum(
                 1
+
                 for record
                 in answerable
-                if (
-                    record[
-                        "initial_evidence_sufficient"
-                    ]
-                )
+
+                if record[
+                    "initial_evidence_sufficient"
+                ]
             ),
 
-        "final_gate_accepts_answerable":
-            sum(
-                1
-                for record
-                in answerable
-                if (
-                    record[
-                        "final_evidence_sufficient"
-                    ]
-                )
+        "initial_gate_rejects_answerable":
+            len(
+                initial_rejects_answerable
             ),
 
         "complete_gold_context_rejected":
@@ -1008,36 +1776,125 @@ def summarize(
                 high_context_rejected
             ),
 
-        "rewrite_attempts":
-            len(
-                rewrites
+        # ----------------------------------------------------
+        # Production AdaptiveRetryPolicy
+        # ----------------------------------------------------
+
+        "initial_route_distribution":
+            counter_dict(
+                record[
+                    "initial_route"
+                ]
+
+                for record
+                in records
             ),
 
-        "rewrite_rescues":
-            sum(
-                1
+        "final_route_distribution":
+            counter_dict(
+                record[
+                    "final_route"
+                ]
+
                 for record
-                in rewrites
-                if (
-                    record[
-                        "rewrite_rescued"
-                    ]
+                in records
+            ),
+
+        "retry_candidates":
+            len(
+                retry_candidates
+            ),
+
+        "retry_candidate_rate":
+            (
+                len(
+                    retry_candidates
                 )
+                /
+                total
+
+                if total
+
+                else None
+            ),
+
+        "answerable_retry_candidates":
+            len(
+                answerable_retry_candidates
+            ),
+
+        "null_retry_candidates":
+            len(
+                null_retry_candidates
+            ),
+
+        "route_by_question_type":
+            route_by_question_type,
+
+        # ----------------------------------------------------
+        # Retry outcomes
+        # ----------------------------------------------------
+
+        "rewrite_rescues":
+            len(
+                rewrite_rescues
+            ),
+
+        "rewrite_rescue_rate":
+            (
+                len(
+                    rewrite_rescues
+                )
+                /
+                len(
+                    retry_candidates
+                )
+
+                if retry_candidates
+
+                else None
             ),
 
         "rewrite_retrieval_improved":
-            len(
-                rewrite_improved_retrieval
+            count_delta(
+                retry_candidates,
+                "rewrite_retrieval_recall_delta",
+                "positive",
             ),
 
         "rewrite_retrieval_harmed":
-            len(
-                rewrite_harmed_retrieval
+            count_delta(
+                retry_candidates,
+                "rewrite_retrieval_recall_delta",
+                "negative",
             ),
 
         "rewrite_retrieval_unchanged":
-            len(
-                rewrite_equal_retrieval
+            count_delta(
+                retry_candidates,
+                "rewrite_retrieval_recall_delta",
+                "zero",
+            ),
+
+        "rewrite_context_improved":
+            count_delta(
+                retry_candidates,
+                "rewrite_context_recall_delta",
+                "positive",
+            ),
+
+        "rewrite_context_harmed":
+            count_delta(
+                retry_candidates,
+                "rewrite_context_recall_delta",
+                "negative",
+            ),
+
+        "rewrite_context_unchanged":
+            count_delta(
+                retry_candidates,
+                "rewrite_context_recall_delta",
+                "zero",
             ),
 
         "mean_rewrite_retrieval_recall_delta":
@@ -1046,8 +1903,9 @@ def summarize(
                     record[
                         "rewrite_retrieval_recall_delta"
                     ]
+
                     for record
-                    in rewrites
+                    in retry_candidates
                 ]
             ),
 
@@ -1057,38 +1915,300 @@ def summarize(
                     record[
                         "rewrite_context_recall_delta"
                     ]
+
                     for record
-                    in rewrites
+                    in retry_candidates
                 ]
             ),
 
-        "null_correct_rejects":
-            sum(
-                1
-                for record
-                in null_examples
-                if not (
+        "mean_rewrite_evidence_score_delta":
+            mean(
+                [
                     record[
-                        "final_evidence_sufficient"
+                        "rewrite_evidence_score_delta"
                     ]
-                )
+
+                    for record
+                    in retry_candidates
+                ]
             ),
 
-        "null_false_accepts":
-            sum(
-                1
-                for record
-                in null_examples
-                if (
-                    record[
-                        "final_evidence_sufficient"
-                    ]
-                )
+        # ----------------------------------------------------
+        # Source-miss patterns
+        # ----------------------------------------------------
+
+        "retry_missing_source_count_distribution":
+            dict(
+                missing_source_count_distribution
             ),
 
-        "failure_categories":
-            categories,
+        "retry_required_source_count_distribution":
+            dict(
+                required_source_count_distribution
+            ),
+
+        "retry_missing_source_frequency":
+            dict(
+                missing_source_frequency
+                .most_common()
+            ),
+
+        "retry_evidence_path_distribution":
+            dict(
+                evidence_path_distribution
+            ),
+
+        # ----------------------------------------------------
+        # Null safety
+        # ----------------------------------------------------
+
+        "null_initial_false_accepts":
+            sum(
+                1
+
+                for record
+                in null_examples
+
+                if record[
+                    "initial_evidence_sufficient"
+                ]
+            ),
+
+        "null_initial_correct_rejects":
+            sum(
+                1
+
+                for record
+                in null_examples
+
+                if not record[
+                    "initial_evidence_sufficient"
+                ]
+            ),
+
+        # ----------------------------------------------------
+        # Diagnostic taxonomy
+        # ----------------------------------------------------
+
+        "production_category_distribution":
+            counter_dict(
+                record[
+                    "production_category"
+                ]
+
+                for record
+                in records
+            ),
+
+        "gold_failure_category_distribution":
+            counter_dict(
+                record[
+                    "gold_failure_category"
+                ]
+
+                for record
+                in initial_rejects_answerable
+            ),
     }
+
+
+# ============================================================
+# Console output
+# ============================================================
+
+def print_retry_candidate(
+    *,
+    index,
+    total,
+    record,
+):
+
+    print(
+        "\n"
+        +
+        "=" * 100
+    )
+
+
+    print(
+        (
+            "ADAPTIVE RETRY CANDIDATE "
+            f"{index}/{total}"
+        )
+    )
+
+
+    print(
+        "=" * 100
+    )
+
+
+    print(
+        "ID:",
+        record[
+            "id"
+        ],
+    )
+
+
+    print(
+        "Type:",
+        record[
+            "question_type"
+        ],
+    )
+
+
+    print(
+        "Question:"
+    )
+
+
+    print(
+        record[
+            "question"
+        ]
+    )
+
+
+    print(
+        "\nRequired sources:",
+        record[
+            "initial_required_sources"
+        ],
+    )
+
+
+    print(
+        "Covered sources:",
+        record[
+            "initial_covered_sources"
+        ],
+    )
+
+
+    print(
+        "Missing sources:",
+        record[
+            "initial_missing_sources"
+        ],
+    )
+
+
+    print(
+        "Evidence path:",
+        record[
+            "initial_evidence_path"
+        ],
+    )
+
+
+    print(
+        "\nInitial retrieval recall:",
+        record[
+            "initial_retrieval_gold_recall"
+        ],
+    )
+
+
+    print(
+        "Initial context recall:",
+        record[
+            "initial_context_gold_recall"
+        ],
+    )
+
+
+    print(
+        "Initial context complete:",
+        record[
+            "initial_context_gold_complete"
+        ],
+    )
+
+
+    print(
+        "Initial evidence:",
+        (
+            record[
+                "initial_evidence_sufficient"
+            ],
+            round(
+                record[
+                    "initial_evidence_score"
+                ],
+                4,
+            ),
+        ),
+    )
+
+
+    print(
+        "\nRewrite:"
+    )
+
+
+    print(
+        record[
+            "rewritten_query"
+        ]
+    )
+
+
+    print(
+        "\nFinal retrieval recall:",
+        record[
+            "final_retrieval_gold_recall"
+        ],
+    )
+
+
+    print(
+        "Final context recall:",
+        record[
+            "final_context_gold_recall"
+        ],
+    )
+
+
+    print(
+        "Final context complete:",
+        record[
+            "final_context_gold_complete"
+        ],
+    )
+
+
+    print(
+        "Final evidence:",
+        (
+            record[
+                "final_evidence_sufficient"
+            ],
+            round(
+                record[
+                    "final_evidence_score"
+                ],
+                4,
+            ),
+        ),
+    )
+
+
+    print(
+        "Final route:",
+        record[
+            "final_route"
+        ],
+    )
+
+
+    print(
+        "Retry outcome:",
+        record[
+            "retry_outcome"
+        ],
+    )
 
 
 # ============================================================
@@ -1102,12 +2222,58 @@ def main():
     )
 
 
+    print(
+        "\n"
+        +
+        "=" * 100
+    )
+
+
+    print(
+        "ADAPTIVE RETRY DIAGNOSTIC — FROZEN500"
+    )
+
+
+    print(
+        "=" * 100
+    )
+
+
+    print(
+        "Dataset:",
+        DATASET_PATH
+    )
+
+
+    print(
+        "Examples:",
+        len(
+            examples
+        )
+    )
+
+
+    print(
+        "Generation:",
+        "DISABLED"
+    )
+
+
+    print(
+        "Max retries:",
+        MAX_RETRIES
+    )
+
+
     nodes = (
         RAGNodes()
     )
 
 
     records = []
+
+
+    retry_candidate_number = 0
 
 
     try:
@@ -1120,33 +2286,11 @@ def main():
             start=1,
         ):
 
-            print(
-                "\n"
-                +
-                "=" * 100
-            )
-
-
-            print(
-                (
-                    f"{index}/"
-                    f"{len(examples)} | "
-                    f"{example['question_type']}"
-                )
-            )
-
-
-            print(
-                example[
-                    "question"
-                ]
-            )
-
-
             record = (
                 run_example(
                     nodes=
                         nodes,
+
                     example=
                         example,
                 )
@@ -1158,45 +2302,9 @@ def main():
             )
 
 
-            print(
-                "\nGold docs:",
-                record[
-                    "gold_document_ids"
-                ],
-            )
-
-
-            print(
-                "Initial retrieval recall:",
-                record[
-                    "initial_retrieval_gold_recall"
-                ],
-            )
-
-
-            print(
-                "Initial context recall:",
-                record[
-                    "initial_context_gold_recall"
-                ],
-            )
-
-
-            print(
-                "Initial evidence:",
-                (
-                    record[
-                        "initial_evidence_sufficient"
-                    ],
-                    round(
-                        record[
-                            "initial_evidence_score"
-                        ],
-                        4,
-                    ),
-                ),
-            )
-
+            # ------------------------------------------------
+            # Keep 500-case output readable.
+            # ------------------------------------------------
 
             if (
                 record[
@@ -1204,52 +2312,37 @@ def main():
                 ]
             ):
 
-                print(
-                    "Rewrite:",
-                    record[
-                        "rewritten_query"
-                    ],
-                )
+                retry_candidate_number += 1
 
 
-                print(
-                    "Final retrieval recall:",
-                    record[
-                        "final_retrieval_gold_recall"
-                    ],
-                )
+                print_retry_candidate(
+                    index=
+                        retry_candidate_number,
 
-
-                print(
-                    "Final context recall:",
-                    record[
-                        "final_context_gold_recall"
-                    ],
-                )
-
-
-                print(
-                    "Final evidence:",
-                    (
-                        record[
-                            "final_evidence_sufficient"
-                        ],
-                        round(
-                            record[
-                                "final_evidence_score"
-                            ],
-                            4,
+                    total=
+                        len(
+                            examples
                         ),
-                    ),
+
+                    record=
+                        record,
                 )
 
 
-            print(
-                "Classification:",
-                record[
-                    "failure_category"
-                ],
-            )
+            elif (
+                index % 25
+                ==
+                0
+            ):
+
+                print(
+                    (
+                        f"Processed {index}/"
+                        f"{len(examples)} "
+                        f"| retry candidates so far: "
+                        f"{retry_candidate_number}"
+                    )
+                )
 
 
     finally:
@@ -1270,9 +2363,11 @@ def main():
         "=" * 100
     )
 
+
     print(
         "SUMMARY"
     )
+
 
     print(
         "=" * 100
@@ -1294,6 +2389,18 @@ def main():
     )
 
 
+    retry_candidate_records = [
+        record
+
+        for record
+        in records
+
+        if record[
+            "rewrite_attempted"
+        ]
+    ]
+
+
     with open(
         OUTPUT_PATH,
         "w",
@@ -1302,8 +2409,22 @@ def main():
 
         json.dump(
             {
+                "dataset":
+                    str(
+                        DATASET_PATH
+                    ),
+
+                "max_retries":
+                    MAX_RETRIES,
+
+                "generation_enabled":
+                    False,
+
                 "summary":
                     summary,
+
+                "retry_candidates":
+                    retry_candidate_records,
 
                 "records":
                     records,
@@ -1317,6 +2438,7 @@ def main():
     print(
         "\nSaved:"
     )
+
 
     print(
         OUTPUT_PATH

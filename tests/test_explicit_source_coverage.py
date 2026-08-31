@@ -5,6 +5,10 @@ from adaptive_agentic_rag.orchestration.explicit_source_coverage import (
 )
 
 
+# ============================================================
+# Test context helper
+# ============================================================
+
 def context(
     *sources,
 ):
@@ -20,6 +24,10 @@ def context(
         ]
     )
 
+
+# ============================================================
+# Existing safety invariants
+# ============================================================
 
 def test_case15_missing_the_age_fails():
 
@@ -57,8 +65,13 @@ def test_case15_missing_the_age_fails():
 
 
     assert any(
-        "age"
-        in source.lower()
+        (
+            guard._normalize(
+                source
+            )
+            ==
+            "the age"
+        )
 
         for source
         in result.missing_sources
@@ -278,8 +291,13 @@ def test_missing_single_explicit_source_fails():
 
 
     assert any(
-        "reuters"
-        in source.lower()
+        (
+            guard._normalize(
+                source
+            )
+            ==
+            "reuters"
+        )
 
         for source
         in result.missing_sources
@@ -322,7 +340,8 @@ def test_query_without_explicit_source_passes():
         ==
         []
     )
-    
+
+
 def test_reports_by_source_followed_by_remained_is_detected():
 
     guard = (
@@ -381,4 +400,524 @@ def test_reports_by_source_followed_by_remained_is_detected():
         "TechCrunch"
         in
         result.covered_sources
+    )
+
+
+# ============================================================
+# Frozen500 regression family:
+# reference phrases are NOT publishers
+# ============================================================
+
+def test_the_subsequent_is_not_a_source():
+
+    guard = (
+        ExplicitSourceCoverageGuard()
+    )
+
+
+    query = (
+        "After the report by The Age on October 22, 2023, "
+        "and the subsequent report by TechCrunch on "
+        "October 31, 2023, was the reporting consistent?"
+    )
+
+
+    result = guard.check(
+        query=
+            query,
+
+        context=
+            context(
+                "The Age",
+                "TechCrunch",
+            ),
+    )
+
+
+    assert (
+        result.satisfied
+        is True
+    )
+
+
+    assert (
+        result.missing_sources
+        ==
+        []
+    )
+
+
+    assert not any(
+        "subsequent"
+        in source.lower()
+
+        for source
+        in result.required_sources
+    )
+
+
+def test_the_other_is_not_a_source():
+
+    guard = (
+        ExplicitSourceCoverageGuard()
+    )
+
+
+    query = (
+        "Does the article from "
+        "The Roar | Sports Writers Blog "
+        "about the Sydney Kings differ from the other "
+        "article from The Roar | Sports Writers Blog "
+        "about Eddie Jones?"
+    )
+
+
+    result = guard.check(
+        query=
+            query,
+
+        context=
+            context(
+                (
+                    "The Roar | "
+                    "Sports Writers Blog"
+                )
+            ),
+    )
+
+
+    assert (
+        result.satisfied
+        is True
+    )
+
+
+    assert (
+        result.missing_sources
+        ==
+        []
+    )
+
+
+    assert not any(
+        (
+            guard._normalize(
+                source
+            )
+            ==
+            "the other"
+        )
+
+        for source
+        in result.required_sources
+    )
+
+
+def test_both_sources_is_not_a_source():
+
+    guard = (
+        ExplicitSourceCoverageGuard()
+    )
+
+
+    query = (
+        "Considering reports from The New York Times "
+        "and The Guardian, which actor according to "
+        "both sources played the lead guitarist?"
+    )
+
+
+    result = guard.check(
+        query=
+            query,
+
+        context=
+            context(
+                "The New York Times",
+                "The Guardian",
+            ),
+    )
+
+
+    assert (
+        result.satisfied
+        is True
+    )
+
+
+    assert (
+        result.missing_sources
+        ==
+        []
+    )
+
+
+def test_these_sources_is_not_a_source():
+
+    guard = (
+        ExplicitSourceCoverageGuard()
+    )
+
+
+    query = (
+        "After the Fortune article and the TechCrunch "
+        "article, was the portrayal consistent according "
+        "to these sources?"
+    )
+
+
+    result = guard.check(
+        query=
+            query,
+
+        context=
+            context(
+                "Fortune",
+                "TechCrunch",
+            ),
+    )
+
+
+    assert (
+        result.satisfied
+        is True
+    )
+
+
+    assert (
+        result.missing_sources
+        ==
+        []
+    )
+
+
+def test_same_source_is_not_a_new_source():
+
+    guard = (
+        ExplicitSourceCoverageGuard()
+    )
+
+
+    query = (
+        "Between the TechCrunch report on the trial "
+        "and the subsequent report by the same source, "
+        "was the portrayal consistent?"
+    )
+
+
+    result = guard.check(
+        query=
+            query,
+
+        context=
+            context(
+                "TechCrunch"
+            ),
+    )
+
+
+    assert (
+        result.satisfied
+        is True
+    )
+
+
+    assert (
+        result.missing_sources
+        ==
+        []
+    )
+
+
+# ============================================================
+# Frozen500 regression family:
+# compound publisher references
+# ============================================================
+
+def test_articles_from_two_sources_resolve_to_two_publishers():
+
+    guard = (
+        ExplicitSourceCoverageGuard()
+    )
+
+
+    query = (
+        "Who is the individual facing criminal charges "
+        "according to articles from TechCrunch and "
+        "The Verge?"
+    )
+
+
+    result = guard.check(
+        query=
+            query,
+
+        context=
+            context(
+                "TechCrunch",
+                "The Verge",
+            ),
+    )
+
+
+    assert (
+        result.satisfied
+        is True
+    )
+
+
+    assert (
+        result.missing_sources
+        ==
+        []
+    )
+
+
+    assert (
+        "TechCrunch"
+        in
+        result.required_sources
+    )
+
+
+    assert (
+        "The Verge"
+        in
+        result.required_sources
+    )
+
+
+def test_compound_reference_can_detect_one_real_missing_source():
+
+    guard = (
+        ExplicitSourceCoverageGuard()
+    )
+
+
+    query = (
+        "Who is the individual facing criminal charges "
+        "according to articles from TechCrunch and "
+        "The Verge?"
+    )
+
+
+    result = guard.check(
+        query=
+            query,
+
+        context=
+            context(
+                "TechCrunch"
+            ),
+    )
+
+
+    assert (
+        result.satisfied
+        is False
+    )
+
+
+    assert (
+        "TechCrunch"
+        in
+        result.covered_sources
+    )
+
+
+    assert any(
+        (
+            guard._normalize(
+                source
+            )
+            ==
+            "the verge"
+        )
+
+        for source
+        in result.missing_sources
+    )
+
+
+def test_in_contrast_to_source_is_cleaned():
+
+    guard = (
+        ExplicitSourceCoverageGuard()
+    )
+
+
+    query = (
+        "Does the Sporting News article suggest one "
+        "outcome, in contrast to the CBSSports.com "
+        "article which discusses another outcome?"
+    )
+
+
+    result = guard.check(
+        query=
+            query,
+
+        context=
+            context(
+                "Sporting News",
+                "CBSSports.com",
+            ),
+    )
+
+
+    assert (
+        result.satisfied
+        is True
+    )
+
+
+    assert (
+        result.missing_sources
+        ==
+        []
+    )
+
+
+# ============================================================
+# Frozen500 regression family:
+# publisher followed by descriptive text
+# ============================================================
+
+def test_reports_from_source_between_dates_does_not_capture_date():
+
+    guard = (
+        ExplicitSourceCoverageGuard()
+    )
+
+
+    query = (
+        "Is the involvement of Sony Music artists "
+        "consistent according to reports from "
+        "Music Business Worldwide between November 23, "
+        "2023 and November 30, 2023?"
+    )
+
+
+    result = guard.check(
+        query=
+            query,
+
+        context=
+            context(
+                "Music Business Worldwide"
+            ),
+    )
+
+
+    assert (
+        result.satisfied
+        is True
+    )
+
+
+    assert (
+        result.missing_sources
+        ==
+        []
+    )
+
+
+def test_source_followed_by_defending_clause_is_trimmed():
+
+    guard = (
+        ExplicitSourceCoverageGuard()
+    )
+
+
+    query = (
+        "Does the article from The Verge defending "
+        "Apple's Google Search deal suggest there was "
+        "no valid alternative?"
+    )
+
+
+    result = guard.check(
+        query=
+            query,
+
+        context=
+            context(
+                "The Verge"
+            ),
+    )
+
+
+    assert (
+        result.satisfied
+        is True
+    )
+
+
+    assert (
+        result.missing_sources
+        ==
+        []
+    )
+
+
+# ============================================================
+# Leading "The" alias regression
+# ============================================================
+
+def test_guardian_alias_matches_the_guardian():
+
+    guard = (
+        ExplicitSourceCoverageGuard()
+    )
+
+
+    query = (
+        "Does the Guardian article discuss "
+        "the team's position?"
+    )
+
+
+    result = guard.check(
+        query=
+            query,
+
+        context=
+            context(
+                "The Guardian"
+            ),
+    )
+
+
+    assert (
+        result.satisfied
+        is True
+    )
+
+
+    assert (
+        result.missing_sources
+        ==
+        []
+    )
+
+
+def test_the_age_does_not_get_unsafe_age_alias():
+
+    aliases = (
+        ExplicitSourceCoverageGuard
+        ._source_aliases(
+            "The Age"
+        )
+    )
+
+
+    assert (
+        "the age"
+        in aliases
+    )
+
+
+    assert (
+        "age"
+        not in aliases
     )
