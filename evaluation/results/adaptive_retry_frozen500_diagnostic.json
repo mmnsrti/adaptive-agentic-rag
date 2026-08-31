@@ -62,7 +62,7 @@
     "rewrite_context_unchanged": 2,
     "mean_rewrite_retrieval_recall_delta": 0.0,
     "mean_rewrite_context_recall_delta": 0.0,
-    "mean_rewrite_evidence_score_delta": -0.006200000000000011,
+    "mean_rewrite_evidence_score_delta": 0.017625000000000002,
     "retry_missing_source_count_distribution": {
       "1_missing": 4
     },
@@ -165,42 +165,42 @@
       "production_category": "production_retry_candidate",
       "gold_failure_category": "retrieval_miss_candidate",
       "rewrite_attempted": true,
-      "rewritten_query": "Which NFL team, featured in articles from both 'Sporting News' and 'CBSSports.com', faced the potential of being closely followed in the wild card race by three other teams, might have opted for a field goal in a 'Monday Night Football' game, recently changed their passing game strategy, and has seen comparable offensive production from Josh Dobbs and Kirk Cousins? supporting evidence",
+      "rewritten_query": "CBSSports.com NFL team featured faced potential closely followed wild card race three teams opted field goal Monday Night Football game recently changed their passing strategy seen comparable offensiv offensive production Josh Dobbs Kirk Cousins",
       "retry_count": 1,
       "retry_outcome": "retry_rescued",
       "rewrite_rescued": true,
       "final_retrieved_document_ids": [
-        "doc_0144",
         "doc_0288",
-        "doc_0119",
-        "doc_0004",
-        "doc_0294",
-        "doc_0200",
-        "doc_0037",
-        "doc_0394",
+        "doc_0144",
         "doc_0343",
-        "doc_0316"
+        "doc_0294",
+        "doc_0553",
+        "doc_0037",
+        "doc_0489",
+        "doc_0394",
+        "doc_0119",
+        "doc_0004"
       ],
       "final_context_document_ids": [
-        "doc_0144",
         "doc_0288",
-        "doc_0119",
-        "doc_0004",
-        "doc_0294",
-        "doc_0200",
-        "doc_0037",
-        "doc_0394",
+        "doc_0144",
         "doc_0343",
-        "doc_0316"
+        "doc_0294",
+        "doc_0553",
+        "doc_0037",
+        "doc_0489",
+        "doc_0394",
+        "doc_0119",
+        "doc_0004"
       ],
       "final_retrieval_gold_recall": 0.6666666666666666,
       "final_context_gold_recall": 0.6666666666666666,
       "final_context_gold_complete": false,
       "final_evidence_sufficient": true,
-      "final_evidence_score": 0.8308,
+      "final_evidence_score": 0.8449,
       "final_evidence_reasons": [
         "Evidence appears sufficient.",
-        "Potentially weak evidence citations: [1, 2, 3, 6, 7, 9, 10]",
+        "Potentially weak evidence citations: [1, 2, 3, 5, 6, 9, 10]",
         "explicit_source_coverage=satisfied",
         "required_sources=['Sporting News', 'CBSSports.com']",
         "covered_sources=['Sporting News', 'CBSSports.com']",
@@ -219,7 +219,7 @@
       "final_route": "generate",
       "rewrite_retrieval_recall_delta": 0.0,
       "rewrite_context_recall_delta": 0.0,
-      "rewrite_evidence_score_delta": 0.014100000000000001
+      "rewrite_evidence_score_delta": 0.028200000000000003
     },
     {
       "id": "eval_aa44caaeae76",
@@ -284,49 +284,47 @@
       "production_category": "null_retry_candidate",
       "gold_failure_category": null,
       "rewrite_attempted": true,
-      "rewritten_query": "Considering the information from an article in The New York Times about Zhemu Soda's recent environmental initiatives and a report by The Guardian on his political career, which political party, known for its green policies, did Zhemu Soda join according to The New York Times, and which committee did he chair that was mentioned in The Guardian, where the first letter of the party and the last letter of the committee are the same? supporting evidence",
+      "rewritten_query": "The Guardian Zhemu Soda's recent environmental initiatives his political career party known its green policies Soda join committee he chair mentioned first letter last",
       "retry_count": 1,
       "retry_outcome": "retry_not_rescued",
       "rewrite_rescued": false,
       "final_retrieved_document_ids": [
+        "doc_0233",
         "doc_0599",
-        "doc_0523",
+        "doc_0138",
         "doc_0457",
         "doc_0536",
-        "doc_0233",
-        "doc_0076",
-        "doc_0415",
-        "doc_0156",
-        "doc_0155",
-        "doc_0410"
+        "doc_0278",
+        "doc_0006",
+        "doc_0025",
+        "doc_0345",
+        "doc_0121"
       ],
       "final_context_document_ids": [
+        "doc_0233",
         "doc_0599",
-        "doc_0523",
+        "doc_0138",
         "doc_0457",
         "doc_0536",
-        "doc_0233",
-        "doc_0076",
-        "doc_0415",
-        "doc_0156",
-        "doc_0155",
-        "doc_0410"
+        "doc_0278",
+        "doc_0006",
+        "doc_0025",
+        "doc_0345",
+        "doc_0121"
       ],
       "final_retrieval_gold_recall": null,
       "final_context_gold_recall": null,
       "final_context_gold_complete": null,
       "final_evidence_sufficient": false,
-      "final_evidence_score": 0.7694,
+      "final_evidence_score": 0.7871,
       "final_evidence_reasons": [
-        "Query term coverage is too low: 0.58 < 0.60 (soft signal only)",
-        "Critical query anchors are missing from the evidence: coverage=0.50 < 0.75; missing=['guardian', 'soda', 'zhemu']",
-        "Evidence score is too low: 0.77 < 0.78",
+        "Critical query anchors are missing from the evidence: coverage=0.33 < 0.75; missing=['new', 'soda', 'york', 'zhemu']",
         "Potentially weak evidence citations: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",
         "Explicit source coverage failed.",
         "required_sources=['The Guardian', 'The New York Times']",
-        "available_sources=['TechCrunch', 'The Age', 'Cnbc | World Business News Leader', 'Yahoo News', 'Hacker News', 'Fortune', 'The New York Times', 'Business World']",
-        "covered_sources=['The New York Times']",
-        "missing_sources=['The Guardian']",
+        "available_sources=['Yahoo News', 'TechCrunch', 'Fortune', 'Cnbc | World Business News Leader', 'Sporting News', 'The Guardian', 'The Verge']",
+        "covered_sources=['The Guardian']",
+        "missing_sources=['The New York Times']",
         "evidence_path=explicit_source_coverage_reject"
       ],
       "final_evidence_path": "explicit_source_coverage_reject",
@@ -335,15 +333,15 @@
         "The New York Times"
       ],
       "final_covered_sources": [
-        "The New York Times"
+        "The Guardian"
       ],
       "final_missing_sources": [
-        "The Guardian"
+        "The New York Times"
       ],
       "final_route": "abstain",
       "rewrite_retrieval_recall_delta": null,
       "rewrite_context_recall_delta": null,
-      "rewrite_evidence_score_delta": -0.01770000000000005
+      "rewrite_evidence_score_delta": 0.0
     },
     {
       "id": "eval_be412cb54feb",
@@ -410,27 +408,27 @@
       "production_category": "production_retry_candidate",
       "gold_failure_category": "retrieval_miss_candidate",
       "rewrite_attempted": true,
-      "rewritten_query": "Has the portrayal of Google's market practices in reports by The Age after October 22, 2023, remained consistent with the depiction in The Verge's coverage of the Epic v. Google case, and with TechCrunch's report on the class action antitrust suit filed against Google? supporting evidence",
+      "rewritten_query": "The Age portrayal Google's market practices October 22 2023 remained consistent depiction Epic Google case class action antitrust suit filed against",
       "retry_count": 1,
       "retry_outcome": "retry_not_rescued",
       "rewrite_rescued": false,
       "final_retrieved_document_ids": [
+        "doc_0042",
         "doc_0033",
-        "doc_0355",
-        "doc_0015",
         "doc_0170",
+        "doc_0015",
         "doc_0299",
-        "doc_0237",
-        "doc_0042"
+        "doc_0355",
+        "doc_0237"
       ],
       "final_context_document_ids": [
+        "doc_0042",
         "doc_0033",
-        "doc_0355",
-        "doc_0015",
         "doc_0170",
+        "doc_0015",
         "doc_0299",
-        "doc_0237",
-        "doc_0042"
+        "doc_0355",
+        "doc_0237"
       ],
       "final_retrieval_gold_recall": 0.6666666666666666,
       "final_context_gold_recall": 0.6666666666666666,
@@ -439,7 +437,7 @@
       "final_evidence_score": 0.78,
       "final_evidence_reasons": [
         "Evidence appears sufficient.",
-        "Potentially weak evidence citations: [4, 5, 7]",
+        "Potentially weak evidence citations: [1, 3, 5]",
         "Explicit source coverage failed.",
         "required_sources=['The Age', 'The Verge', 'TechCrunch']",
         "available_sources=['TechCrunch', 'The Verge']",
@@ -529,7 +527,7 @@
       "production_category": "null_retry_candidate",
       "gold_failure_category": null,
       "rewrite_attempted": true,
-      "rewritten_query": "Considering the features discussed in a New York Times article and the performance benchmarks mentioned in a review by The Verge, which component of the latest iPad Pro, represented by a single letter, has seen the most significant upgrade in terms of speed and efficiency? supporting evidence",
+      "rewritten_query": "New York Times features discussed performance benchmarks mentioned review component latest iPad Pro represented single letter seen most significant upgrade terms speed efficiency",
       "retry_count": 1,
       "retry_outcome": "retry_not_rescued",
       "rewrite_rescued": false,
@@ -537,54 +535,64 @@
         "doc_0600",
         "doc_0526",
         "doc_0287",
-        "doc_0169",
         "doc_0576",
-        "doc_0199",
-        "doc_0383",
-        "doc_0250",
         "doc_0222",
-        "doc_0091"
+        "doc_0250",
+        "doc_0558",
+        "doc_0104",
+        "doc_0351",
+        "doc_0102"
       ],
       "final_context_document_ids": [
         "doc_0600",
         "doc_0526",
         "doc_0287",
-        "doc_0169",
         "doc_0576",
-        "doc_0199",
-        "doc_0383",
-        "doc_0250",
         "doc_0222",
-        "doc_0091"
+        "doc_0250",
+        "doc_0558",
+        "doc_0104",
+        "doc_0351",
+        "doc_0102"
       ],
       "final_retrieval_gold_recall": null,
       "final_context_gold_recall": null,
       "final_context_gold_complete": null,
       "final_evidence_sufficient": false,
-      "final_evidence_score": 0.7038,
+      "final_evidence_score": 0.7673,
       "final_evidence_reasons": [
-        "Query term coverage is too low: 0.46 < 0.60 (soft signal only)",
-        "Evidence score is too low: 0.70 < 0.78",
-        "Potentially weak evidence citations: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",
-        "Explicit source coverage failed.",
-        "required_sources=['New York Times']",
-        "available_sources=['Wired', 'TechCrunch', 'Engadget', 'Polygon']",
-        "covered_sources=[]",
-        "missing_sources=['New York Times']",
-        "evidence_path=explicit_source_coverage_reject"
+        "Query term coverage is too low: 0.58 < 0.60 (soft signal only)",
+        "Evidence score is too low: 0.77 < 0.78",
+        "Potentially weak evidence citations: [1, 2, 3, 4, 5, 6, 8, 9, 10]",
+        "explicit_source_coverage=satisfied",
+        "required_sources=['The New York Times', 'The Verge']",
+        "covered_sources=['The New York Times', 'The Verge']",
+        "semantic_rescue_attempted=true",
+        "semantic_rescue_sufficient=false",
+        "semantic_rescue=insufficient",
+        "semantic_rescue_threshold=-6.127460241317749",
+        "semantic_rescue_required_fraction=0.75",
+        "semantic_rescue_requirement_count=2",
+        "semantic_rescue_supported_requirements=1",
+        "semantic_rescue_required_requirements=2",
+        "semantic_rescue_missing_query_sources=[]",
+        "semantic_rescue_supporting_document_ids=['doc_0526']",
+        "evidence_path=constrained_semantic_rescue_reject"
       ],
-      "final_evidence_path": "explicit_source_coverage_reject",
+      "final_evidence_path": "constrained_semantic_rescue_reject",
       "final_required_sources": [
-        "New York Times"
+        "The New York Times",
+        "The Verge"
       ],
-      "final_covered_sources": [],
-      "final_missing_sources": [
-        "New York Times"
+      "final_covered_sources": [
+        "The New York Times",
+        "The Verge"
       ],
+      "final_missing_sources": [],
       "final_route": "abstain",
       "rewrite_retrieval_recall_delta": null,
       "rewrite_context_recall_delta": null,
-      "rewrite_evidence_score_delta": -0.021199999999999997
+      "rewrite_evidence_score_delta": 0.042300000000000004
     }
   ],
   "records": [
@@ -10424,42 +10432,42 @@
       "production_category": "production_retry_candidate",
       "gold_failure_category": "retrieval_miss_candidate",
       "rewrite_attempted": true,
-      "rewritten_query": "Which NFL team, featured in articles from both 'Sporting News' and 'CBSSports.com', faced the potential of being closely followed in the wild card race by three other teams, might have opted for a field goal in a 'Monday Night Football' game, recently changed their passing game strategy, and has seen comparable offensive production from Josh Dobbs and Kirk Cousins? supporting evidence",
+      "rewritten_query": "CBSSports.com NFL team featured faced potential closely followed wild card race three teams opted field goal Monday Night Football game recently changed their passing strategy seen comparable offensiv offensive production Josh Dobbs Kirk Cousins",
       "retry_count": 1,
       "retry_outcome": "retry_rescued",
       "rewrite_rescued": true,
       "final_retrieved_document_ids": [
-        "doc_0144",
         "doc_0288",
-        "doc_0119",
-        "doc_0004",
-        "doc_0294",
-        "doc_0200",
-        "doc_0037",
-        "doc_0394",
+        "doc_0144",
         "doc_0343",
-        "doc_0316"
+        "doc_0294",
+        "doc_0553",
+        "doc_0037",
+        "doc_0489",
+        "doc_0394",
+        "doc_0119",
+        "doc_0004"
       ],
       "final_context_document_ids": [
-        "doc_0144",
         "doc_0288",
-        "doc_0119",
-        "doc_0004",
-        "doc_0294",
-        "doc_0200",
-        "doc_0037",
-        "doc_0394",
+        "doc_0144",
         "doc_0343",
-        "doc_0316"
+        "doc_0294",
+        "doc_0553",
+        "doc_0037",
+        "doc_0489",
+        "doc_0394",
+        "doc_0119",
+        "doc_0004"
       ],
       "final_retrieval_gold_recall": 0.6666666666666666,
       "final_context_gold_recall": 0.6666666666666666,
       "final_context_gold_complete": false,
       "final_evidence_sufficient": true,
-      "final_evidence_score": 0.8308,
+      "final_evidence_score": 0.8449,
       "final_evidence_reasons": [
         "Evidence appears sufficient.",
-        "Potentially weak evidence citations: [1, 2, 3, 6, 7, 9, 10]",
+        "Potentially weak evidence citations: [1, 2, 3, 5, 6, 9, 10]",
         "explicit_source_coverage=satisfied",
         "required_sources=['Sporting News', 'CBSSports.com']",
         "covered_sources=['Sporting News', 'CBSSports.com']",
@@ -10478,7 +10486,7 @@
       "final_route": "generate",
       "rewrite_retrieval_recall_delta": 0.0,
       "rewrite_context_recall_delta": 0.0,
-      "rewrite_evidence_score_delta": 0.014100000000000001
+      "rewrite_evidence_score_delta": 0.028200000000000003
     },
     {
       "id": "eval_0917bb98093d",
@@ -19337,49 +19345,47 @@
       "production_category": "null_retry_candidate",
       "gold_failure_category": null,
       "rewrite_attempted": true,
-      "rewritten_query": "Considering the information from an article in The New York Times about Zhemu Soda's recent environmental initiatives and a report by The Guardian on his political career, which political party, known for its green policies, did Zhemu Soda join according to The New York Times, and which committee did he chair that was mentioned in The Guardian, where the first letter of the party and the last letter of the committee are the same? supporting evidence",
+      "rewritten_query": "The Guardian Zhemu Soda's recent environmental initiatives his political career party known its green policies Soda join committee he chair mentioned first letter last",
       "retry_count": 1,
       "retry_outcome": "retry_not_rescued",
       "rewrite_rescued": false,
       "final_retrieved_document_ids": [
+        "doc_0233",
         "doc_0599",
-        "doc_0523",
+        "doc_0138",
         "doc_0457",
         "doc_0536",
-        "doc_0233",
-        "doc_0076",
-        "doc_0415",
-        "doc_0156",
-        "doc_0155",
-        "doc_0410"
+        "doc_0278",
+        "doc_0006",
+        "doc_0025",
+        "doc_0345",
+        "doc_0121"
       ],
       "final_context_document_ids": [
+        "doc_0233",
         "doc_0599",
-        "doc_0523",
+        "doc_0138",
         "doc_0457",
         "doc_0536",
-        "doc_0233",
-        "doc_0076",
-        "doc_0415",
-        "doc_0156",
-        "doc_0155",
-        "doc_0410"
+        "doc_0278",
+        "doc_0006",
+        "doc_0025",
+        "doc_0345",
+        "doc_0121"
       ],
       "final_retrieval_gold_recall": null,
       "final_context_gold_recall": null,
       "final_context_gold_complete": null,
       "final_evidence_sufficient": false,
-      "final_evidence_score": 0.7694,
+      "final_evidence_score": 0.7871,
       "final_evidence_reasons": [
-        "Query term coverage is too low: 0.58 < 0.60 (soft signal only)",
-        "Critical query anchors are missing from the evidence: coverage=0.50 < 0.75; missing=['guardian', 'soda', 'zhemu']",
-        "Evidence score is too low: 0.77 < 0.78",
+        "Critical query anchors are missing from the evidence: coverage=0.33 < 0.75; missing=['new', 'soda', 'york', 'zhemu']",
         "Potentially weak evidence citations: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",
         "Explicit source coverage failed.",
         "required_sources=['The Guardian', 'The New York Times']",
-        "available_sources=['TechCrunch', 'The Age', 'Cnbc | World Business News Leader', 'Yahoo News', 'Hacker News', 'Fortune', 'The New York Times', 'Business World']",
-        "covered_sources=['The New York Times']",
-        "missing_sources=['The Guardian']",
+        "available_sources=['Yahoo News', 'TechCrunch', 'Fortune', 'Cnbc | World Business News Leader', 'Sporting News', 'The Guardian', 'The Verge']",
+        "covered_sources=['The Guardian']",
+        "missing_sources=['The New York Times']",
         "evidence_path=explicit_source_coverage_reject"
       ],
       "final_evidence_path": "explicit_source_coverage_reject",
@@ -19388,15 +19394,15 @@
         "The New York Times"
       ],
       "final_covered_sources": [
-        "The New York Times"
+        "The Guardian"
       ],
       "final_missing_sources": [
-        "The Guardian"
+        "The New York Times"
       ],
       "final_route": "abstain",
       "rewrite_retrieval_recall_delta": null,
       "rewrite_context_recall_delta": null,
-      "rewrite_evidence_score_delta": -0.01770000000000005
+      "rewrite_evidence_score_delta": 0.0
     },
     {
       "id": "eval_27a5bb75706e",
@@ -20297,27 +20303,27 @@
       "production_category": "production_retry_candidate",
       "gold_failure_category": "retrieval_miss_candidate",
       "rewrite_attempted": true,
-      "rewritten_query": "Has the portrayal of Google's market practices in reports by The Age after October 22, 2023, remained consistent with the depiction in The Verge's coverage of the Epic v. Google case, and with TechCrunch's report on the class action antitrust suit filed against Google? supporting evidence",
+      "rewritten_query": "The Age portrayal Google's market practices October 22 2023 remained consistent depiction Epic Google case class action antitrust suit filed against",
       "retry_count": 1,
       "retry_outcome": "retry_not_rescued",
       "rewrite_rescued": false,
       "final_retrieved_document_ids": [
+        "doc_0042",
         "doc_0033",
-        "doc_0355",
-        "doc_0015",
         "doc_0170",
+        "doc_0015",
         "doc_0299",
-        "doc_0237",
-        "doc_0042"
+        "doc_0355",
+        "doc_0237"
       ],
       "final_context_document_ids": [
+        "doc_0042",
         "doc_0033",
-        "doc_0355",
-        "doc_0015",
         "doc_0170",
+        "doc_0015",
         "doc_0299",
-        "doc_0237",
-        "doc_0042"
+        "doc_0355",
+        "doc_0237"
       ],
       "final_retrieval_gold_recall": 0.6666666666666666,
       "final_context_gold_recall": 0.6666666666666666,
@@ -20326,7 +20332,7 @@
       "final_evidence_score": 0.78,
       "final_evidence_reasons": [
         "Evidence appears sufficient.",
-        "Potentially weak evidence citations: [4, 5, 7]",
+        "Potentially weak evidence citations: [1, 3, 5]",
         "Explicit source coverage failed.",
         "required_sources=['The Age', 'The Verge', 'TechCrunch']",
         "available_sources=['TechCrunch', 'The Verge']",
@@ -52283,7 +52289,7 @@
       "production_category": "null_retry_candidate",
       "gold_failure_category": null,
       "rewrite_attempted": true,
-      "rewritten_query": "Considering the features discussed in a New York Times article and the performance benchmarks mentioned in a review by The Verge, which component of the latest iPad Pro, represented by a single letter, has seen the most significant upgrade in terms of speed and efficiency? supporting evidence",
+      "rewritten_query": "New York Times features discussed performance benchmarks mentioned review component latest iPad Pro represented single letter seen most significant upgrade terms speed efficiency",
       "retry_count": 1,
       "retry_outcome": "retry_not_rescued",
       "rewrite_rescued": false,
@@ -52291,54 +52297,64 @@
         "doc_0600",
         "doc_0526",
         "doc_0287",
-        "doc_0169",
         "doc_0576",
-        "doc_0199",
-        "doc_0383",
-        "doc_0250",
         "doc_0222",
-        "doc_0091"
+        "doc_0250",
+        "doc_0558",
+        "doc_0104",
+        "doc_0351",
+        "doc_0102"
       ],
       "final_context_document_ids": [
         "doc_0600",
         "doc_0526",
         "doc_0287",
-        "doc_0169",
         "doc_0576",
-        "doc_0199",
-        "doc_0383",
-        "doc_0250",
         "doc_0222",
-        "doc_0091"
+        "doc_0250",
+        "doc_0558",
+        "doc_0104",
+        "doc_0351",
+        "doc_0102"
       ],
       "final_retrieval_gold_recall": null,
       "final_context_gold_recall": null,
       "final_context_gold_complete": null,
       "final_evidence_sufficient": false,
-      "final_evidence_score": 0.7038,
+      "final_evidence_score": 0.7673,
       "final_evidence_reasons": [
-        "Query term coverage is too low: 0.46 < 0.60 (soft signal only)",
-        "Evidence score is too low: 0.70 < 0.78",
-        "Potentially weak evidence citations: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",
-        "Explicit source coverage failed.",
-        "required_sources=['New York Times']",
-        "available_sources=['Wired', 'TechCrunch', 'Engadget', 'Polygon']",
-        "covered_sources=[]",
-        "missing_sources=['New York Times']",
-        "evidence_path=explicit_source_coverage_reject"
+        "Query term coverage is too low: 0.58 < 0.60 (soft signal only)",
+        "Evidence score is too low: 0.77 < 0.78",
+        "Potentially weak evidence citations: [1, 2, 3, 4, 5, 6, 8, 9, 10]",
+        "explicit_source_coverage=satisfied",
+        "required_sources=['The New York Times', 'The Verge']",
+        "covered_sources=['The New York Times', 'The Verge']",
+        "semantic_rescue_attempted=true",
+        "semantic_rescue_sufficient=false",
+        "semantic_rescue=insufficient",
+        "semantic_rescue_threshold=-6.127460241317749",
+        "semantic_rescue_required_fraction=0.75",
+        "semantic_rescue_requirement_count=2",
+        "semantic_rescue_supported_requirements=1",
+        "semantic_rescue_required_requirements=2",
+        "semantic_rescue_missing_query_sources=[]",
+        "semantic_rescue_supporting_document_ids=['doc_0526']",
+        "evidence_path=constrained_semantic_rescue_reject"
       ],
-      "final_evidence_path": "explicit_source_coverage_reject",
+      "final_evidence_path": "constrained_semantic_rescue_reject",
       "final_required_sources": [
-        "New York Times"
+        "The New York Times",
+        "The Verge"
       ],
-      "final_covered_sources": [],
-      "final_missing_sources": [
-        "New York Times"
+      "final_covered_sources": [
+        "The New York Times",
+        "The Verge"
       ],
+      "final_missing_sources": [],
       "final_route": "abstain",
       "rewrite_retrieval_recall_delta": null,
       "rewrite_context_recall_delta": null,
-      "rewrite_evidence_score_delta": -0.021199999999999997
+      "rewrite_evidence_score_delta": 0.042300000000000004
     },
     {
       "id": "eval_43b102d7681b",

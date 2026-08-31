@@ -3,7 +3,7 @@ from typing import Any
 from adaptive_agentic_rag.agents.query_router import (
     QueryRouter,
 )
-
+import ast
 from adaptive_agentic_rag.agents.evidence_grader import (
     EvidenceGrader,
 )
@@ -197,7 +197,89 @@ class RAGNodes:
             value
         )
 
+    # ======================================================
+    # Evidence telemetry list extraction
+    #
+    # QueryRewriter V2 consumes the structural source
+    # telemetry produced by ExplicitSourceCoverageGuard.
+    #
+    # Fail closed:
+    #
+    # malformed/missing telemetry -> []
+    # ======================================================
 
+    @staticmethod
+    def _extract_reason_list(
+        reasons: list[str],
+        prefix: str,
+    ) -> list[str]:
+
+        for reason in (
+            reasons
+            or []
+        ):
+
+            if not isinstance(
+                reason,
+                str,
+            ):
+
+                continue
+
+
+            if not reason.startswith(
+                prefix
+            ):
+
+                continue
+
+
+            raw_value = (
+                reason[
+                    len(
+                        prefix
+                    ):
+                ]
+                .strip()
+            )
+
+
+            try:
+
+                parsed = (
+                    ast.literal_eval(
+                        raw_value
+                    )
+                )
+
+
+            except (
+                ValueError,
+                SyntaxError,
+            ):
+
+                return []
+
+
+            if not isinstance(
+                parsed,
+                list,
+            ):
+
+                return []
+
+
+            return [
+                str(
+                    value
+                )
+
+                for value
+                in parsed
+            ]
+
+
+        return []
     # ======================================================
     # Structured-result accessor
     #
@@ -1122,6 +1204,19 @@ class RAGNodes:
     # Query rewriting
     # ======================================================
 
+    # ======================================================
+    # Node 5
+    # Query rewriting
+    #
+    # V2:
+    #
+    # Evidence telemetry
+    #       ↓
+    # missing publisher(s)
+    #       ↓
+    # source-targeted retrieval rewrite
+    # ======================================================
+
     def rewrite_query(
         self,
         state: AgentState,
@@ -1158,19 +1253,69 @@ class RAGNodes:
         )
 
 
+        # ==================================================
+        # IMPORTANT:
+        #
+        # Capture evidence telemetry BEFORE resetting the
+        # retrieval-round state below.
+        #
+        # AdaptiveRetryPolicy has already approved this retry.
+        # QueryRewriter now needs to know the structural
+        # reason for that decision.
+        # ==================================================
+
+        evidence_reasons = list(
+            state.get(
+                "evidence_reasons",
+                [],
+            )
+            or []
+        )
+
+
+        required_sources = (
+            self._extract_reason_list(
+                evidence_reasons,
+                "required_sources=",
+            )
+        )
+
+
+        covered_sources = (
+            self._extract_reason_list(
+                evidence_reasons,
+                "covered_sources=",
+            )
+        )
+
+
+        missing_sources = (
+            self._extract_reason_list(
+                evidence_reasons,
+                "missing_sources=",
+            )
+        )
+
+
         rewritten_query = (
             self.query_rewriter.rewrite(
-                query=(
-                    original_query
-                ),
+                query=
+                    original_query,
 
-                query_type=(
-                    query_type
-                ),
+                query_type=
+                    query_type,
 
-                attempt=(
-                    attempt
-                ),
+                attempt=
+                    attempt,
+
+                required_sources=
+                    required_sources,
+
+                covered_sources=
+                    covered_sources,
+
+                missing_sources=
+                    missing_sources,
             )
         )
 
@@ -1184,7 +1329,6 @@ class RAGNodes:
 
             "rewritten":
                 True,
-
 
             # ----------------------------------------------
             # Reset retrieval-round state.
@@ -1205,8 +1349,6 @@ class RAGNodes:
             "evidence_reasons":
                 [],
         }
-
-
     # ======================================================
     # Node 6
     # Grounded generation
