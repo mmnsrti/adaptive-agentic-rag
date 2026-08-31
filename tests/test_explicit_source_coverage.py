@@ -921,3 +921,164 @@ def test_the_age_does_not_get_unsafe_age_alias():
         "age"
         not in aliases
     )
+def test_according_to_person_is_not_treated_as_source():
+
+    guard = (
+        ExplicitSourceCoverageGuard()
+    )
+
+
+    query = (
+        "Which company, according to Eddy Cue, had no "
+        "valid alternative for search engine services, "
+        "is reported by The Verge to have spent billions "
+        "to remain the default search engine, as mentioned "
+        "by TechCrunch?"
+    )
+
+
+    result = guard.check(
+        query=
+            query,
+
+        context=
+            context(
+                "The Verge",
+                "TechCrunch",
+            ),
+    )
+
+
+    assert (
+        result.satisfied
+        is True
+    )
+
+
+    assert (
+        result.missing_sources
+        ==
+        []
+    )
+
+
+    assert not any(
+        (
+            guard._normalize(
+                source
+            )
+            ==
+            "eddy cue"
+        )
+
+        for source
+        in result.required_sources
+    )
+
+
+def test_according_to_missing_publisher_still_fails():
+
+    guard = (
+        ExplicitSourceCoverageGuard()
+    )
+
+
+    query = (
+        "According to Reuters, "
+        "which country launched the initiative?"
+    )
+
+
+    result = guard.check(
+        query=
+            query,
+
+        context=
+            context(
+                "Bloomberg"
+            ),
+    )
+
+
+    assert (
+        result.satisfied
+        is False
+    )
+
+
+    assert any(
+        (
+            guard._normalize(
+                source
+            )
+            ==
+            "reuters"
+        )
+
+        for source
+        in result.missing_sources
+    )
+
+
+def test_quoted_compound_sources_are_split_correctly():
+
+    guard = (
+        ExplicitSourceCoverageGuard()
+    )
+
+
+    query = (
+        "Has the focus of Taylor Swift coverage by "
+        "'The Independent - Life and Style' and "
+        "'FOX News - Lifestyle' remained consistent?"
+    )
+
+
+    result = guard.check(
+        query=
+            query,
+
+        context=
+            context(
+                "The Independent - Life and Style",
+                "FOX News - Lifestyle",
+            ),
+    )
+
+
+    assert (
+        result.satisfied
+        is True
+    )
+
+
+    assert (
+        result.missing_sources
+        ==
+        []
+    )
+
+
+    assert (
+        "The Independent - Life and Style"
+        in
+        result.required_sources
+    )
+
+
+    assert (
+        "FOX News - Lifestyle"
+        in
+        result.required_sources
+    )
+
+
+    assert not any(
+        (
+            " and "
+            in source.lower()
+        )
+
+        for source
+        in result.missing_sources
+    )    

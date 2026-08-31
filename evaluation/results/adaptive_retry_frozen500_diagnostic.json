@@ -9,23 +9,23 @@
     "null": 80,
     "mean_initial_retrieval_gold_recall": 0.8775793650793651,
     "mean_initial_context_gold_recall": 0.8775793650793651,
-    "initial_gate_accepts_answerable": 305,
-    "initial_gate_rejects_answerable": 115,
-    "complete_gold_context_rejected": 60,
-    "high_gold_context_rejected": 77,
+    "initial_gate_accepts_answerable": 307,
+    "initial_gate_rejects_answerable": 113,
+    "complete_gold_context_rejected": 58,
+    "high_gold_context_rejected": 75,
     "initial_route_distribution": {
-      "generate": 308,
-      "abstain": 178,
-      "rewrite": 14
+      "generate": 310,
+      "abstain": 186,
+      "rewrite": 4
     },
     "final_route_distribution": {
-      "generate": 309,
-      "abstain": 191
+      "generate": 311,
+      "abstain": 189
     },
-    "retry_candidates": 14,
-    "retry_candidate_rate": 0.028,
-    "answerable_retry_candidates": 4,
-    "null_retry_candidates": 10,
+    "retry_candidates": 4,
+    "retry_candidate_rate": 0.008,
+    "answerable_retry_candidates": 2,
+    "null_retry_candidates": 2,
     "route_by_question_type": {
       "comparison_query": {
         "count": 140,
@@ -35,308 +35,69 @@
       },
       "inference_query": {
         "count": 140,
-        "generate": 91,
-        "rewrite": 2,
+        "generate": 92,
+        "rewrite": 1,
         "abstain": 47
       },
       "null_query": {
         "count": 80,
         "generate": 3,
-        "rewrite": 10,
-        "abstain": 67
+        "rewrite": 2,
+        "abstain": 75
       },
       "temporal_query": {
         "count": 140,
-        "generate": 106,
-        "rewrite": 2,
+        "generate": 107,
+        "rewrite": 1,
         "abstain": 32
       }
     },
     "rewrite_rescues": 1,
-    "rewrite_rescue_rate": 0.07142857142857142,
+    "rewrite_rescue_rate": 0.25,
     "rewrite_retrieval_improved": 0,
     "rewrite_retrieval_harmed": 0,
-    "rewrite_retrieval_unchanged": 4,
+    "rewrite_retrieval_unchanged": 2,
     "rewrite_context_improved": 0,
     "rewrite_context_harmed": 0,
-    "rewrite_context_unchanged": 4,
+    "rewrite_context_unchanged": 2,
     "mean_rewrite_retrieval_recall_delta": 0.0,
     "mean_rewrite_context_recall_delta": 0.0,
-    "mean_rewrite_evidence_score_delta": 0.0034285714285714314,
+    "mean_rewrite_evidence_score_delta": -0.006200000000000011,
     "retry_missing_source_count_distribution": {
-      "1_missing": 14
+      "1_missing": 4
     },
     "retry_required_source_count_distribution": {
-      "3_required": 3,
-      "2_required": 11
+      "2_required": 3,
+      "3_required": 1
     },
     "retry_missing_source_frequency": {
-      "Forbes": 3,
-      "Bloomberg": 2,
-      "Eddy Cue": 1,
       "CBSSports.com": 1,
-      "Gizmodo": 1,
-      "Wall Street Journal": 1,
       "The Guardian": 1,
       "The Age": 1,
-      "The Independent - Life and Style' and 'FOX News - Lifestyle": 1,
-      "CNET": 1,
       "New York Times": 1
     },
     "retry_evidence_path_distribution": {
-      "explicit_source_coverage_reject": 14
+      "explicit_source_coverage_reject": 4
     },
     "null_initial_false_accepts": 3,
     "null_initial_correct_rejects": 77,
     "production_category_distribution": {
-      "initial_gate_accept": 305,
+      "initial_gate_accept": 307,
       "production_abstain__grader_reject_complete_gold_context": 58,
       "production_abstain__grader_reject_high_gold_context": 17,
       "production_abstain__retrieval_miss_candidate": 36,
-      "null_correct_reject": 67,
-      "production_retry_candidate": 4,
-      "null_retry_candidate": 10,
-      "null_false_accept": 3
+      "null_correct_reject": 75,
+      "production_retry_candidate": 2,
+      "null_false_accept": 3,
+      "null_retry_candidate": 2
     },
     "gold_failure_category_distribution": {
-      "grader_reject_complete_gold_context": 60,
+      "grader_reject_complete_gold_context": 58,
       "grader_reject_high_gold_context": 17,
       "retrieval_miss_candidate": 38
     }
   },
   "retry_candidates": [
-    {
-      "id": "eval_1da57abdaa1f",
-      "question": "Which company, according to Eddy Cue, had no valid alternative for search engine services at the time of a negotiation, is reported by The Verge to have spent $26.3 billion in 2021 to secure its default search engine status across various platforms as mentioned by TechCrunch, and is also accused by news publishers in a class action antitrust suit of siphoning off content, readers, and ad revenue through anticompetitive means as cited by TechCrunch?",
-      "question_type": "inference_query",
-      "gold_answer": "Google",
-      "gold_document_ids": [
-        "doc_0014",
-        "doc_0015",
-        "doc_0033"
-      ],
-      "is_null": false,
-      "router_query_type": "multihop",
-      "retrieval_strategy": "hybrid",
-      "initial_retrieved_document_ids": [
-        "doc_0015",
-        "doc_0033",
-        "doc_0237",
-        "doc_0014",
-        "doc_0042"
-      ],
-      "initial_context_document_ids": [
-        "doc_0015",
-        "doc_0033",
-        "doc_0237",
-        "doc_0014",
-        "doc_0042"
-      ],
-      "initial_retrieval_gold_recall": 1.0,
-      "initial_context_gold_recall": 1.0,
-      "initial_context_gold_complete": true,
-      "initial_evidence_sufficient": false,
-      "initial_evidence_score": 0.85,
-      "initial_evidence_reasons": [
-        "Evidence appears sufficient.",
-        "Potentially weak evidence citations: [3, 4, 5]",
-        "Explicit source coverage failed.",
-        "required_sources=['Eddy Cue', 'TechCrunch', 'The Verge']",
-        "available_sources=['TechCrunch', 'The Verge']",
-        "covered_sources=['TechCrunch', 'The Verge']",
-        "missing_sources=['Eddy Cue']",
-        "evidence_path=explicit_source_coverage_reject"
-      ],
-      "initial_evidence_path": "explicit_source_coverage_reject",
-      "initial_required_sources": [
-        "Eddy Cue",
-        "TechCrunch",
-        "The Verge"
-      ],
-      "initial_covered_sources": [
-        "TechCrunch",
-        "The Verge"
-      ],
-      "initial_missing_sources": [
-        "Eddy Cue"
-      ],
-      "initial_route": "rewrite",
-      "production_category": "production_retry_candidate",
-      "gold_failure_category": "grader_reject_complete_gold_context",
-      "rewrite_attempted": true,
-      "rewritten_query": "Which company, according to Eddy Cue, had no valid alternative for search engine services at the time of a negotiation, is reported by The Verge to have spent $26.3 billion in 2021 to secure its default search engine status across various platforms as mentioned by TechCrunch, and is also accused by news publishers in a class action antitrust suit of siphoning off content, readers, and ad revenue through anticompetitive means as cited by TechCrunch? supporting evidence",
-      "retry_count": 1,
-      "retry_outcome": "retry_not_rescued",
-      "rewrite_rescued": false,
-      "final_retrieved_document_ids": [
-        "doc_0015",
-        "doc_0033",
-        "doc_0237",
-        "doc_0014",
-        "doc_0042"
-      ],
-      "final_context_document_ids": [
-        "doc_0015",
-        "doc_0033",
-        "doc_0237",
-        "doc_0014",
-        "doc_0042"
-      ],
-      "final_retrieval_gold_recall": 1.0,
-      "final_context_gold_recall": 1.0,
-      "final_context_gold_complete": true,
-      "final_evidence_sufficient": false,
-      "final_evidence_score": 0.85,
-      "final_evidence_reasons": [
-        "Evidence appears sufficient.",
-        "Potentially weak evidence citations: [3, 4, 5]",
-        "Explicit source coverage failed.",
-        "required_sources=['Eddy Cue', 'TechCrunch', 'The Verge']",
-        "available_sources=['TechCrunch', 'The Verge']",
-        "covered_sources=['TechCrunch', 'The Verge']",
-        "missing_sources=['Eddy Cue']",
-        "evidence_path=explicit_source_coverage_reject"
-      ],
-      "final_evidence_path": "explicit_source_coverage_reject",
-      "final_required_sources": [
-        "Eddy Cue",
-        "TechCrunch",
-        "The Verge"
-      ],
-      "final_covered_sources": [
-        "TechCrunch",
-        "The Verge"
-      ],
-      "final_missing_sources": [
-        "Eddy Cue"
-      ],
-      "final_route": "abstain",
-      "rewrite_retrieval_recall_delta": 0.0,
-      "rewrite_context_recall_delta": 0.0,
-      "rewrite_evidence_score_delta": 0.0
-    },
-    {
-      "id": "eval_d940ff230963",
-      "question": "Based on a report by Bloomberg and an analysis by The Verge, which company's executive, known for leading a significant shift in software strategy as per Bloomberg, was also highlighted by The Verge for their involvement in a controversial decision affecting user privacy?",
-      "question_type": "null_query",
-      "gold_answer": "Insufficient information.",
-      "gold_document_ids": [],
-      "is_null": true,
-      "router_query_type": "multihop",
-      "retrieval_strategy": "hybrid",
-      "initial_retrieved_document_ids": [
-        "doc_0032",
-        "doc_0199",
-        "doc_0099",
-        "doc_0581",
-        "doc_0405",
-        "doc_0608",
-        "doc_0396",
-        "doc_0516",
-        "doc_0014",
-        "doc_0050"
-      ],
-      "initial_context_document_ids": [
-        "doc_0032",
-        "doc_0199",
-        "doc_0099",
-        "doc_0581",
-        "doc_0405",
-        "doc_0608",
-        "doc_0396",
-        "doc_0516",
-        "doc_0014",
-        "doc_0050"
-      ],
-      "initial_retrieval_gold_recall": null,
-      "initial_context_gold_recall": null,
-      "initial_context_gold_complete": null,
-      "initial_evidence_sufficient": false,
-      "initial_evidence_score": 0.825,
-      "initial_evidence_reasons": [
-        "Critical query anchors are missing from the evidence: coverage=0.50 < 0.75; missing=['bloomberg']",
-        "Potentially weak evidence citations: [1, 2, 3, 5, 6, 8, 9, 10]",
-        "Explicit source coverage failed.",
-        "required_sources=['Bloomberg', 'The Verge']",
-        "available_sources=['The Age', 'TechCrunch', 'Engadget', 'Seeking Alpha', 'The Verge']",
-        "covered_sources=['The Verge']",
-        "missing_sources=['Bloomberg']",
-        "evidence_path=explicit_source_coverage_reject"
-      ],
-      "initial_evidence_path": "explicit_source_coverage_reject",
-      "initial_required_sources": [
-        "Bloomberg",
-        "The Verge"
-      ],
-      "initial_covered_sources": [
-        "The Verge"
-      ],
-      "initial_missing_sources": [
-        "Bloomberg"
-      ],
-      "initial_route": "rewrite",
-      "production_category": "null_retry_candidate",
-      "gold_failure_category": null,
-      "rewrite_attempted": true,
-      "rewritten_query": "Based on a report by Bloomberg and an analysis by The Verge, which company's executive, known for leading a significant shift in software strategy as per Bloomberg, was also highlighted by The Verge for their involvement in a controversial decision affecting user privacy? supporting evidence",
-      "retry_count": 1,
-      "retry_outcome": "retry_not_rescued",
-      "rewrite_rescued": false,
-      "final_retrieved_document_ids": [
-        "doc_0032",
-        "doc_0199",
-        "doc_0581",
-        "doc_0099",
-        "doc_0405",
-        "doc_0608",
-        "doc_0014",
-        "doc_0516",
-        "doc_0396",
-        "doc_0141"
-      ],
-      "final_context_document_ids": [
-        "doc_0032",
-        "doc_0199",
-        "doc_0581",
-        "doc_0099",
-        "doc_0405",
-        "doc_0608",
-        "doc_0014",
-        "doc_0516",
-        "doc_0396",
-        "doc_0141"
-      ],
-      "final_retrieval_gold_recall": null,
-      "final_context_gold_recall": null,
-      "final_context_gold_complete": null,
-      "final_evidence_sufficient": false,
-      "final_evidence_score": 0.8,
-      "final_evidence_reasons": [
-        "Critical query anchors are missing from the evidence: coverage=0.50 < 0.75; missing=['bloomberg']",
-        "Potentially weak evidence citations: [1, 2, 4, 5, 6, 7, 8, 10]",
-        "Explicit source coverage failed.",
-        "required_sources=['Bloomberg', 'The Verge']",
-        "available_sources=['The Age', 'TechCrunch', 'Seeking Alpha', 'Engadget', 'The Verge']",
-        "covered_sources=['The Verge']",
-        "missing_sources=['Bloomberg']",
-        "evidence_path=explicit_source_coverage_reject"
-      ],
-      "final_evidence_path": "explicit_source_coverage_reject",
-      "final_required_sources": [
-        "Bloomberg",
-        "The Verge"
-      ],
-      "final_covered_sources": [
-        "The Verge"
-      ],
-      "final_missing_sources": [
-        "Bloomberg"
-      ],
-      "final_route": "abstain",
-      "rewrite_retrieval_recall_delta": null,
-      "rewrite_context_recall_delta": null,
-      "rewrite_evidence_score_delta": -0.02499999999999991
-    },
     {
       "id": "eval_b34094b1e6c2",
       "question": "Which NFL team, featured in articles from both 'Sporting News' and 'CBSSports.com', faced the potential of being closely followed in the wild card race by three other teams, might have opted for a field goal in a 'Monday Night Football' game, recently changed their passing game strategy, and has seen comparable offensive production from Josh Dobbs and Kirk Cousins?",
@@ -459,380 +220,6 @@
       "rewrite_retrieval_recall_delta": 0.0,
       "rewrite_context_recall_delta": 0.0,
       "rewrite_evidence_score_delta": 0.014100000000000001
-    },
-    {
-      "id": "eval_5be6ab82527f",
-      "question": "Considering the information from a CNBC article discussing the growth strategy of CareCredit and a Forbes article analyzing the impact of CareCredit's partnerships on the healthcare financing market, which company, beginning with the letter 'S', is both a strategic partner of CareCredit mentioned in the CNBC article and is also highlighted in the Forbes article for its innovative approach to patient financing?",
-      "question_type": "null_query",
-      "gold_answer": "Insufficient information.",
-      "gold_document_ids": [],
-      "is_null": true,
-      "router_query_type": "multihop",
-      "retrieval_strategy": "hybrid",
-      "initial_retrieved_document_ids": [
-        "doc_0158",
-        "doc_0075",
-        "doc_0298",
-        "doc_0097",
-        "doc_0230",
-        "doc_0536",
-        "doc_0263",
-        "doc_0463",
-        "doc_0375",
-        "doc_0344"
-      ],
-      "initial_context_document_ids": [
-        "doc_0158",
-        "doc_0075",
-        "doc_0298",
-        "doc_0097",
-        "doc_0230",
-        "doc_0536",
-        "doc_0263",
-        "doc_0463",
-        "doc_0375",
-        "doc_0344"
-      ],
-      "initial_retrieval_gold_recall": null,
-      "initial_context_gold_recall": null,
-      "initial_context_gold_complete": null,
-      "initial_evidence_sufficient": false,
-      "initial_evidence_score": 0.7148,
-      "initial_evidence_reasons": [
-        "Query term coverage is too low: 0.48 < 0.60 (soft signal only)",
-        "Critical query anchors are missing from the evidence: coverage=0.33 < 0.75; missing=['carecredit', 'forbes']",
-        "Evidence score is too low: 0.71 < 0.78",
-        "Potentially weak evidence citations: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",
-        "Explicit source coverage failed.",
-        "required_sources=['Cnbc | World Business News Leader', 'Forbes']",
-        "available_sources=['FOX News - Health', 'TechCrunch', 'The Sydney Morning Herald', 'Fortune', 'Cnbc | World Business News Leader', 'Music Business Worldwide', 'Business World', 'Essentially Sports']",
-        "covered_sources=['Cnbc | World Business News Leader']",
-        "missing_sources=['Forbes']",
-        "evidence_path=explicit_source_coverage_reject"
-      ],
-      "initial_evidence_path": "explicit_source_coverage_reject",
-      "initial_required_sources": [
-        "Cnbc | World Business News Leader",
-        "Forbes"
-      ],
-      "initial_covered_sources": [
-        "Cnbc | World Business News Leader"
-      ],
-      "initial_missing_sources": [
-        "Forbes"
-      ],
-      "initial_route": "rewrite",
-      "production_category": "null_retry_candidate",
-      "gold_failure_category": null,
-      "rewrite_attempted": true,
-      "rewritten_query": "Considering the information from a CNBC article discussing the growth strategy of CareCredit and a Forbes article analyzing the impact of CareCredit's partnerships on the healthcare financing market, which company, beginning with the letter 'S', is both a strategic partner of CareCredit mentioned in the CNBC article and is also highlighted in the Forbes article for its innovative approach to patient financing? supporting evidence",
-      "retry_count": 1,
-      "retry_outcome": "retry_not_rescued",
-      "rewrite_rescued": false,
-      "final_retrieved_document_ids": [
-        "doc_0158",
-        "doc_0075",
-        "doc_0298",
-        "doc_0230",
-        "doc_0536",
-        "doc_0011",
-        "doc_0263",
-        "doc_0463",
-        "doc_0375",
-        "doc_0344"
-      ],
-      "final_context_document_ids": [
-        "doc_0158",
-        "doc_0075",
-        "doc_0298",
-        "doc_0230",
-        "doc_0536",
-        "doc_0011",
-        "doc_0263",
-        "doc_0463",
-        "doc_0375",
-        "doc_0344"
-      ],
-      "final_retrieval_gold_recall": null,
-      "final_context_gold_recall": null,
-      "final_context_gold_complete": null,
-      "final_evidence_sufficient": false,
-      "final_evidence_score": 0.7148,
-      "final_evidence_reasons": [
-        "Query term coverage is too low: 0.48 < 0.60 (soft signal only)",
-        "Critical query anchors are missing from the evidence: coverage=0.33 < 0.75; missing=['carecredit', 'forbes']",
-        "Evidence score is too low: 0.71 < 0.78",
-        "Potentially weak evidence citations: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",
-        "Explicit source coverage failed.",
-        "required_sources=['Cnbc | World Business News Leader', 'Forbes']",
-        "available_sources=['FOX News - Health', 'TechCrunch', 'The Sydney Morning Herald', 'Cnbc | World Business News Leader', 'Music Business Worldwide', 'Business World', 'Essentially Sports']",
-        "covered_sources=['Cnbc | World Business News Leader']",
-        "missing_sources=['Forbes']",
-        "evidence_path=explicit_source_coverage_reject"
-      ],
-      "final_evidence_path": "explicit_source_coverage_reject",
-      "final_required_sources": [
-        "Cnbc | World Business News Leader",
-        "Forbes"
-      ],
-      "final_covered_sources": [
-        "Cnbc | World Business News Leader"
-      ],
-      "final_missing_sources": [
-        "Forbes"
-      ],
-      "final_route": "abstain",
-      "rewrite_retrieval_recall_delta": null,
-      "rewrite_context_recall_delta": null,
-      "rewrite_evidence_score_delta": 0.0
-    },
-    {
-      "id": "eval_ea1a339e39dc",
-      "question": "Considering the features highlighted in the Gizmodo article and the pricing details mentioned in the Engadget article, what is the first letter of the model name of Garmin's dive computer that is solar-powered and specifically designed for underwater explorers?",
-      "question_type": "null_query",
-      "gold_answer": "Insufficient information.",
-      "gold_document_ids": [],
-      "is_null": true,
-      "router_query_type": "multihop",
-      "retrieval_strategy": "hybrid",
-      "initial_retrieved_document_ids": [
-        "doc_0520",
-        "doc_0213",
-        "doc_0521",
-        "doc_0527",
-        "doc_0126",
-        "doc_0104",
-        "doc_0222",
-        "doc_0235",
-        "doc_0069",
-        "doc_0436"
-      ],
-      "initial_context_document_ids": [
-        "doc_0520",
-        "doc_0213",
-        "doc_0521",
-        "doc_0527",
-        "doc_0126",
-        "doc_0104",
-        "doc_0222",
-        "doc_0235",
-        "doc_0069",
-        "doc_0436"
-      ],
-      "initial_retrieval_gold_recall": null,
-      "initial_context_gold_recall": null,
-      "initial_context_gold_complete": null,
-      "initial_evidence_sufficient": false,
-      "initial_evidence_score": 0.675,
-      "initial_evidence_reasons": [
-        "Query term coverage is too low: 0.41 < 0.60 (soft signal only)",
-        "Critical query anchors are missing from the evidence: coverage=0.67 < 0.75; missing=['gizmodo']",
-        "Evidence score is too low: 0.68 < 0.78",
-        "Potentially weak evidence citations: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",
-        "Explicit source coverage failed.",
-        "required_sources=['Gizmodo', 'Engadget']",
-        "available_sources=['Wired', 'Polygon', 'The Verge', 'TechCrunch', 'Engadget', 'Science News For Students']",
-        "covered_sources=['Engadget']",
-        "missing_sources=['Gizmodo']",
-        "evidence_path=explicit_source_coverage_reject"
-      ],
-      "initial_evidence_path": "explicit_source_coverage_reject",
-      "initial_required_sources": [
-        "Gizmodo",
-        "Engadget"
-      ],
-      "initial_covered_sources": [
-        "Engadget"
-      ],
-      "initial_missing_sources": [
-        "Gizmodo"
-      ],
-      "initial_route": "rewrite",
-      "production_category": "null_retry_candidate",
-      "gold_failure_category": null,
-      "rewrite_attempted": true,
-      "rewritten_query": "Considering the features highlighted in the Gizmodo article and the pricing details mentioned in the Engadget article, what is the first letter of the model name of Garmin's dive computer that is solar-powered and specifically designed for underwater explorers? supporting evidence",
-      "retry_count": 1,
-      "retry_outcome": "retry_not_rescued",
-      "rewrite_rescued": false,
-      "final_retrieved_document_ids": [
-        "doc_0520",
-        "doc_0213",
-        "doc_0521",
-        "doc_0235",
-        "doc_0126",
-        "doc_0104",
-        "doc_0222",
-        "doc_0069",
-        "doc_0436",
-        "doc_0084"
-      ],
-      "final_context_document_ids": [
-        "doc_0520",
-        "doc_0213",
-        "doc_0521",
-        "doc_0235",
-        "doc_0126",
-        "doc_0104",
-        "doc_0222",
-        "doc_0069",
-        "doc_0436",
-        "doc_0084"
-      ],
-      "final_retrieval_gold_recall": null,
-      "final_context_gold_recall": null,
-      "final_context_gold_complete": null,
-      "final_evidence_sufficient": false,
-      "final_evidence_score": 0.7,
-      "final_evidence_reasons": [
-        "Query term coverage is too low: 0.45 < 0.60 (soft signal only)",
-        "Critical query anchors are missing from the evidence: coverage=0.67 < 0.75; missing=['gizmodo']",
-        "Evidence score is too low: 0.70 < 0.78",
-        "Potentially weak evidence citations: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",
-        "Explicit source coverage failed.",
-        "required_sources=['Gizmodo', 'Engadget']",
-        "available_sources=['Wired', 'Polygon', 'The Verge', 'TechCrunch', 'Engadget', 'Science News For Students', 'Eos: Earth And Space Science News']",
-        "covered_sources=['Engadget']",
-        "missing_sources=['Gizmodo']",
-        "evidence_path=explicit_source_coverage_reject"
-      ],
-      "final_evidence_path": "explicit_source_coverage_reject",
-      "final_required_sources": [
-        "Gizmodo",
-        "Engadget"
-      ],
-      "final_covered_sources": [
-        "Engadget"
-      ],
-      "final_missing_sources": [
-        "Gizmodo"
-      ],
-      "final_route": "abstain",
-      "rewrite_retrieval_recall_delta": null,
-      "rewrite_context_recall_delta": null,
-      "rewrite_evidence_score_delta": 0.02499999999999991
-    },
-    {
-      "id": "eval_0d388d0ff3c3",
-      "question": "What is the name of the company that Anthony Melone joined as a CTO, according to a TechCrunch article, and later became the CEO, as reported by a Wall Street Journal article?",
-      "question_type": "null_query",
-      "gold_answer": "Insufficient information.",
-      "gold_document_ids": [],
-      "is_null": true,
-      "router_query_type": "multihop",
-      "retrieval_strategy": "hybrid",
-      "initial_retrieved_document_ids": [
-        "doc_0516",
-        "doc_0049",
-        "doc_0488",
-        "doc_0027",
-        "doc_0536",
-        "doc_0415",
-        "doc_0511",
-        "doc_0162",
-        "doc_0029",
-        "doc_0215"
-      ],
-      "initial_context_document_ids": [
-        "doc_0516",
-        "doc_0049",
-        "doc_0488",
-        "doc_0027",
-        "doc_0536",
-        "doc_0415",
-        "doc_0511",
-        "doc_0162",
-        "doc_0029",
-        "doc_0215"
-      ],
-      "initial_retrieval_gold_recall": null,
-      "initial_context_gold_recall": null,
-      "initial_context_gold_complete": null,
-      "initial_evidence_sufficient": false,
-      "initial_evidence_score": 0.7938,
-      "initial_evidence_reasons": [
-        "Critical query anchors are missing from the evidence: coverage=0.62 < 0.75; missing=['anthony', 'cto', 'melone']",
-        "Potentially weak evidence citations: [1, 4, 6, 7, 9]",
-        "Explicit source coverage failed.",
-        "required_sources=['TechCrunch', 'Wall Street Journal']",
-        "available_sources=['TechCrunch', 'The Age', 'Cnbc | World Business News Leader', 'The Verge']",
-        "covered_sources=['TechCrunch']",
-        "missing_sources=['Wall Street Journal']",
-        "evidence_path=explicit_source_coverage_reject"
-      ],
-      "initial_evidence_path": "explicit_source_coverage_reject",
-      "initial_required_sources": [
-        "TechCrunch",
-        "Wall Street Journal"
-      ],
-      "initial_covered_sources": [
-        "TechCrunch"
-      ],
-      "initial_missing_sources": [
-        "Wall Street Journal"
-      ],
-      "initial_route": "rewrite",
-      "production_category": "null_retry_candidate",
-      "gold_failure_category": null,
-      "rewrite_attempted": true,
-      "rewritten_query": "What is the name of the company that Anthony Melone joined as a CTO, according to a TechCrunch article, and later became the CEO, as reported by a Wall Street Journal article? supporting evidence",
-      "retry_count": 1,
-      "retry_outcome": "retry_not_rescued",
-      "rewrite_rescued": false,
-      "final_retrieved_document_ids": [
-        "doc_0027",
-        "doc_0049",
-        "doc_0488",
-        "doc_0415",
-        "doc_0162",
-        "doc_0536",
-        "doc_0215",
-        "doc_0511",
-        "doc_0029",
-        "doc_0508"
-      ],
-      "final_context_document_ids": [
-        "doc_0027",
-        "doc_0049",
-        "doc_0488",
-        "doc_0415",
-        "doc_0162",
-        "doc_0536",
-        "doc_0215",
-        "doc_0511",
-        "doc_0029",
-        "doc_0508"
-      ],
-      "final_retrieval_gold_recall": null,
-      "final_context_gold_recall": null,
-      "final_context_gold_complete": null,
-      "final_evidence_sufficient": false,
-      "final_evidence_score": 0.8281,
-      "final_evidence_reasons": [
-        "Critical query anchors are missing from the evidence: coverage=0.62 < 0.75; missing=['anthony', 'cto', 'melone']",
-        "Potentially weak evidence citations: [1, 4, 8, 9, 10]",
-        "Explicit source coverage failed.",
-        "required_sources=['TechCrunch', 'Wall Street Journal']",
-        "available_sources=['The Age', 'TechCrunch', 'The Verge', 'Cnbc | World Business News Leader']",
-        "covered_sources=['TechCrunch']",
-        "missing_sources=['Wall Street Journal']",
-        "evidence_path=explicit_source_coverage_reject"
-      ],
-      "final_evidence_path": "explicit_source_coverage_reject",
-      "final_required_sources": [
-        "TechCrunch",
-        "Wall Street Journal"
-      ],
-      "final_covered_sources": [
-        "TechCrunch"
-      ],
-      "final_missing_sources": [
-        "Wall Street Journal"
-      ],
-      "final_route": "abstain",
-      "rewrite_retrieval_recall_delta": null,
-      "rewrite_context_recall_delta": null,
-      "rewrite_evidence_score_delta": 0.0343
     },
     {
       "id": "eval_aa44caaeae76",
@@ -1079,505 +466,6 @@
       "rewrite_evidence_score_delta": 0.0
     },
     {
-      "id": "eval_b7315c1fb666",
-      "question": "Has the focus of Taylor Swift coverage by 'The Independent - Life and Style' and 'FOX News - Lifestyle' remained solely on the National Football League's (NFL) perspective without shifting to personal fan experiences involving individuals like Annika?",
-      "question_type": "temporal_query",
-      "gold_answer": "no",
-      "gold_document_ids": [
-        "doc_0559",
-        "doc_0128"
-      ],
-      "is_null": false,
-      "router_query_type": "multihop",
-      "retrieval_strategy": "hybrid",
-      "initial_retrieved_document_ids": [
-        "doc_0059",
-        "doc_0046",
-        "doc_0344",
-        "doc_0295",
-        "doc_0559",
-        "doc_0311",
-        "doc_0128",
-        "doc_0174"
-      ],
-      "initial_context_document_ids": [
-        "doc_0059",
-        "doc_0046",
-        "doc_0344",
-        "doc_0295",
-        "doc_0559",
-        "doc_0311",
-        "doc_0128",
-        "doc_0174"
-      ],
-      "initial_retrieval_gold_recall": 1.0,
-      "initial_context_gold_recall": 1.0,
-      "initial_context_gold_complete": true,
-      "initial_evidence_sufficient": false,
-      "initial_evidence_score": 0.8096,
-      "initial_evidence_reasons": [
-        "Evidence appears sufficient.",
-        "Potentially weak evidence citations: [2, 3, 4, 6, 7, 8]",
-        "Explicit source coverage failed.",
-        "required_sources=[\"The Independent - Life and Style' and 'FOX News - Lifestyle\", 'The Independent - Life and Style', 'FOX News - Lifestyle']",
-        "available_sources=['CBSSports.com', 'The Independent - Life and Style', 'Essentially Sports', 'Sporting News', 'FOX News - Lifestyle']",
-        "covered_sources=['The Independent - Life and Style', 'FOX News - Lifestyle']",
-        "missing_sources=[\"The Independent - Life and Style' and 'FOX News - Lifestyle\"]",
-        "evidence_path=explicit_source_coverage_reject"
-      ],
-      "initial_evidence_path": "explicit_source_coverage_reject",
-      "initial_required_sources": [
-        "The Independent - Life and Style' and 'FOX News - Lifestyle",
-        "The Independent - Life and Style",
-        "FOX News - Lifestyle"
-      ],
-      "initial_covered_sources": [
-        "The Independent - Life and Style",
-        "FOX News - Lifestyle"
-      ],
-      "initial_missing_sources": [
-        "The Independent - Life and Style' and 'FOX News - Lifestyle"
-      ],
-      "initial_route": "rewrite",
-      "production_category": "production_retry_candidate",
-      "gold_failure_category": "grader_reject_complete_gold_context",
-      "rewrite_attempted": true,
-      "rewritten_query": "Has the focus of Taylor Swift coverage by 'The Independent - Life and Style' and 'FOX News - Lifestyle' remained solely on the National Football League's (NFL) perspective without shifting to personal fan experiences involving individuals like Annika? supporting evidence",
-      "retry_count": 1,
-      "retry_outcome": "retry_not_rescued",
-      "rewrite_rescued": false,
-      "final_retrieved_document_ids": [
-        "doc_0059",
-        "doc_0046",
-        "doc_0344",
-        "doc_0295",
-        "doc_0559",
-        "doc_0311",
-        "doc_0128",
-        "doc_0174"
-      ],
-      "final_context_document_ids": [
-        "doc_0059",
-        "doc_0046",
-        "doc_0344",
-        "doc_0295",
-        "doc_0559",
-        "doc_0311",
-        "doc_0128",
-        "doc_0174"
-      ],
-      "final_retrieval_gold_recall": 1.0,
-      "final_context_gold_recall": 1.0,
-      "final_context_gold_complete": true,
-      "final_evidence_sufficient": false,
-      "final_evidence_score": 0.8096,
-      "final_evidence_reasons": [
-        "Evidence appears sufficient.",
-        "Potentially weak evidence citations: [1, 2, 4, 5, 6, 8]",
-        "Explicit source coverage failed.",
-        "required_sources=[\"The Independent - Life and Style' and 'FOX News - Lifestyle\", 'The Independent - Life and Style', 'FOX News - Lifestyle']",
-        "available_sources=['CBSSports.com', 'The Independent - Life and Style', 'Essentially Sports', 'Sporting News', 'FOX News - Lifestyle']",
-        "covered_sources=['The Independent - Life and Style', 'FOX News - Lifestyle']",
-        "missing_sources=[\"The Independent - Life and Style' and 'FOX News - Lifestyle\"]",
-        "evidence_path=explicit_source_coverage_reject"
-      ],
-      "final_evidence_path": "explicit_source_coverage_reject",
-      "final_required_sources": [
-        "The Independent - Life and Style' and 'FOX News - Lifestyle",
-        "The Independent - Life and Style",
-        "FOX News - Lifestyle"
-      ],
-      "final_covered_sources": [
-        "The Independent - Life and Style",
-        "FOX News - Lifestyle"
-      ],
-      "final_missing_sources": [
-        "The Independent - Life and Style' and 'FOX News - Lifestyle"
-      ],
-      "final_route": "abstain",
-      "rewrite_retrieval_recall_delta": 0.0,
-      "rewrite_context_recall_delta": 0.0,
-      "rewrite_evidence_score_delta": 0.0
-    },
-    {
-      "id": "eval_7e434c4c2bfc",
-      "question": "Considering the information from an article by The Verge on the latest iCloud security features and a report by Bloomberg on the recent iCloud service outages, which character from the CEO's name of the company responsible for iCloud would be common to both the security feature's codename and the name of the city where the most significant server disruption occurred?",
-      "question_type": "null_query",
-      "gold_answer": "Insufficient information.",
-      "gold_document_ids": [],
-      "is_null": true,
-      "router_query_type": "multihop",
-      "retrieval_strategy": "hybrid",
-      "initial_retrieved_document_ids": [
-        "doc_0199",
-        "doc_0178",
-        "doc_0229",
-        "doc_0116",
-        "doc_0505",
-        "doc_0015",
-        "doc_0014",
-        "doc_0402",
-        "doc_0333",
-        "doc_0237"
-      ],
-      "initial_context_document_ids": [
-        "doc_0199",
-        "doc_0178",
-        "doc_0229",
-        "doc_0116",
-        "doc_0505",
-        "doc_0015",
-        "doc_0014",
-        "doc_0402",
-        "doc_0333",
-        "doc_0237"
-      ],
-      "initial_retrieval_gold_recall": null,
-      "initial_context_gold_recall": null,
-      "initial_context_gold_complete": null,
-      "initial_evidence_sufficient": false,
-      "initial_evidence_score": 0.6857,
-      "initial_evidence_reasons": [
-        "Query term coverage is too low: 0.43 < 0.60 (soft signal only)",
-        "Critical query anchors are missing from the evidence: coverage=0.67 < 0.75; missing=['bloomberg']",
-        "Evidence score is too low: 0.69 < 0.78",
-        "Potentially weak evidence citations: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",
-        "Explicit source coverage failed.",
-        "required_sources=['The Verge', 'Bloomberg']",
-        "available_sources=['TechCrunch', 'The Independent - Life and Style', 'Engadget', 'The Verge']",
-        "covered_sources=['The Verge']",
-        "missing_sources=['Bloomberg']",
-        "evidence_path=explicit_source_coverage_reject"
-      ],
-      "initial_evidence_path": "explicit_source_coverage_reject",
-      "initial_required_sources": [
-        "The Verge",
-        "Bloomberg"
-      ],
-      "initial_covered_sources": [
-        "The Verge"
-      ],
-      "initial_missing_sources": [
-        "Bloomberg"
-      ],
-      "initial_route": "rewrite",
-      "production_category": "null_retry_candidate",
-      "gold_failure_category": null,
-      "rewrite_attempted": true,
-      "rewritten_query": "Considering the information from an article by The Verge on the latest iCloud security features and a report by Bloomberg on the recent iCloud service outages, which character from the CEO's name of the company responsible for iCloud would be common to both the security feature's codename and the name of the city where the most significant server disruption occurred? supporting evidence",
-      "retry_count": 1,
-      "retry_outcome": "retry_not_rescued",
-      "rewrite_rescued": false,
-      "final_retrieved_document_ids": [
-        "doc_0199",
-        "doc_0178",
-        "doc_0229",
-        "doc_0116",
-        "doc_0505",
-        "doc_0014",
-        "doc_0402",
-        "doc_0015",
-        "doc_0333",
-        "doc_0237"
-      ],
-      "final_context_document_ids": [
-        "doc_0199",
-        "doc_0178",
-        "doc_0229",
-        "doc_0116",
-        "doc_0505",
-        "doc_0014",
-        "doc_0402",
-        "doc_0015",
-        "doc_0333",
-        "doc_0237"
-      ],
-      "final_retrieval_gold_recall": null,
-      "final_context_gold_recall": null,
-      "final_context_gold_complete": null,
-      "final_evidence_sufficient": false,
-      "final_evidence_score": 0.6857,
-      "final_evidence_reasons": [
-        "Query term coverage is too low: 0.43 < 0.60 (soft signal only)",
-        "Critical query anchors are missing from the evidence: coverage=0.67 < 0.75; missing=['bloomberg']",
-        "Evidence score is too low: 0.69 < 0.78",
-        "Potentially weak evidence citations: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",
-        "Explicit source coverage failed.",
-        "required_sources=['The Verge', 'Bloomberg']",
-        "available_sources=['TechCrunch', 'The Independent - Life and Style', 'Engadget', 'The Verge']",
-        "covered_sources=['The Verge']",
-        "missing_sources=['Bloomberg']",
-        "evidence_path=explicit_source_coverage_reject"
-      ],
-      "final_evidence_path": "explicit_source_coverage_reject",
-      "final_required_sources": [
-        "The Verge",
-        "Bloomberg"
-      ],
-      "final_covered_sources": [
-        "The Verge"
-      ],
-      "final_missing_sources": [
-        "Bloomberg"
-      ],
-      "final_route": "abstain",
-      "rewrite_retrieval_recall_delta": null,
-      "rewrite_context_recall_delta": null,
-      "rewrite_evidence_score_delta": 0.0
-    },
-    {
-      "id": "eval_d89f3a989156",
-      "question": "Considering the information from a CNET article discussing the latest Chromebook security features and a separate Engadget article reviewing the performance of the newest Chromebook model, which letter represents the shared key feature highlighted for its importance in both security and performance?",
-      "question_type": "null_query",
-      "gold_answer": "Insufficient information.",
-      "gold_document_ids": [],
-      "is_null": true,
-      "router_query_type": "multihop",
-      "retrieval_strategy": "hybrid",
-      "initial_retrieved_document_ids": [
-        "doc_0222",
-        "doc_0230",
-        "doc_0048",
-        "doc_0229",
-        "doc_0015",
-        "doc_0043",
-        "doc_0117",
-        "doc_0526",
-        "doc_0372",
-        "doc_0313"
-      ],
-      "initial_context_document_ids": [
-        "doc_0222",
-        "doc_0230",
-        "doc_0048",
-        "doc_0229",
-        "doc_0015",
-        "doc_0043",
-        "doc_0117",
-        "doc_0526",
-        "doc_0372",
-        "doc_0313"
-      ],
-      "initial_retrieval_gold_recall": null,
-      "initial_context_gold_recall": null,
-      "initial_context_gold_complete": null,
-      "initial_evidence_sufficient": false,
-      "initial_evidence_score": 0.713,
-      "initial_evidence_reasons": [
-        "Query term coverage is too low: 0.48 < 0.60 (soft signal only)",
-        "Critical query anchors are missing from the evidence: coverage=0.67 < 0.75; missing=['cnet']",
-        "Evidence score is too low: 0.71 < 0.78",
-        "Potentially weak evidence citations: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",
-        "Explicit source coverage failed.",
-        "required_sources=['CNET', 'Engadget']",
-        "available_sources=['Engadget', 'TechCrunch']",
-        "covered_sources=['Engadget']",
-        "missing_sources=['CNET']",
-        "evidence_path=explicit_source_coverage_reject"
-      ],
-      "initial_evidence_path": "explicit_source_coverage_reject",
-      "initial_required_sources": [
-        "CNET",
-        "Engadget"
-      ],
-      "initial_covered_sources": [
-        "Engadget"
-      ],
-      "initial_missing_sources": [
-        "CNET"
-      ],
-      "initial_route": "rewrite",
-      "production_category": "null_retry_candidate",
-      "gold_failure_category": null,
-      "rewrite_attempted": true,
-      "rewritten_query": "Considering the information from a CNET article discussing the latest Chromebook security features and a separate Engadget article reviewing the performance of the newest Chromebook model, which letter represents the shared key feature highlighted for its importance in both security and performance? supporting evidence",
-      "retry_count": 1,
-      "retry_outcome": "retry_not_rescued",
-      "rewrite_rescued": false,
-      "final_retrieved_document_ids": [
-        "doc_0222",
-        "doc_0230",
-        "doc_0048",
-        "doc_0229",
-        "doc_0526",
-        "doc_0043",
-        "doc_0313",
-        "doc_0372",
-        "doc_0199",
-        "doc_0126"
-      ],
-      "final_context_document_ids": [
-        "doc_0222",
-        "doc_0230",
-        "doc_0048",
-        "doc_0229",
-        "doc_0526",
-        "doc_0043",
-        "doc_0313",
-        "doc_0372",
-        "doc_0199",
-        "doc_0126"
-      ],
-      "final_retrieval_gold_recall": null,
-      "final_context_gold_recall": null,
-      "final_context_gold_complete": null,
-      "final_evidence_sufficient": false,
-      "final_evidence_score": 0.737,
-      "final_evidence_reasons": [
-        "Query term coverage is too low: 0.52 < 0.60 (soft signal only)",
-        "Critical query anchors are missing from the evidence: coverage=0.67 < 0.75; missing=['cnet']",
-        "Evidence score is too low: 0.74 < 0.78",
-        "Potentially weak evidence citations: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",
-        "Explicit source coverage failed.",
-        "required_sources=['CNET', 'Engadget']",
-        "available_sources=['Engadget', 'TechCrunch']",
-        "covered_sources=['Engadget']",
-        "missing_sources=['CNET']",
-        "evidence_path=explicit_source_coverage_reject"
-      ],
-      "final_evidence_path": "explicit_source_coverage_reject",
-      "final_required_sources": [
-        "CNET",
-        "Engadget"
-      ],
-      "final_covered_sources": [
-        "Engadget"
-      ],
-      "final_missing_sources": [
-        "CNET"
-      ],
-      "final_route": "abstain",
-      "rewrite_retrieval_recall_delta": null,
-      "rewrite_context_recall_delta": null,
-      "rewrite_evidence_score_delta": 0.02400000000000002
-    },
-    {
-      "id": "eval_5cb31599cd9e",
-      "question": "Considering the information from a CNBC article detailing Sweatcoin's partnership strategies and a Forbes article discussing the app's user engagement metrics, which letter, representing a feature that both articles attribute to contributing significantly to Sweatcoin's growth, is shared by the names of the companies that Sweatcoin has reportedly partnered with for rewards?",
-      "question_type": "null_query",
-      "gold_answer": "Insufficient information.",
-      "gold_document_ids": [],
-      "is_null": true,
-      "router_query_type": "multihop",
-      "retrieval_strategy": "hybrid",
-      "initial_retrieved_document_ids": [
-        "doc_0334",
-        "doc_0488",
-        "doc_0375",
-        "doc_0189",
-        "doc_0075",
-        "doc_0507",
-        "doc_0363",
-        "doc_0283",
-        "doc_0082",
-        "doc_0099"
-      ],
-      "initial_context_document_ids": [
-        "doc_0334",
-        "doc_0488",
-        "doc_0375",
-        "doc_0189",
-        "doc_0075",
-        "doc_0507",
-        "doc_0363",
-        "doc_0283",
-        "doc_0082",
-        "doc_0099"
-      ],
-      "initial_retrieval_gold_recall": null,
-      "initial_context_gold_recall": null,
-      "initial_context_gold_complete": null,
-      "initial_evidence_sufficient": false,
-      "initial_evidence_score": 0.6776,
-      "initial_evidence_reasons": [
-        "Query term coverage is too low: 0.41 < 0.60 (soft signal only)",
-        "Critical query anchors are missing from the evidence: coverage=0.33 < 0.75; missing=['forbes', 'sweatcoin']",
-        "Evidence score is too low: 0.68 < 0.78",
-        "Potentially weak evidence citations: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",
-        "Explicit source coverage failed.",
-        "required_sources=['Cnbc | World Business News Leader', 'Forbes']",
-        "available_sources=['TechCrunch', 'Cnbc | World Business News Leader', 'The Age', 'Music Business Worldwide', 'Essentially Sports', 'Engadget']",
-        "covered_sources=['Cnbc | World Business News Leader']",
-        "missing_sources=['Forbes']",
-        "evidence_path=explicit_source_coverage_reject"
-      ],
-      "initial_evidence_path": "explicit_source_coverage_reject",
-      "initial_required_sources": [
-        "Cnbc | World Business News Leader",
-        "Forbes"
-      ],
-      "initial_covered_sources": [
-        "Cnbc | World Business News Leader"
-      ],
-      "initial_missing_sources": [
-        "Forbes"
-      ],
-      "initial_route": "rewrite",
-      "production_category": "null_retry_candidate",
-      "gold_failure_category": null,
-      "rewrite_attempted": true,
-      "rewritten_query": "Considering the information from a CNBC article detailing Sweatcoin's partnership strategies and a Forbes article discussing the app's user engagement metrics, which letter, representing a feature that both articles attribute to contributing significantly to Sweatcoin's growth, is shared by the names of the companies that Sweatcoin has reportedly partnered with for rewards? supporting evidence",
-      "retry_count": 1,
-      "retry_outcome": "retry_not_rescued",
-      "rewrite_rescued": false,
-      "final_retrieved_document_ids": [
-        "doc_0334",
-        "doc_0189",
-        "doc_0375",
-        "doc_0488",
-        "doc_0075",
-        "doc_0363",
-        "doc_0283",
-        "doc_0355",
-        "doc_0085",
-        "doc_0194"
-      ],
-      "final_context_document_ids": [
-        "doc_0334",
-        "doc_0189",
-        "doc_0375",
-        "doc_0488",
-        "doc_0075",
-        "doc_0363",
-        "doc_0283",
-        "doc_0355",
-        "doc_0085",
-        "doc_0194"
-      ],
-      "final_retrieval_gold_recall": null,
-      "final_context_gold_recall": null,
-      "final_context_gold_complete": null,
-      "final_evidence_sufficient": false,
-      "final_evidence_score": 0.7345,
-      "final_evidence_reasons": [
-        "Query term coverage is too low: 0.52 < 0.60 (soft signal only)",
-        "Critical query anchors are missing from the evidence: coverage=0.33 < 0.75; missing=['forbes', 'sweatcoin']",
-        "Evidence score is too low: 0.73 < 0.78",
-        "Potentially weak evidence citations: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",
-        "Explicit source coverage failed.",
-        "required_sources=['Cnbc | World Business News Leader', 'Forbes']",
-        "available_sources=['TechCrunch', 'The Age', 'Cnbc | World Business News Leader', 'Music Business Worldwide', 'The Verge', 'Essentially Sports']",
-        "covered_sources=['Cnbc | World Business News Leader']",
-        "missing_sources=['Forbes']",
-        "evidence_path=explicit_source_coverage_reject"
-      ],
-      "final_evidence_path": "explicit_source_coverage_reject",
-      "final_required_sources": [
-        "Cnbc | World Business News Leader",
-        "Forbes"
-      ],
-      "final_covered_sources": [
-        "Cnbc | World Business News Leader"
-      ],
-      "final_missing_sources": [
-        "Forbes"
-      ],
-      "final_route": "abstain",
-      "rewrite_retrieval_recall_delta": null,
-      "rewrite_context_recall_delta": null,
-      "rewrite_evidence_score_delta": 0.05690000000000006
-    },
-    {
       "id": "eval_ffba71206ed9",
       "question": "Considering the features discussed in a New York Times article and the performance benchmarks mentioned in a review by The Verge, which component of the latest iPad Pro, represented by a single letter, has seen the most significant upgrade in terms of speed and efficiency?",
       "question_type": "null_query",
@@ -1697,132 +585,6 @@
       "rewrite_retrieval_recall_delta": null,
       "rewrite_context_recall_delta": null,
       "rewrite_evidence_score_delta": -0.021199999999999997
-    },
-    {
-      "id": "eval_9751f307e484",
-      "question": "Considering the updates from a CNBC article on the latest Google Workspace features and the implications for remote work discussed in a Forbes article, which single letter represents the new keyboard shortcut introduced by Google Workspace for quickly starting a new document, as mentioned in both articles?",
-      "question_type": "null_query",
-      "gold_answer": "Insufficient information.",
-      "gold_document_ids": [],
-      "is_null": true,
-      "router_query_type": "multihop",
-      "retrieval_strategy": "hybrid",
-      "initial_retrieved_document_ids": [
-        "doc_0011",
-        "doc_0126",
-        "doc_0049",
-        "doc_0069",
-        "doc_0115",
-        "doc_0598",
-        "doc_0381",
-        "doc_0032",
-        "doc_0536",
-        "doc_0191"
-      ],
-      "initial_context_document_ids": [
-        "doc_0011",
-        "doc_0126",
-        "doc_0049",
-        "doc_0069",
-        "doc_0115",
-        "doc_0598",
-        "doc_0381",
-        "doc_0032",
-        "doc_0536",
-        "doc_0191"
-      ],
-      "initial_retrieval_gold_recall": null,
-      "initial_context_gold_recall": null,
-      "initial_context_gold_complete": null,
-      "initial_evidence_sufficient": false,
-      "initial_evidence_score": 0.7462,
-      "initial_evidence_reasons": [
-        "Query term coverage is too low: 0.54 < 0.60 (soft signal only)",
-        "Evidence score is too low: 0.75 < 0.78",
-        "Potentially weak evidence citations: [1, 2, 3, 5, 6, 7, 8, 9, 10]",
-        "Explicit source coverage failed.",
-        "required_sources=['Cnbc | World Business News Leader', 'Forbes']",
-        "available_sources=['TechCrunch', 'The Verge', 'Music Business Worldwide', 'The Age', 'Cnbc | World Business News Leader', 'Iot Business News']",
-        "covered_sources=['Cnbc | World Business News Leader']",
-        "missing_sources=['Forbes']",
-        "evidence_path=explicit_source_coverage_reject"
-      ],
-      "initial_evidence_path": "explicit_source_coverage_reject",
-      "initial_required_sources": [
-        "Cnbc | World Business News Leader",
-        "Forbes"
-      ],
-      "initial_covered_sources": [
-        "Cnbc | World Business News Leader"
-      ],
-      "initial_missing_sources": [
-        "Forbes"
-      ],
-      "initial_route": "rewrite",
-      "production_category": "null_retry_candidate",
-      "gold_failure_category": null,
-      "rewrite_attempted": true,
-      "rewritten_query": "Considering the updates from a CNBC article on the latest Google Workspace features and the implications for remote work discussed in a Forbes article, which single letter represents the new keyboard shortcut introduced by Google Workspace for quickly starting a new document, as mentioned in both articles? supporting evidence",
-      "retry_count": 1,
-      "retry_outcome": "retry_not_rescued",
-      "rewrite_rescued": false,
-      "final_retrieved_document_ids": [
-        "doc_0011",
-        "doc_0126",
-        "doc_0049",
-        "doc_0042",
-        "doc_0115",
-        "doc_0598",
-        "doc_0069",
-        "doc_0381",
-        "doc_0334",
-        "doc_0032"
-      ],
-      "final_context_document_ids": [
-        "doc_0011",
-        "doc_0126",
-        "doc_0049",
-        "doc_0042",
-        "doc_0115",
-        "doc_0598",
-        "doc_0069",
-        "doc_0381",
-        "doc_0334",
-        "doc_0032"
-      ],
-      "final_retrieval_gold_recall": null,
-      "final_context_gold_recall": null,
-      "final_context_gold_complete": null,
-      "final_evidence_sufficient": false,
-      "final_evidence_score": 0.7038,
-      "final_evidence_reasons": [
-        "Query term coverage is too low: 0.46 < 0.60 (soft signal only)",
-        "Critical query anchors are missing from the evidence: coverage=0.25 < 0.75; missing=['cnbc', 'forbes', 'workspace']",
-        "Evidence score is too low: 0.70 < 0.78",
-        "Potentially weak evidence citations: [1, 2, 3, 4, 5, 6, 8, 9, 10]",
-        "Explicit source coverage failed.",
-        "required_sources=['a CNBC article', 'CNBC', 'Forbes']",
-        "available_sources=['TechCrunch', 'The Verge', 'Music Business Worldwide', 'The Age']",
-        "covered_sources=[]",
-        "missing_sources=['a CNBC article', 'CNBC', 'Forbes']",
-        "evidence_path=explicit_source_coverage_reject"
-      ],
-      "final_evidence_path": "explicit_source_coverage_reject",
-      "final_required_sources": [
-        "a CNBC article",
-        "CNBC",
-        "Forbes"
-      ],
-      "final_covered_sources": [],
-      "final_missing_sources": [
-        "a CNBC article",
-        "CNBC",
-        "Forbes"
-      ],
-      "final_route": "abstain",
-      "rewrite_retrieval_recall_delta": null,
-      "rewrite_context_recall_delta": null,
-      "rewrite_evidence_score_delta": -0.04239999999999999
     }
   ],
   "records": [
@@ -8708,21 +7470,18 @@
       "initial_retrieval_gold_recall": 1.0,
       "initial_context_gold_recall": 1.0,
       "initial_context_gold_complete": true,
-      "initial_evidence_sufficient": false,
+      "initial_evidence_sufficient": true,
       "initial_evidence_score": 0.85,
       "initial_evidence_reasons": [
         "Evidence appears sufficient.",
         "Potentially weak evidence citations: [3, 4, 5]",
-        "Explicit source coverage failed.",
-        "required_sources=['Eddy Cue', 'TechCrunch', 'The Verge']",
-        "available_sources=['TechCrunch', 'The Verge']",
+        "explicit_source_coverage=satisfied",
+        "required_sources=['TechCrunch', 'The Verge']",
         "covered_sources=['TechCrunch', 'The Verge']",
-        "missing_sources=['Eddy Cue']",
-        "evidence_path=explicit_source_coverage_reject"
+        "evidence_path=v2"
       ],
-      "initial_evidence_path": "explicit_source_coverage_reject",
+      "initial_evidence_path": "v2",
       "initial_required_sources": [
-        "Eddy Cue",
         "TechCrunch",
         "The Verge"
       ],
@@ -8730,16 +7489,14 @@
         "TechCrunch",
         "The Verge"
       ],
-      "initial_missing_sources": [
-        "Eddy Cue"
-      ],
-      "initial_route": "rewrite",
-      "production_category": "production_retry_candidate",
-      "gold_failure_category": "grader_reject_complete_gold_context",
-      "rewrite_attempted": true,
-      "rewritten_query": "Which company, according to Eddy Cue, had no valid alternative for search engine services at the time of a negotiation, is reported by The Verge to have spent $26.3 billion in 2021 to secure its default search engine status across various platforms as mentioned by TechCrunch, and is also accused by news publishers in a class action antitrust suit of siphoning off content, readers, and ad revenue through anticompetitive means as cited by TechCrunch? supporting evidence",
-      "retry_count": 1,
-      "retry_outcome": "retry_not_rescued",
+      "initial_missing_sources": [],
+      "initial_route": "generate",
+      "production_category": "initial_gate_accept",
+      "gold_failure_category": null,
+      "rewrite_attempted": false,
+      "rewritten_query": null,
+      "retry_count": 0,
+      "retry_outcome": "not_retried",
       "rewrite_rescued": false,
       "final_retrieved_document_ids": [
         "doc_0015",
@@ -8758,21 +7515,18 @@
       "final_retrieval_gold_recall": 1.0,
       "final_context_gold_recall": 1.0,
       "final_context_gold_complete": true,
-      "final_evidence_sufficient": false,
+      "final_evidence_sufficient": true,
       "final_evidence_score": 0.85,
       "final_evidence_reasons": [
         "Evidence appears sufficient.",
         "Potentially weak evidence citations: [3, 4, 5]",
-        "Explicit source coverage failed.",
-        "required_sources=['Eddy Cue', 'TechCrunch', 'The Verge']",
-        "available_sources=['TechCrunch', 'The Verge']",
+        "explicit_source_coverage=satisfied",
+        "required_sources=['TechCrunch', 'The Verge']",
         "covered_sources=['TechCrunch', 'The Verge']",
-        "missing_sources=['Eddy Cue']",
-        "evidence_path=explicit_source_coverage_reject"
+        "evidence_path=v2"
       ],
-      "final_evidence_path": "explicit_source_coverage_reject",
+      "final_evidence_path": "v2",
       "final_required_sources": [
-        "Eddy Cue",
         "TechCrunch",
         "The Verge"
       ],
@@ -8780,13 +7534,11 @@
         "TechCrunch",
         "The Verge"
       ],
-      "final_missing_sources": [
-        "Eddy Cue"
-      ],
-      "final_route": "abstain",
-      "rewrite_retrieval_recall_delta": 0.0,
-      "rewrite_context_recall_delta": 0.0,
-      "rewrite_evidence_score_delta": 0.0
+      "final_missing_sources": [],
+      "final_route": "generate",
+      "rewrite_retrieval_recall_delta": null,
+      "rewrite_context_recall_delta": null,
+      "rewrite_evidence_score_delta": null
     },
     {
       "id": "eval_bfa58efca3b9",
@@ -10188,49 +8940,49 @@
       "initial_missing_sources": [
         "Bloomberg"
       ],
-      "initial_route": "rewrite",
-      "production_category": "null_retry_candidate",
+      "initial_route": "abstain",
+      "production_category": "null_correct_reject",
       "gold_failure_category": null,
-      "rewrite_attempted": true,
-      "rewritten_query": "Based on a report by Bloomberg and an analysis by The Verge, which company's executive, known for leading a significant shift in software strategy as per Bloomberg, was also highlighted by The Verge for their involvement in a controversial decision affecting user privacy? supporting evidence",
-      "retry_count": 1,
-      "retry_outcome": "retry_not_rescued",
+      "rewrite_attempted": false,
+      "rewritten_query": null,
+      "retry_count": 0,
+      "retry_outcome": "not_retried",
       "rewrite_rescued": false,
       "final_retrieved_document_ids": [
         "doc_0032",
         "doc_0199",
-        "doc_0581",
         "doc_0099",
+        "doc_0581",
         "doc_0405",
         "doc_0608",
-        "doc_0014",
-        "doc_0516",
         "doc_0396",
-        "doc_0141"
+        "doc_0516",
+        "doc_0014",
+        "doc_0050"
       ],
       "final_context_document_ids": [
         "doc_0032",
         "doc_0199",
-        "doc_0581",
         "doc_0099",
+        "doc_0581",
         "doc_0405",
         "doc_0608",
-        "doc_0014",
-        "doc_0516",
         "doc_0396",
-        "doc_0141"
+        "doc_0516",
+        "doc_0014",
+        "doc_0050"
       ],
       "final_retrieval_gold_recall": null,
       "final_context_gold_recall": null,
       "final_context_gold_complete": null,
       "final_evidence_sufficient": false,
-      "final_evidence_score": 0.8,
+      "final_evidence_score": 0.825,
       "final_evidence_reasons": [
         "Critical query anchors are missing from the evidence: coverage=0.50 < 0.75; missing=['bloomberg']",
-        "Potentially weak evidence citations: [1, 2, 4, 5, 6, 7, 8, 10]",
+        "Potentially weak evidence citations: [1, 2, 3, 5, 6, 8, 9, 10]",
         "Explicit source coverage failed.",
         "required_sources=['Bloomberg', 'The Verge']",
-        "available_sources=['The Age', 'TechCrunch', 'Seeking Alpha', 'Engadget', 'The Verge']",
+        "available_sources=['The Age', 'TechCrunch', 'Engadget', 'Seeking Alpha', 'The Verge']",
         "covered_sources=['The Verge']",
         "missing_sources=['Bloomberg']",
         "evidence_path=explicit_source_coverage_reject"
@@ -10249,7 +9001,7 @@
       "final_route": "abstain",
       "rewrite_retrieval_recall_delta": null,
       "rewrite_context_recall_delta": null,
-      "rewrite_evidence_score_delta": -0.02499999999999991
+      "rewrite_evidence_score_delta": null
     },
     {
       "id": "eval_0a9efac87cba",
@@ -16625,21 +15377,21 @@
       "initial_missing_sources": [
         "Forbes"
       ],
-      "initial_route": "rewrite",
-      "production_category": "null_retry_candidate",
+      "initial_route": "abstain",
+      "production_category": "null_correct_reject",
       "gold_failure_category": null,
-      "rewrite_attempted": true,
-      "rewritten_query": "Considering the information from a CNBC article discussing the growth strategy of CareCredit and a Forbes article analyzing the impact of CareCredit's partnerships on the healthcare financing market, which company, beginning with the letter 'S', is both a strategic partner of CareCredit mentioned in the CNBC article and is also highlighted in the Forbes article for its innovative approach to patient financing? supporting evidence",
-      "retry_count": 1,
-      "retry_outcome": "retry_not_rescued",
+      "rewrite_attempted": false,
+      "rewritten_query": null,
+      "retry_count": 0,
+      "retry_outcome": "not_retried",
       "rewrite_rescued": false,
       "final_retrieved_document_ids": [
         "doc_0158",
         "doc_0075",
         "doc_0298",
+        "doc_0097",
         "doc_0230",
         "doc_0536",
-        "doc_0011",
         "doc_0263",
         "doc_0463",
         "doc_0375",
@@ -16649,9 +15401,9 @@
         "doc_0158",
         "doc_0075",
         "doc_0298",
+        "doc_0097",
         "doc_0230",
         "doc_0536",
-        "doc_0011",
         "doc_0263",
         "doc_0463",
         "doc_0375",
@@ -16669,7 +15421,7 @@
         "Potentially weak evidence citations: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",
         "Explicit source coverage failed.",
         "required_sources=['Cnbc | World Business News Leader', 'Forbes']",
-        "available_sources=['FOX News - Health', 'TechCrunch', 'The Sydney Morning Herald', 'Cnbc | World Business News Leader', 'Music Business Worldwide', 'Business World', 'Essentially Sports']",
+        "available_sources=['FOX News - Health', 'TechCrunch', 'The Sydney Morning Herald', 'Fortune', 'Cnbc | World Business News Leader', 'Music Business Worldwide', 'Business World', 'Essentially Sports']",
         "covered_sources=['Cnbc | World Business News Leader']",
         "missing_sources=['Forbes']",
         "evidence_path=explicit_source_coverage_reject"
@@ -16688,7 +15440,7 @@
       "final_route": "abstain",
       "rewrite_retrieval_recall_delta": null,
       "rewrite_context_recall_delta": null,
-      "rewrite_evidence_score_delta": 0.0
+      "rewrite_evidence_score_delta": null
     },
     {
       "id": "eval_1cd86d79d6e5",
@@ -17950,51 +16702,51 @@
       "initial_missing_sources": [
         "Gizmodo"
       ],
-      "initial_route": "rewrite",
-      "production_category": "null_retry_candidate",
+      "initial_route": "abstain",
+      "production_category": "null_correct_reject",
       "gold_failure_category": null,
-      "rewrite_attempted": true,
-      "rewritten_query": "Considering the features highlighted in the Gizmodo article and the pricing details mentioned in the Engadget article, what is the first letter of the model name of Garmin's dive computer that is solar-powered and specifically designed for underwater explorers? supporting evidence",
-      "retry_count": 1,
-      "retry_outcome": "retry_not_rescued",
+      "rewrite_attempted": false,
+      "rewritten_query": null,
+      "retry_count": 0,
+      "retry_outcome": "not_retried",
       "rewrite_rescued": false,
       "final_retrieved_document_ids": [
         "doc_0520",
         "doc_0213",
         "doc_0521",
-        "doc_0235",
+        "doc_0527",
         "doc_0126",
         "doc_0104",
         "doc_0222",
+        "doc_0235",
         "doc_0069",
-        "doc_0436",
-        "doc_0084"
+        "doc_0436"
       ],
       "final_context_document_ids": [
         "doc_0520",
         "doc_0213",
         "doc_0521",
-        "doc_0235",
+        "doc_0527",
         "doc_0126",
         "doc_0104",
         "doc_0222",
+        "doc_0235",
         "doc_0069",
-        "doc_0436",
-        "doc_0084"
+        "doc_0436"
       ],
       "final_retrieval_gold_recall": null,
       "final_context_gold_recall": null,
       "final_context_gold_complete": null,
       "final_evidence_sufficient": false,
-      "final_evidence_score": 0.7,
+      "final_evidence_score": 0.675,
       "final_evidence_reasons": [
-        "Query term coverage is too low: 0.45 < 0.60 (soft signal only)",
+        "Query term coverage is too low: 0.41 < 0.60 (soft signal only)",
         "Critical query anchors are missing from the evidence: coverage=0.67 < 0.75; missing=['gizmodo']",
-        "Evidence score is too low: 0.70 < 0.78",
+        "Evidence score is too low: 0.68 < 0.78",
         "Potentially weak evidence citations: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",
         "Explicit source coverage failed.",
         "required_sources=['Gizmodo', 'Engadget']",
-        "available_sources=['Wired', 'Polygon', 'The Verge', 'TechCrunch', 'Engadget', 'Science News For Students', 'Eos: Earth And Space Science News']",
+        "available_sources=['Wired', 'Polygon', 'The Verge', 'TechCrunch', 'Engadget', 'Science News For Students']",
         "covered_sources=['Engadget']",
         "missing_sources=['Gizmodo']",
         "evidence_path=explicit_source_coverage_reject"
@@ -18013,7 +16765,7 @@
       "final_route": "abstain",
       "rewrite_retrieval_recall_delta": null,
       "rewrite_context_recall_delta": null,
-      "rewrite_evidence_score_delta": 0.02499999999999991
+      "rewrite_evidence_score_delta": null
     },
     {
       "id": "eval_b3d8c0279731",
@@ -20232,49 +18984,49 @@
       "initial_missing_sources": [
         "Wall Street Journal"
       ],
-      "initial_route": "rewrite",
-      "production_category": "null_retry_candidate",
+      "initial_route": "abstain",
+      "production_category": "null_correct_reject",
       "gold_failure_category": null,
-      "rewrite_attempted": true,
-      "rewritten_query": "What is the name of the company that Anthony Melone joined as a CTO, according to a TechCrunch article, and later became the CEO, as reported by a Wall Street Journal article? supporting evidence",
-      "retry_count": 1,
-      "retry_outcome": "retry_not_rescued",
+      "rewrite_attempted": false,
+      "rewritten_query": null,
+      "retry_count": 0,
+      "retry_outcome": "not_retried",
       "rewrite_rescued": false,
       "final_retrieved_document_ids": [
-        "doc_0027",
+        "doc_0516",
         "doc_0049",
         "doc_0488",
-        "doc_0415",
-        "doc_0162",
+        "doc_0027",
         "doc_0536",
-        "doc_0215",
+        "doc_0415",
         "doc_0511",
+        "doc_0162",
         "doc_0029",
-        "doc_0508"
+        "doc_0215"
       ],
       "final_context_document_ids": [
-        "doc_0027",
+        "doc_0516",
         "doc_0049",
         "doc_0488",
-        "doc_0415",
-        "doc_0162",
+        "doc_0027",
         "doc_0536",
-        "doc_0215",
+        "doc_0415",
         "doc_0511",
+        "doc_0162",
         "doc_0029",
-        "doc_0508"
+        "doc_0215"
       ],
       "final_retrieval_gold_recall": null,
       "final_context_gold_recall": null,
       "final_context_gold_complete": null,
       "final_evidence_sufficient": false,
-      "final_evidence_score": 0.8281,
+      "final_evidence_score": 0.7938,
       "final_evidence_reasons": [
         "Critical query anchors are missing from the evidence: coverage=0.62 < 0.75; missing=['anthony', 'cto', 'melone']",
-        "Potentially weak evidence citations: [1, 4, 8, 9, 10]",
+        "Potentially weak evidence citations: [1, 4, 6, 7, 9]",
         "Explicit source coverage failed.",
         "required_sources=['TechCrunch', 'Wall Street Journal']",
-        "available_sources=['The Age', 'TechCrunch', 'The Verge', 'Cnbc | World Business News Leader']",
+        "available_sources=['TechCrunch', 'The Age', 'Cnbc | World Business News Leader', 'The Verge']",
         "covered_sources=['TechCrunch']",
         "missing_sources=['Wall Street Journal']",
         "evidence_path=explicit_source_coverage_reject"
@@ -20293,7 +19045,7 @@
       "final_route": "abstain",
       "rewrite_retrieval_recall_delta": null,
       "rewrite_context_recall_delta": null,
-      "rewrite_evidence_score_delta": 0.0343
+      "rewrite_evidence_score_delta": null
     },
     {
       "id": "eval_5c7fab04046b",
@@ -21748,21 +20500,18 @@
       "initial_retrieval_gold_recall": 1.0,
       "initial_context_gold_recall": 1.0,
       "initial_context_gold_complete": true,
-      "initial_evidence_sufficient": false,
+      "initial_evidence_sufficient": true,
       "initial_evidence_score": 0.8096,
       "initial_evidence_reasons": [
         "Evidence appears sufficient.",
         "Potentially weak evidence citations: [2, 3, 4, 6, 7, 8]",
-        "Explicit source coverage failed.",
-        "required_sources=[\"The Independent - Life and Style' and 'FOX News - Lifestyle\", 'The Independent - Life and Style', 'FOX News - Lifestyle']",
-        "available_sources=['CBSSports.com', 'The Independent - Life and Style', 'Essentially Sports', 'Sporting News', 'FOX News - Lifestyle']",
+        "explicit_source_coverage=satisfied",
+        "required_sources=['The Independent - Life and Style', 'FOX News - Lifestyle']",
         "covered_sources=['The Independent - Life and Style', 'FOX News - Lifestyle']",
-        "missing_sources=[\"The Independent - Life and Style' and 'FOX News - Lifestyle\"]",
-        "evidence_path=explicit_source_coverage_reject"
+        "evidence_path=v2"
       ],
-      "initial_evidence_path": "explicit_source_coverage_reject",
+      "initial_evidence_path": "v2",
       "initial_required_sources": [
-        "The Independent - Life and Style' and 'FOX News - Lifestyle",
         "The Independent - Life and Style",
         "FOX News - Lifestyle"
       ],
@@ -21770,16 +20519,14 @@
         "The Independent - Life and Style",
         "FOX News - Lifestyle"
       ],
-      "initial_missing_sources": [
-        "The Independent - Life and Style' and 'FOX News - Lifestyle"
-      ],
-      "initial_route": "rewrite",
-      "production_category": "production_retry_candidate",
-      "gold_failure_category": "grader_reject_complete_gold_context",
-      "rewrite_attempted": true,
-      "rewritten_query": "Has the focus of Taylor Swift coverage by 'The Independent - Life and Style' and 'FOX News - Lifestyle' remained solely on the National Football League's (NFL) perspective without shifting to personal fan experiences involving individuals like Annika? supporting evidence",
-      "retry_count": 1,
-      "retry_outcome": "retry_not_rescued",
+      "initial_missing_sources": [],
+      "initial_route": "generate",
+      "production_category": "initial_gate_accept",
+      "gold_failure_category": null,
+      "rewrite_attempted": false,
+      "rewritten_query": null,
+      "retry_count": 0,
+      "retry_outcome": "not_retried",
       "rewrite_rescued": false,
       "final_retrieved_document_ids": [
         "doc_0059",
@@ -21804,21 +20551,18 @@
       "final_retrieval_gold_recall": 1.0,
       "final_context_gold_recall": 1.0,
       "final_context_gold_complete": true,
-      "final_evidence_sufficient": false,
+      "final_evidence_sufficient": true,
       "final_evidence_score": 0.8096,
       "final_evidence_reasons": [
         "Evidence appears sufficient.",
-        "Potentially weak evidence citations: [1, 2, 4, 5, 6, 8]",
-        "Explicit source coverage failed.",
-        "required_sources=[\"The Independent - Life and Style' and 'FOX News - Lifestyle\", 'The Independent - Life and Style', 'FOX News - Lifestyle']",
-        "available_sources=['CBSSports.com', 'The Independent - Life and Style', 'Essentially Sports', 'Sporting News', 'FOX News - Lifestyle']",
+        "Potentially weak evidence citations: [2, 3, 4, 6, 7, 8]",
+        "explicit_source_coverage=satisfied",
+        "required_sources=['The Independent - Life and Style', 'FOX News - Lifestyle']",
         "covered_sources=['The Independent - Life and Style', 'FOX News - Lifestyle']",
-        "missing_sources=[\"The Independent - Life and Style' and 'FOX News - Lifestyle\"]",
-        "evidence_path=explicit_source_coverage_reject"
+        "evidence_path=v2"
       ],
-      "final_evidence_path": "explicit_source_coverage_reject",
+      "final_evidence_path": "v2",
       "final_required_sources": [
-        "The Independent - Life and Style' and 'FOX News - Lifestyle",
         "The Independent - Life and Style",
         "FOX News - Lifestyle"
       ],
@@ -21826,13 +20570,11 @@
         "The Independent - Life and Style",
         "FOX News - Lifestyle"
       ],
-      "final_missing_sources": [
-        "The Independent - Life and Style' and 'FOX News - Lifestyle"
-      ],
-      "final_route": "abstain",
-      "rewrite_retrieval_recall_delta": 0.0,
-      "rewrite_context_recall_delta": 0.0,
-      "rewrite_evidence_score_delta": 0.0
+      "final_missing_sources": [],
+      "final_route": "generate",
+      "rewrite_retrieval_recall_delta": null,
+      "rewrite_context_recall_delta": null,
+      "rewrite_evidence_score_delta": null
     },
     {
       "id": "eval_a8dcbd894219",
@@ -27256,13 +25998,13 @@
       "initial_missing_sources": [
         "Bloomberg"
       ],
-      "initial_route": "rewrite",
-      "production_category": "null_retry_candidate",
+      "initial_route": "abstain",
+      "production_category": "null_correct_reject",
       "gold_failure_category": null,
-      "rewrite_attempted": true,
-      "rewritten_query": "Considering the information from an article by The Verge on the latest iCloud security features and a report by Bloomberg on the recent iCloud service outages, which character from the CEO's name of the company responsible for iCloud would be common to both the security feature's codename and the name of the city where the most significant server disruption occurred? supporting evidence",
-      "retry_count": 1,
-      "retry_outcome": "retry_not_rescued",
+      "rewrite_attempted": false,
+      "rewritten_query": null,
+      "retry_count": 0,
+      "retry_outcome": "not_retried",
       "rewrite_rescued": false,
       "final_retrieved_document_ids": [
         "doc_0199",
@@ -27270,9 +26012,9 @@
         "doc_0229",
         "doc_0116",
         "doc_0505",
+        "doc_0015",
         "doc_0014",
         "doc_0402",
-        "doc_0015",
         "doc_0333",
         "doc_0237"
       ],
@@ -27282,9 +26024,9 @@
         "doc_0229",
         "doc_0116",
         "doc_0505",
+        "doc_0015",
         "doc_0014",
         "doc_0402",
-        "doc_0015",
         "doc_0333",
         "doc_0237"
       ],
@@ -27319,7 +26061,7 @@
       "final_route": "abstain",
       "rewrite_retrieval_recall_delta": null,
       "rewrite_context_recall_delta": null,
-      "rewrite_evidence_score_delta": 0.0
+      "rewrite_evidence_score_delta": null
     },
     {
       "id": "eval_9a7ace3fc939",
@@ -27833,47 +26575,47 @@
       "initial_missing_sources": [
         "CNET"
       ],
-      "initial_route": "rewrite",
-      "production_category": "null_retry_candidate",
+      "initial_route": "abstain",
+      "production_category": "null_correct_reject",
       "gold_failure_category": null,
-      "rewrite_attempted": true,
-      "rewritten_query": "Considering the information from a CNET article discussing the latest Chromebook security features and a separate Engadget article reviewing the performance of the newest Chromebook model, which letter represents the shared key feature highlighted for its importance in both security and performance? supporting evidence",
-      "retry_count": 1,
-      "retry_outcome": "retry_not_rescued",
+      "rewrite_attempted": false,
+      "rewritten_query": null,
+      "retry_count": 0,
+      "retry_outcome": "not_retried",
       "rewrite_rescued": false,
       "final_retrieved_document_ids": [
         "doc_0222",
         "doc_0230",
         "doc_0048",
         "doc_0229",
-        "doc_0526",
+        "doc_0015",
         "doc_0043",
-        "doc_0313",
+        "doc_0117",
+        "doc_0526",
         "doc_0372",
-        "doc_0199",
-        "doc_0126"
+        "doc_0313"
       ],
       "final_context_document_ids": [
         "doc_0222",
         "doc_0230",
         "doc_0048",
         "doc_0229",
-        "doc_0526",
+        "doc_0015",
         "doc_0043",
-        "doc_0313",
+        "doc_0117",
+        "doc_0526",
         "doc_0372",
-        "doc_0199",
-        "doc_0126"
+        "doc_0313"
       ],
       "final_retrieval_gold_recall": null,
       "final_context_gold_recall": null,
       "final_context_gold_complete": null,
       "final_evidence_sufficient": false,
-      "final_evidence_score": 0.737,
+      "final_evidence_score": 0.713,
       "final_evidence_reasons": [
-        "Query term coverage is too low: 0.52 < 0.60 (soft signal only)",
+        "Query term coverage is too low: 0.48 < 0.60 (soft signal only)",
         "Critical query anchors are missing from the evidence: coverage=0.67 < 0.75; missing=['cnet']",
-        "Evidence score is too low: 0.74 < 0.78",
+        "Evidence score is too low: 0.71 < 0.78",
         "Potentially weak evidence citations: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",
         "Explicit source coverage failed.",
         "required_sources=['CNET', 'Engadget']",
@@ -27896,7 +26638,7 @@
       "final_route": "abstain",
       "rewrite_retrieval_recall_delta": null,
       "rewrite_context_recall_delta": null,
-      "rewrite_evidence_score_delta": 0.02400000000000002
+      "rewrite_evidence_score_delta": null
     },
     {
       "id": "eval_7f5d5749a01f",
@@ -30250,51 +28992,51 @@
       "initial_missing_sources": [
         "Forbes"
       ],
-      "initial_route": "rewrite",
-      "production_category": "null_retry_candidate",
+      "initial_route": "abstain",
+      "production_category": "null_correct_reject",
       "gold_failure_category": null,
-      "rewrite_attempted": true,
-      "rewritten_query": "Considering the information from a CNBC article detailing Sweatcoin's partnership strategies and a Forbes article discussing the app's user engagement metrics, which letter, representing a feature that both articles attribute to contributing significantly to Sweatcoin's growth, is shared by the names of the companies that Sweatcoin has reportedly partnered with for rewards? supporting evidence",
-      "retry_count": 1,
-      "retry_outcome": "retry_not_rescued",
+      "rewrite_attempted": false,
+      "rewritten_query": null,
+      "retry_count": 0,
+      "retry_outcome": "not_retried",
       "rewrite_rescued": false,
       "final_retrieved_document_ids": [
         "doc_0334",
-        "doc_0189",
-        "doc_0375",
         "doc_0488",
+        "doc_0375",
+        "doc_0189",
         "doc_0075",
+        "doc_0507",
         "doc_0363",
         "doc_0283",
-        "doc_0355",
-        "doc_0085",
-        "doc_0194"
+        "doc_0082",
+        "doc_0099"
       ],
       "final_context_document_ids": [
         "doc_0334",
-        "doc_0189",
-        "doc_0375",
         "doc_0488",
+        "doc_0375",
+        "doc_0189",
         "doc_0075",
+        "doc_0507",
         "doc_0363",
         "doc_0283",
-        "doc_0355",
-        "doc_0085",
-        "doc_0194"
+        "doc_0082",
+        "doc_0099"
       ],
       "final_retrieval_gold_recall": null,
       "final_context_gold_recall": null,
       "final_context_gold_complete": null,
       "final_evidence_sufficient": false,
-      "final_evidence_score": 0.7345,
+      "final_evidence_score": 0.6776,
       "final_evidence_reasons": [
-        "Query term coverage is too low: 0.52 < 0.60 (soft signal only)",
+        "Query term coverage is too low: 0.41 < 0.60 (soft signal only)",
         "Critical query anchors are missing from the evidence: coverage=0.33 < 0.75; missing=['forbes', 'sweatcoin']",
-        "Evidence score is too low: 0.73 < 0.78",
+        "Evidence score is too low: 0.68 < 0.78",
         "Potentially weak evidence citations: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",
         "Explicit source coverage failed.",
         "required_sources=['Cnbc | World Business News Leader', 'Forbes']",
-        "available_sources=['TechCrunch', 'The Age', 'Cnbc | World Business News Leader', 'Music Business Worldwide', 'The Verge', 'Essentially Sports']",
+        "available_sources=['TechCrunch', 'Cnbc | World Business News Leader', 'The Age', 'Music Business Worldwide', 'Essentially Sports', 'Engadget']",
         "covered_sources=['Cnbc | World Business News Leader']",
         "missing_sources=['Forbes']",
         "evidence_path=explicit_source_coverage_reject"
@@ -30313,7 +29055,7 @@
       "final_route": "abstain",
       "rewrite_retrieval_recall_delta": null,
       "rewrite_context_recall_delta": null,
-      "rewrite_evidence_score_delta": 0.05690000000000006
+      "rewrite_evidence_score_delta": null
     },
     {
       "id": "eval_2dd9703c609e",
@@ -48203,20 +46945,18 @@
         "Evidence score is too low: 0.69 < 0.78",
         "Potentially weak evidence citations: [1, 2, 4, 5, 6, 7, 8, 9]",
         "Explicit source coverage failed.",
-        "required_sources=['a Deal Stripe article', 'Deal Stripe']",
+        "required_sources=['Deal Stripe']",
         "available_sources=['Engadget', 'Mashable', 'TechCrunch', 'Polygon', 'Wired']",
         "covered_sources=[]",
-        "missing_sources=['a Deal Stripe article', 'Deal Stripe']",
+        "missing_sources=['Deal Stripe']",
         "evidence_path=explicit_source_coverage_reject"
       ],
       "initial_evidence_path": "explicit_source_coverage_reject",
       "initial_required_sources": [
-        "a Deal Stripe article",
         "Deal Stripe"
       ],
       "initial_covered_sources": [],
       "initial_missing_sources": [
-        "a Deal Stripe article",
         "Deal Stripe"
       ],
       "initial_route": "abstain",
@@ -48261,20 +47001,18 @@
         "Evidence score is too low: 0.69 < 0.78",
         "Potentially weak evidence citations: [1, 2, 4, 5, 6, 7, 8, 9]",
         "Explicit source coverage failed.",
-        "required_sources=['a Deal Stripe article', 'Deal Stripe']",
+        "required_sources=['Deal Stripe']",
         "available_sources=['Engadget', 'Mashable', 'TechCrunch', 'Polygon', 'Wired']",
         "covered_sources=[]",
-        "missing_sources=['a Deal Stripe article', 'Deal Stripe']",
+        "missing_sources=['Deal Stripe']",
         "evidence_path=explicit_source_coverage_reject"
       ],
       "final_evidence_path": "explicit_source_coverage_reject",
       "final_required_sources": [
-        "a Deal Stripe article",
         "Deal Stripe"
       ],
       "final_covered_sources": [],
       "final_missing_sources": [
-        "a Deal Stripe article",
         "Deal Stripe"
       ],
       "final_route": "abstain",
@@ -51647,21 +50385,19 @@
         "Evidence score is too low: 0.57 < 0.78",
         "Potentially weak evidence citations: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",
         "Explicit source coverage failed.",
-        "required_sources=['a CNN report', 'Bloomberg', 'CNN']",
+        "required_sources=['Bloomberg', 'CNN']",
         "available_sources=['TechCrunch', 'The Verge', 'The Independent - Life and Style', 'Polygon', 'Science News For Students', 'BBC News - Entertainment & Arts']",
         "covered_sources=[]",
-        "missing_sources=['a CNN report', 'Bloomberg', 'CNN']",
+        "missing_sources=['Bloomberg', 'CNN']",
         "evidence_path=explicit_source_coverage_reject"
       ],
       "initial_evidence_path": "explicit_source_coverage_reject",
       "initial_required_sources": [
-        "a CNN report",
         "Bloomberg",
         "CNN"
       ],
       "initial_covered_sources": [],
       "initial_missing_sources": [
-        "a CNN report",
         "Bloomberg",
         "CNN"
       ],
@@ -51708,21 +50444,19 @@
         "Evidence score is too low: 0.57 < 0.78",
         "Potentially weak evidence citations: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",
         "Explicit source coverage failed.",
-        "required_sources=['a CNN report', 'Bloomberg', 'CNN']",
+        "required_sources=['Bloomberg', 'CNN']",
         "available_sources=['TechCrunch', 'The Verge', 'The Independent - Life and Style', 'Polygon', 'Science News For Students', 'BBC News - Entertainment & Arts']",
         "covered_sources=[]",
-        "missing_sources=['a CNN report', 'Bloomberg', 'CNN']",
+        "missing_sources=['Bloomberg', 'CNN']",
         "evidence_path=explicit_source_coverage_reject"
       ],
       "final_evidence_path": "explicit_source_coverage_reject",
       "final_required_sources": [
-        "a CNN report",
         "Bloomberg",
         "CNN"
       ],
       "final_covered_sources": [],
       "final_missing_sources": [
-        "a CNN report",
         "Bloomberg",
         "CNN"
       ],
@@ -55159,21 +53893,19 @@
         "Evidence score is too low: 0.70 < 0.78",
         "Potentially weak evidence citations: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",
         "Explicit source coverage failed.",
-        "required_sources=['Variety', 'an article from Variety']",
+        "required_sources=['Variety']",
         "available_sources=['Polygon', 'The Sydney Morning Herald', 'TechCrunch']",
         "covered_sources=[]",
-        "missing_sources=['Variety', 'an article from Variety']",
+        "missing_sources=['Variety']",
         "evidence_path=explicit_source_coverage_reject"
       ],
       "initial_evidence_path": "explicit_source_coverage_reject",
       "initial_required_sources": [
-        "Variety",
-        "an article from Variety"
+        "Variety"
       ],
       "initial_covered_sources": [],
       "initial_missing_sources": [
-        "Variety",
-        "an article from Variety"
+        "Variety"
       ],
       "initial_route": "abstain",
       "production_category": "null_correct_reject",
@@ -55218,21 +53950,19 @@
         "Evidence score is too low: 0.70 < 0.78",
         "Potentially weak evidence citations: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",
         "Explicit source coverage failed.",
-        "required_sources=['Variety', 'an article from Variety']",
+        "required_sources=['Variety']",
         "available_sources=['Polygon', 'The Sydney Morning Herald', 'TechCrunch']",
         "covered_sources=[]",
-        "missing_sources=['Variety', 'an article from Variety']",
+        "missing_sources=['Variety']",
         "evidence_path=explicit_source_coverage_reject"
       ],
       "final_evidence_path": "explicit_source_coverage_reject",
       "final_required_sources": [
-        "Variety",
-        "an article from Variety"
+        "Variety"
       ],
       "final_covered_sources": [],
       "final_missing_sources": [
-        "Variety",
-        "an article from Variety"
+        "Variety"
       ],
       "final_route": "abstain",
       "rewrite_retrieval_recall_delta": null,
@@ -58203,71 +56933,69 @@
       "initial_missing_sources": [
         "Forbes"
       ],
-      "initial_route": "rewrite",
-      "production_category": "null_retry_candidate",
+      "initial_route": "abstain",
+      "production_category": "null_correct_reject",
       "gold_failure_category": null,
-      "rewrite_attempted": true,
-      "rewritten_query": "Considering the updates from a CNBC article on the latest Google Workspace features and the implications for remote work discussed in a Forbes article, which single letter represents the new keyboard shortcut introduced by Google Workspace for quickly starting a new document, as mentioned in both articles? supporting evidence",
-      "retry_count": 1,
-      "retry_outcome": "retry_not_rescued",
+      "rewrite_attempted": false,
+      "rewritten_query": null,
+      "retry_count": 0,
+      "retry_outcome": "not_retried",
       "rewrite_rescued": false,
       "final_retrieved_document_ids": [
         "doc_0011",
         "doc_0126",
         "doc_0049",
-        "doc_0042",
+        "doc_0069",
         "doc_0115",
         "doc_0598",
-        "doc_0069",
         "doc_0381",
-        "doc_0334",
-        "doc_0032"
+        "doc_0032",
+        "doc_0536",
+        "doc_0191"
       ],
       "final_context_document_ids": [
         "doc_0011",
         "doc_0126",
         "doc_0049",
-        "doc_0042",
+        "doc_0069",
         "doc_0115",
         "doc_0598",
-        "doc_0069",
         "doc_0381",
-        "doc_0334",
-        "doc_0032"
+        "doc_0032",
+        "doc_0536",
+        "doc_0191"
       ],
       "final_retrieval_gold_recall": null,
       "final_context_gold_recall": null,
       "final_context_gold_complete": null,
       "final_evidence_sufficient": false,
-      "final_evidence_score": 0.7038,
+      "final_evidence_score": 0.7462,
       "final_evidence_reasons": [
-        "Query term coverage is too low: 0.46 < 0.60 (soft signal only)",
-        "Critical query anchors are missing from the evidence: coverage=0.25 < 0.75; missing=['cnbc', 'forbes', 'workspace']",
-        "Evidence score is too low: 0.70 < 0.78",
-        "Potentially weak evidence citations: [1, 2, 3, 4, 5, 6, 8, 9, 10]",
+        "Query term coverage is too low: 0.54 < 0.60 (soft signal only)",
+        "Evidence score is too low: 0.75 < 0.78",
+        "Potentially weak evidence citations: [1, 2, 3, 5, 6, 7, 8, 9, 10]",
         "Explicit source coverage failed.",
-        "required_sources=['a CNBC article', 'CNBC', 'Forbes']",
-        "available_sources=['TechCrunch', 'The Verge', 'Music Business Worldwide', 'The Age']",
-        "covered_sources=[]",
-        "missing_sources=['a CNBC article', 'CNBC', 'Forbes']",
+        "required_sources=['Cnbc | World Business News Leader', 'Forbes']",
+        "available_sources=['TechCrunch', 'The Verge', 'Music Business Worldwide', 'The Age', 'Cnbc | World Business News Leader', 'Iot Business News']",
+        "covered_sources=['Cnbc | World Business News Leader']",
+        "missing_sources=['Forbes']",
         "evidence_path=explicit_source_coverage_reject"
       ],
       "final_evidence_path": "explicit_source_coverage_reject",
       "final_required_sources": [
-        "a CNBC article",
-        "CNBC",
+        "Cnbc | World Business News Leader",
         "Forbes"
       ],
-      "final_covered_sources": [],
+      "final_covered_sources": [
+        "Cnbc | World Business News Leader"
+      ],
       "final_missing_sources": [
-        "a CNBC article",
-        "CNBC",
         "Forbes"
       ],
       "final_route": "abstain",
       "rewrite_retrieval_recall_delta": null,
       "rewrite_context_recall_delta": null,
-      "rewrite_evidence_score_delta": -0.04239999999999999
+      "rewrite_evidence_score_delta": null
     },
     {
       "id": "eval_1d56cef09f1c",

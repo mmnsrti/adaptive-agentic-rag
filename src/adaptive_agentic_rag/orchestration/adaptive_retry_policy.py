@@ -3,6 +3,10 @@ import ast
 from dataclasses import dataclass
 from enum import Enum
 
+from adaptive_agentic_rag.orchestration.corpus_source_availability import (
+    CorpusSourceAvailability,
+)
+
 
 class RetryAction(
     str,
@@ -40,11 +44,8 @@ class AdaptiveRetryPolicy:
 
     Goal
     ----
-    Retry retrieval only when the current evidence state
-    contains a structural signal that another retrieval
-    attempt may be useful.
-
-    This V1 intentionally prefers precision over retry recall.
+    Retry retrieval only when another retrieval attempt is
+    structurally possible and justified.
 
     Safe rules
     ----------
@@ -56,15 +57,20 @@ class AdaptiveRetryPolicy:
        -> ABSTAIN
 
     3. Explicit source coverage rejection with PARTIAL
-       source coverage
-       -> RETRY
+       source coverage:
+
+       3a. Missing source unavailable in corpus
+           -> ABSTAIN
+
+       3b. Missing source available in corpus
+           -> RETRY
 
     4. Explicit source coverage rejection with ZERO
        requested sources covered
        -> ABSTAIN
 
-    5. Evidence/source coverage already satisfied but
-       constrained semantic rescue still rejects
+    5. Source coverage satisfied but constrained semantic
+       rescue rejects
        -> ABSTAIN
 
     6. Unknown rejection state
@@ -72,25 +78,40 @@ class AdaptiveRetryPolicy:
 
     Important
     ---------
-    V1 does NOT use:
+    The policy does NOT use:
 
     - gold evidence
     - dataset labels
+    - null-query labels
     - evidence-score thresholds
     - embedding thresholds
     - LLM classification
 
-    It only consumes production-visible evidence telemetry.
+    Source availability is corpus-structural metadata only.
     """
 
     def __init__(
         self,
         *,
         max_retries: int = 1,
+        source_availability: CorpusSourceAvailability | None = None,
     ):
 
         self.max_retries = (
             max_retries
+        )
+
+
+        # ----------------------------------------------------
+        # Dependency is optional so the policy remains easy
+        # to unit-test and backwards-compatible when used
+        # outside the production graph.
+        #
+        # The production graph always injects it.
+        # ----------------------------------------------------
+
+        self.source_availability = (
+            source_availability
         )
 
 
@@ -165,6 +186,7 @@ class AdaptiveRetryPolicy:
                 )
             )
 
+
         except (
             ValueError,
             SyntaxError,
@@ -205,6 +227,46 @@ class AdaptiveRetryPolicy:
                 prefix=
                     "evidence_path=",
             )
+        )
+
+
+    # ========================================================
+    # Decision factory
+    # ========================================================
+
+    @staticmethod
+    def _decision(
+        *,
+        action: RetryAction,
+        reason: str,
+        evidence_path: str | None,
+        required_sources: list[str],
+        covered_sources: list[str],
+        missing_sources: list[str],
+        retry_count: int,
+    ) -> RetryDecision:
+
+        return RetryDecision(
+            action=
+                action,
+
+            reason=
+                reason,
+
+            evidence_path=
+                evidence_path,
+
+            required_sources=
+                required_sources,
+
+            covered_sources=
+                covered_sources,
+
+            missing_sources=
+                missing_sources,
+
+            retry_count=
+                retry_count,
         )
 
 
@@ -257,7 +319,7 @@ class AdaptiveRetryPolicy:
 
         if evidence_sufficient:
 
-            return RetryDecision(
+            return self._decision(
                 action=
                     RetryAction.GENERATE,
 
@@ -292,7 +354,7 @@ class AdaptiveRetryPolicy:
             self.max_retries
         ):
 
-            return RetryDecision(
+            return self._decision(
                 action=
                     RetryAction.ABSTAIN,
 
@@ -328,11 +390,8 @@ class AdaptiveRetryPolicy:
         ):
 
             # ------------------------------------------------
-            # Some required source evidence exists, while
-            # another explicitly requested source is absent.
-            #
-            # This is the clearest retrieval-recoverable
-            # signal currently available.
+            # Partial source coverage is the only currently
+            # approved retrieval-retry family.
             # ------------------------------------------------
 
             if (
@@ -341,13 +400,83 @@ class AdaptiveRetryPolicy:
                 covered_sources
             ):
 
-                return RetryDecision(
+                # ============================================
+                # Corpus availability invariant
+                #
+                # If production supplied the availability
+                # dependency, a missing publisher that does
+                # not exist anywhere in the corpus cannot be
+                # recovered by query rewriting.
+                # ============================================
+
+                if (
+                    self.source_availability
+                    is not None
+                ):
+
+                    availability = (
+                        self.source_availability.check(
+                            missing_sources
+                        )
+                    )
+
+
+                    if not (
+                        availability.all_available
+                    ):
+
+                        unavailable = (
+                            availability
+                            .unavailable_sources
+                        )
+
+
+                        return self._decision(
+                            action=
+                                RetryAction.ABSTAIN,
+
+                            reason=(
+                                "Explicit source evidence is "
+                                "missing, but retrieval cannot "
+                                "recover all missing sources "
+                                "because they are unavailable "
+                                "in the corpus: "
+                                f"{unavailable!r}."
+                            ),
+
+                            evidence_path=
+                                evidence_path,
+
+                            required_sources=
+                                required_sources,
+
+                            covered_sources=
+                                covered_sources,
+
+                            missing_sources=
+                                missing_sources,
+
+                            retry_count=
+                                retry_count,
+                        )
+
+
+                # ============================================
+                # Missing source exists in corpus.
+                #
+                # Another retrieval attempt is structurally
+                # possible.
+                # ============================================
+
+                return self._decision(
                     action=
                         RetryAction.RETRY,
 
                     reason=(
                         "Partial explicit-source coverage "
-                        "suggests a recoverable retrieval miss."
+                        "with corpus-available missing "
+                        "sources suggests a recoverable "
+                        "retrieval miss."
                     ),
 
                     evidence_path=
@@ -368,15 +497,10 @@ class AdaptiveRetryPolicy:
 
 
             # ------------------------------------------------
-            # No explicitly requested source was found.
-            #
-            # Current Smoke diagnostics provide no evidence
-            # that blindly rewriting such cases helps.
-            #
-            # Null queries also frequently exhibit this shape.
+            # Zero explicit-source coverage.
             # ------------------------------------------------
 
-            return RetryDecision(
+            return self._decision(
                 action=
                     RetryAction.ABSTAIN,
 
@@ -404,10 +528,7 @@ class AdaptiveRetryPolicy:
 
 
         # ====================================================
-        # Source coverage passed, semantic rescue failed.
-        #
-        # Cases with complete gold context already showed
-        # that re-running retrieval here can be pointless.
+        # Semantic rescue failed after source coverage.
         # ====================================================
 
         if (
@@ -416,7 +537,7 @@ class AdaptiveRetryPolicy:
             "constrained_semantic_rescue_reject"
         ):
 
-            return RetryDecision(
+            return self._decision(
                 action=
                     RetryAction.ABSTAIN,
 
@@ -448,7 +569,7 @@ class AdaptiveRetryPolicy:
         # Conservative fallback
         # ====================================================
 
-        return RetryDecision(
+        return self._decision(
             action=
                 RetryAction.ABSTAIN,
 

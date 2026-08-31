@@ -3,13 +3,104 @@ from adaptive_agentic_rag.orchestration.adaptive_retry_policy import (
     RetryAction,
 )
 
+from adaptive_agentic_rag.orchestration.corpus_source_availability import (
+    CorpusSourceAvailabilityResult,
+)
 
-def policy():
 
-    return (
-        AdaptiveRetryPolicy(
-            max_retries=1
+class FakeSourceAvailability:
+
+    def __init__(
+        self,
+        available_sources,
+    ):
+
+        self.available_sources = set(
+            available_sources
         )
+
+
+    def check(
+        self,
+        sources,
+    ):
+
+        available = [
+            source
+
+            for source
+            in sources
+
+            if source
+            in self.available_sources
+        ]
+
+
+        unavailable = [
+            source
+
+            for source
+            in sources
+
+            if source
+            not in self.available_sources
+        ]
+
+
+        return CorpusSourceAvailabilityResult(
+            requested_sources=
+                list(
+                    sources
+                ),
+
+            available_sources=
+                available,
+
+            unavailable_sources=
+                unavailable,
+
+            matched_catalog_sources={
+                source: (
+                    [
+                        source
+                    ]
+
+                    if source
+                    in self.available_sources
+
+                    else []
+                )
+
+                for source
+                in sources
+            },
+        )
+
+
+def policy(
+    *,
+    available_sources=None,
+):
+
+    source_availability = None
+
+
+    if (
+        available_sources
+        is not None
+    ):
+
+        source_availability = (
+            FakeSourceAvailability(
+                available_sources
+            )
+        )
+
+
+    return AdaptiveRetryPolicy(
+        max_retries=1,
+        source_availability=
+            source_availability,
     )
 
 
@@ -31,9 +122,13 @@ def test_sufficient_evidence_goes_to_generation():
     )
 
 
-def test_partial_explicit_source_miss_allows_retry():
+def test_partial_explicit_source_miss_available_in_corpus_allows_retry():
 
-    result = policy().decide(
+    result = policy(
+        available_sources={
+            "The Age",
+        },
+    ).decide(
         evidence_sufficient=False,
         retry_count=0,
         evidence_reasons=[
@@ -67,12 +162,90 @@ def test_partial_explicit_source_miss_allows_retry():
     )
 
 
+def test_partial_explicit_source_miss_unavailable_in_corpus_abstains():
+
+    result = policy(
+        available_sources={
+            "TechCrunch",
+        },
+    ).decide(
+        evidence_sufficient=False,
+        retry_count=0,
+        evidence_reasons=[
+            (
+                "required_sources="
+                "['TechCrunch', 'Forbes']"
+            ),
+
+            (
+                "covered_sources="
+                "['TechCrunch']"
+            ),
+
+            (
+                "missing_sources="
+                "['Forbes']"
+            ),
+
+            (
+                "evidence_path="
+                "explicit_source_coverage_reject"
+            ),
+        ],
+    )
+
+
     assert (
-        result.missing_sources
+        result.action
         ==
-        [
+        RetryAction.ABSTAIN
+    )
+
+
+    assert (
+        "unavailable"
+        in
+        result.reason.lower()
+    )
+
+
+def test_multiple_missing_sources_require_all_to_exist():
+
+    result = policy(
+        available_sources={
             "The Age",
-        ]
+        },
+    ).decide(
+        evidence_sufficient=False,
+        retry_count=0,
+        evidence_reasons=[
+            (
+                "required_sources="
+                "['TechCrunch', 'The Age', 'Forbes']"
+            ),
+
+            (
+                "covered_sources="
+                "['TechCrunch']"
+            ),
+
+            (
+                "missing_sources="
+                "['The Age', 'Forbes']"
+            ),
+
+            (
+                "evidence_path="
+                "explicit_source_coverage_reject"
+            ),
+        ],
+    )
+
+
+    assert (
+        result.action
+        ==
+        RetryAction.ABSTAIN
     )
 
 
@@ -149,7 +322,11 @@ def test_complete_source_coverage_semantic_reject_does_not_retry():
 
 def test_retry_budget_prevents_second_retry():
 
-    result = policy().decide(
+    result = policy(
+        available_sources={
+            "The Age",
+        },
+    ).decide(
         evidence_sufficient=False,
         retry_count=1,
         evidence_reasons=[

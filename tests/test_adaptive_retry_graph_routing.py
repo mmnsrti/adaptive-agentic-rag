@@ -2,10 +2,79 @@ from adaptive_agentic_rag.orchestration.graph import (
     route_after_evidence,
 )
 
+from adaptive_agentic_rag.orchestration.corpus_source_availability import (
+    CorpusSourceAvailabilityResult,
+)
 
-# ============================================================
-# Helper
-# ============================================================
+
+class FakeSourceAvailability:
+
+    def __init__(
+        self,
+        available_sources,
+    ):
+
+        self.available_sources = set(
+            available_sources
+        )
+
+
+    def check(
+        self,
+        sources,
+    ):
+
+        available = [
+            source
+
+            for source
+            in sources
+
+            if source
+            in self.available_sources
+        ]
+
+
+        unavailable = [
+            source
+
+            for source
+            in sources
+
+            if source
+            not in self.available_sources
+        ]
+
+
+        return CorpusSourceAvailabilityResult(
+            requested_sources=
+                list(
+                    sources
+                ),
+
+            available_sources=
+                available,
+
+            unavailable_sources=
+                unavailable,
+
+            matched_catalog_sources={
+                source: (
+                    [
+                        source
+                    ]
+
+                    if source
+                    in self.available_sources
+
+                    else []
+                )
+
+                for source
+                in sources
+            },
+        )
+
 
 def make_state(
     *,
@@ -30,12 +99,6 @@ def make_state(
     }
 
 
-# ============================================================
-# Sufficient evidence
-#
-# Must always go directly to generation.
-# ============================================================
-
 def test_sufficient_evidence_routes_to_generate():
 
     state = make_state(
@@ -56,16 +119,7 @@ def test_sufficient_evidence_routes_to_generate():
     )
 
 
-# ============================================================
-# Canonical Case 15 shape
-#
-# Some required publishers are present,
-# one is missing.
-#
-# This is a justified retrieval retry.
-# ============================================================
-
-def test_partial_explicit_source_miss_routes_to_rewrite():
+def test_partial_source_miss_available_in_corpus_routes_to_rewrite():
 
     state = make_state(
         evidence_sufficient=False,
@@ -96,20 +150,64 @@ def test_partial_explicit_source_miss_routes_to_rewrite():
 
     assert (
         route_after_evidence(
-            state
+            state,
+
+            source_availability=
+                FakeSourceAvailability(
+                    {
+                        "The Age",
+                    }
+                ),
         )
         ==
         "rewrite"
     )
 
 
-# ============================================================
-# Complete context / semantic-gate rejection
-#
-# Cases 6 and 13 demonstrated this failure family.
-#
-# Re-running retrieval is not structurally justified.
-# ============================================================
+def test_partial_source_miss_unavailable_in_corpus_routes_to_abstain():
+
+    state = make_state(
+        evidence_sufficient=False,
+
+        evidence_reasons=[
+            (
+                "required_sources="
+                "['TechCrunch', 'Forbes']"
+            ),
+
+            (
+                "covered_sources="
+                "['TechCrunch']"
+            ),
+
+            (
+                "missing_sources="
+                "['Forbes']"
+            ),
+
+            (
+                "evidence_path="
+                "explicit_source_coverage_reject"
+            ),
+        ],
+    )
+
+
+    assert (
+        route_after_evidence(
+            state,
+
+            source_availability=
+                FakeSourceAvailability(
+                    {
+                        "TechCrunch",
+                    }
+                ),
+        )
+        ==
+        "abstain"
+    )
+
 
 def test_semantic_rescue_reject_routes_to_abstain():
 
@@ -151,15 +249,6 @@ def test_semantic_rescue_reject_routes_to_abstain():
     )
 
 
-# ============================================================
-# Null-query style:
-#
-# Required publishers exist in the query,
-# but none are covered.
-#
-# Blind rewriting is not justified in V1.
-# ============================================================
-
 def test_zero_explicit_source_coverage_routes_to_abstain():
 
     state = make_state(
@@ -195,13 +284,6 @@ def test_zero_explicit_source_coverage_routes_to_abstain():
     )
 
 
-# ============================================================
-# Retry budget exhausted
-#
-# Even a structurally recoverable source miss cannot loop
-# indefinitely.
-# ============================================================
-
 def test_partial_source_miss_with_exhausted_budget_abstains():
 
     state = make_state(
@@ -236,18 +318,19 @@ def test_partial_source_miss_with_exhausted_budget_abstains():
 
     assert (
         route_after_evidence(
-            state
+            state,
+
+            source_availability=
+                FakeSourceAvailability(
+                    {
+                        "The Age",
+                    }
+                ),
         )
         ==
         "abstain"
     )
 
-
-# ============================================================
-# Runtime max_retries must remain configurable.
-#
-# max_retries=2 and retry_count=1 still leaves one attempt.
-# ============================================================
 
 def test_runtime_retry_budget_is_honored():
 
@@ -283,18 +366,19 @@ def test_runtime_retry_budget_is_honored():
 
     assert (
         route_after_evidence(
-            state
+            state,
+
+            source_availability=
+                FakeSourceAvailability(
+                    {
+                        "The Age",
+                    }
+                ),
         )
         ==
         "rewrite"
     )
 
-
-# ============================================================
-# Unknown future rejection
-#
-# Fail closed.
-# ============================================================
 
 def test_unknown_evidence_rejection_routes_to_abstain():
 

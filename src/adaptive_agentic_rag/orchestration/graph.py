@@ -18,19 +18,38 @@ from adaptive_agentic_rag.orchestration.adaptive_retry_policy import (
     RetryAction,
 )
 
+from adaptive_agentic_rag.orchestration.corpus_source_availability import (
+    CorpusSourceAvailability,
+)
 
-# ==========================================================
+
+# ============================================================
+# Shared lazy corpus-source catalog
+#
+# No corpus file is loaded during module import.
+#
+# The component loads the source catalog only if the retry
+# policy actually encounters a partial explicit-source miss.
+#
+# One graph process therefore builds the catalog once.
+# ============================================================
+
+_CORPUS_SOURCE_AVAILABILITY = (
+    CorpusSourceAvailability()
+)
+
+
+# ============================================================
 # Conditional routing after evidence grading
-# ==========================================================
+# ============================================================
 
 def route_after_evidence(
     state: AgentState,
+    *,
+    source_availability=None,
 ) -> str:
     """
     Decide what the graph should do after evidence grading.
-
-    Architecture
-    ------------
 
         grade_evidence
               ↓
@@ -41,23 +60,15 @@ def route_after_evidence(
         ▼     ▼     ▼
     generate retry abstain
 
-    Important
-    ---------
-    EvidenceGrader decides:
+    Retry now requires:
 
-        "Is the current evidence sufficient?"
+    1. evidence insufficiency,
+    2. remaining retry budget,
+    3. partial explicit-source coverage,
+    4. missing source actually existing in the corpus.
 
-    AdaptiveRetryPolicy decides:
-
-        "If it is not sufficient, is another retrieval
-        attempt structurally justified?"
-
-    These responsibilities intentionally remain separate.
+    This prevents structurally impossible retrieval retries.
     """
-
-    # ======================================================
-    # Evidence decision must exist at this point.
-    # ======================================================
 
     evidence_sufficient = (
         state.get(
@@ -76,10 +87,6 @@ def route_after_evidence(
             "without evidence_sufficient."
         )
 
-
-    # ======================================================
-    # Retry configuration
-    # ======================================================
 
     retry_count = (
         state.get(
@@ -108,55 +115,56 @@ def route_after_evidence(
     )
 
 
-    # ======================================================
-    # Policy is intentionally lightweight.
+    # ========================================================
+    # Dependency injection
     #
-    # It loads:
+    # LangGraph invokes this function with only `state`,
+    # therefore production uses the shared lazy catalog.
     #
-    # - no model
-    # - no embeddings
-    # - no reranker
-    # - no files
-    #
-    # Therefore creating it here with the request-specific
-    # retry budget is cheap and keeps routing deterministic.
-    # ======================================================
+    # Tests can inject a deterministic fake availability
+    # implementation through the optional keyword argument.
+    # ========================================================
+
+    if (
+        source_availability
+        is None
+    ):
+
+        source_availability = (
+            _CORPUS_SOURCE_AVAILABILITY
+        )
+
 
     retry_policy = (
         AdaptiveRetryPolicy(
-            max_retries=(
+            max_retries=
                 int(
                     max_retries
-                )
-            )
+                ),
+
+            source_availability=
+                source_availability,
         )
     )
 
 
     decision = (
         retry_policy.decide(
-            evidence_sufficient=(
+            evidence_sufficient=
                 bool(
                     evidence_sufficient
-                )
-            ),
+                ),
 
-            retry_count=(
+            retry_count=
                 int(
                     retry_count
-                )
-            ),
+                ),
 
-            evidence_reasons=(
-                evidence_reasons
-            ),
+            evidence_reasons=
+                evidence_reasons,
         )
     )
 
-
-    # ======================================================
-    # Policy → LangGraph route
-    # ======================================================
 
     if (
         decision.action
@@ -185,13 +193,6 @@ def route_after_evidence(
         return "abstain"
 
 
-    # ======================================================
-    # Defensive programming.
-    #
-    # A future RetryAction must never silently fall into an
-    # existing graph route.
-    # ======================================================
-
     raise RuntimeError(
         (
             "Unsupported retry-policy action: "
@@ -200,9 +201,9 @@ def route_after_evidence(
     )
 
 
-# ==========================================================
+# ============================================================
 # Main Graph
-# ==========================================================
+# ============================================================
 
 class AdaptiveRAGGraph:
 
@@ -210,18 +211,10 @@ class AdaptiveRAGGraph:
         self,
     ):
 
-        # --------------------------------------------------
-        # Shared application services
-        # --------------------------------------------------
-
         self.nodes = (
             RAGNodes()
         )
 
-
-        # --------------------------------------------------
-        # Graph definition
-        # --------------------------------------------------
 
         builder = (
             StateGraph(
@@ -230,9 +223,9 @@ class AdaptiveRAGGraph:
         )
 
 
-        # ==================================================
+        # ====================================================
         # Nodes
-        # ==================================================
+        # ====================================================
 
         builder.add_node(
             "route_query",
@@ -282,9 +275,9 @@ class AdaptiveRAGGraph:
         )
 
 
-        # ==================================================
+        # ====================================================
         # Main forward path
-        # ==================================================
+        # ====================================================
 
         builder.add_edge(
             START,
@@ -310,32 +303,9 @@ class AdaptiveRAGGraph:
         )
 
 
-        # ==================================================
-        # Adaptive evidence / retry routing
-        #
-        # OLD:
-        #
-        # evidence sufficient?
-        #   yes → generate
-        #   no  → retry whenever budget remains
-        #
-        #
-        # NEW:
-        #
-        # evidence sufficient
-        #       ↓
-        #    generate
-        #
-        # evidence insufficient
-        #       ↓
-        # AdaptiveRetryPolicy
-        #       │
-        #       ├── structural retrieval miss
-        #       │       → rewrite
-        #       │
-        #       └── no justified retrieval miss
-        #               → abstain
-        # ==================================================
+        # ====================================================
+        # Adaptive evidence routing
+        # ====================================================
 
         builder.add_conditional_edges(
             "grade_evidence",
@@ -355,11 +325,12 @@ class AdaptiveRAGGraph:
         )
 
 
-        # ==================================================
+        # ====================================================
         # Self-correction loop
         #
-        # Only AdaptiveRetryPolicy can enter this path now.
-        # ==================================================
+        # Only recoverable, corpus-available structural misses
+        # may enter this loop.
+        # ====================================================
 
         builder.add_edge(
             "rewrite_query",
@@ -367,10 +338,9 @@ class AdaptiveRAGGraph:
         )
 
 
-        # ==================================================
-        # Both successful answers and abstentions
-        # must be graded.
-        # ==================================================
+        # ====================================================
+        # Answer grading
+        # ====================================================
 
         builder.add_edge(
             "generate",
@@ -384,28 +354,20 @@ class AdaptiveRAGGraph:
         )
 
 
-        # ==================================================
-        # Final exit
-        # ==================================================
-
         builder.add_edge(
             "grade_answer",
             END,
         )
 
 
-        # ==================================================
-        # Compile
-        # ==================================================
-
         self.graph = (
             builder.compile()
         )
 
 
-    # ======================================================
+    # ========================================================
     # Execute
-    # ======================================================
+    # ========================================================
 
     def run(
         self,
@@ -415,13 +377,11 @@ class AdaptiveRAGGraph:
 
         initial_state = (
             create_initial_state(
-                query=(
-                    query
-                ),
+                query=
+                    query,
 
-                max_retries=(
-                    max_retries
-                ),
+                max_retries=
+                    max_retries,
             )
         )
 
@@ -436,9 +396,9 @@ class AdaptiveRAGGraph:
         return final_state
 
 
-    # ======================================================
+    # ========================================================
     # Cleanup
-    # ======================================================
+    # ========================================================
 
     def close(
         self,
