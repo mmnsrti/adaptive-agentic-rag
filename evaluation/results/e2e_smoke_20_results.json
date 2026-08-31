@@ -25,11 +25,11 @@
     "rewrite_rate": 0.45,
     "rewrite_rescues": 0,
     "rewrite_rescue_rate": 0.0,
-    "mean_case_seconds": 17.081297509999786,
-    "p95_case_seconds": 31.494805765002095,
-    "mean_generation_seconds_including_cold_start": 10.444416394998916,
-    "mean_generation_seconds_warm_provisional": 10.99412179999873,
-    "p95_generation_seconds_warm_provisional": 26.729638949994104,
+    "mean_case_seconds": 13.720286395000949,
+    "p95_case_seconds": 28.89976666500079,
+    "mean_generation_seconds_including_cold_start": 8.33048710999974,
+    "mean_generation_seconds_warm_provisional": 8.768933405262942,
+    "p95_generation_seconds_warm_provisional": 24.47751939999798,
     "by_question_type": {
       "comparison_query": {
         "count": 5,
@@ -108,11 +108,11 @@
         "Correctly abstained when evidence was insufficient."
       ],
       "smoke_answer_correct": false,
-      "route_seconds": 0.0002206999997724779,
-      "initial_retrieval_seconds": 2.903235900004802,
-      "rewrite_retrieval_seconds": 1.3295597000033013,
-      "generation_seconds": 1.3700002455152571e-05,
-      "case_seconds": 4.244973000000755
+      "route_seconds": 0.0002026999936788343,
+      "initial_retrieval_seconds": 2.267269700001634,
+      "rewrite_retrieval_seconds": 0.9126068999976269,
+      "generation_seconds": 7.499998901039362e-06,
+      "case_seconds": 3.187656699999934
     },
     {
       "id": "eval_59af1023e6cf",
@@ -156,11 +156,11 @@
         "Generation abstained even though evidence was considered sufficient."
       ],
       "smoke_answer_correct": false,
-      "route_seconds": 0.00015600000187987462,
-      "initial_retrieval_seconds": 2.3671796999988146,
+      "route_seconds": 9.439999848837033e-05,
+      "initial_retrieval_seconds": 1.604115100002673,
       "rewrite_retrieval_seconds": 0.0,
-      "generation_seconds": 19.560683199997584,
-      "case_seconds": 22.267621399994823
+      "generation_seconds": 16.27940259999741,
+      "case_seconds": 18.209253200002422
     },
     {
       "id": "eval_5cd0e3b824db",
@@ -203,11 +203,11 @@
         "Correctly abstained when evidence was insufficient."
       ],
       "smoke_answer_correct": false,
-      "route_seconds": 0.0002310999989276752,
-      "initial_retrieval_seconds": 1.344078800000716,
-      "rewrite_retrieval_seconds": 1.4157875000018976,
-      "generation_seconds": 5.800000508315861e-06,
-      "case_seconds": 2.767902100000356
+      "route_seconds": 0.0001447000031475909,
+      "initial_retrieval_seconds": 1.012722199993732,
+      "rewrite_retrieval_seconds": 0.8633627000017441,
+      "generation_seconds": 5.000001692678779e-06,
+      "case_seconds": 1.8820711000007577
     },
     {
       "id": "eval_c5a0d98021ee",
@@ -253,11 +253,11 @@
         "Final answer passed runtime grounding and relevance checks."
       ],
       "smoke_answer_correct": false,
-      "route_seconds": 0.00011390000145183876,
-      "initial_retrieval_seconds": 1.65491320000001,
+      "route_seconds": 9.210000280290842e-05,
+      "initial_retrieval_seconds": 1.1143597000045702,
       "rewrite_retrieval_seconds": 0.0,
-      "generation_seconds": 19.8488495000056,
-      "case_seconds": 21.71848759999557
+      "generation_seconds": 11.835759800000233,
+      "case_seconds": 13.087090000000899
     },
     {
       "id": "eval_ff33914e9156",
@@ -306,11 +306,11 @@
         "Final answer passed runtime grounding and relevance checks."
       ],
       "smoke_answer_correct": true,
-      "route_seconds": 8.510000043315813e-05,
-      "initial_retrieval_seconds": 4.3139689000017825,
+      "route_seconds": 9.99000039882958e-05,
+      "initial_retrieval_seconds": 3.1854233000049135,
       "rewrite_retrieval_seconds": 0.0,
-      "generation_seconds": 14.639641499998106,
-      "case_seconds": 19.106515300001774
+      "generation_seconds": 10.8841700999983,
+      "case_seconds": 14.203505700003006
     },
     {
       "id": "eval_1e7d390adde0",
@@ -353,11 +353,11 @@
         "Correctly abstained when evidence was insufficient."
       ],
       "smoke_answer_correct": false,
-      "route_seconds": 0.0001140000022132881,
-      "initial_retrieval_seconds": 5.430530199999339,
-      "rewrite_retrieval_seconds": 4.986854000002495,
-      "generation_seconds": 3.9000005926936865e-06,
-      "case_seconds": 10.421096199999738
+      "route_seconds": 9.680000221123919e-05,
+      "initial_retrieval_seconds": 4.3276556999990134,
+      "rewrite_retrieval_seconds": 4.243334400001913,
+      "generation_seconds": 4.499997885432094e-06,
+      "case_seconds": 8.574983200000133
     },
     {
       "id": "eval_4e23afea1f81",
@@ -404,11 +404,11 @@
         "1 unsupported draft claim(s) were removed before the final answer."
       ],
       "smoke_answer_correct": false,
-      "route_seconds": 0.00011150000500492752,
-      "initial_retrieval_seconds": 4.835079200005566,
+      "route_seconds": 8.930000331019983e-05,
+      "initial_retrieval_seconds": 4.7954406999997445,
       "rewrite_retrieval_seconds": 0.0,
-      "generation_seconds": 26.189385399993625,
-      "case_seconds": 31.218624200002523
+      "generation_seconds": 24.000558299994736,
+      "case_seconds": 28.89445010000054
     },
     {
       "id": "eval_5c7fab04046b",
@@ -450,11 +450,11 @@
         "Generation abstained even though evidence was considered sufficient."
       ],
       "smoke_answer_correct": false,
-      "route_seconds": 0.0001373999984934926,
-      "initial_retrieval_seconds": 5.241557499997725,
+      "route_seconds": 7.560000085504726e-05,
+      "initial_retrieval_seconds": 3.980327800003579,
       "rewrite_retrieval_seconds": 0.0,
-      "generation_seconds": 25.47893699999986,
-      "case_seconds": 30.722474900001544
+      "generation_seconds": 25.01826820000133,
+      "case_seconds": 29.000781400005508
     },
     {
       "id": "eval_eb1a6bb45cb4",
@@ -501,11 +501,11 @@
         "1 unsupported draft claim(s) were removed before the final answer."
       ],
       "smoke_answer_correct": false,
-      "route_seconds": 0.00014540000120177865,
-      "initial_retrieval_seconds": 4.857040700000653,
+      "route_seconds": 8.180000440916047e-05,
+      "initial_retrieval_seconds": 3.503022400000191,
       "rewrite_retrieval_seconds": 0.0,
-      "generation_seconds": 31.591920899998513,
-      "case_seconds": 36.74225549999392
+      "generation_seconds": 24.41743619999761,
+      "case_seconds": 28.071656299995084
     },
     {
       "id": "eval_f3e9235ece5a",
@@ -555,11 +555,11 @@
         "1 unsupported draft claim(s) were removed before the final answer."
       ],
       "smoke_answer_correct": false,
-      "route_seconds": 0.0001055999964592047,
-      "initial_retrieval_seconds": 7.1284579999992275,
+      "route_seconds": 9.649999992689118e-05,
+      "initial_retrieval_seconds": 4.589907099994889,
       "rewrite_retrieval_seconds": 0.0,
-      "generation_seconds": 20.660593900000094,
-      "case_seconds": 27.996073599999363
+      "generation_seconds": 11.618061599998327,
+      "case_seconds": 16.392073100003472
     },
     {
       "id": "eval_093af83d0219",
@@ -607,11 +607,11 @@
         "Final answer passed runtime grounding and relevance checks."
       ],
       "smoke_answer_correct": true,
-      "route_seconds": 8.160000288626179e-05,
-      "initial_retrieval_seconds": 7.382519099999627,
+      "route_seconds": 4.340000305091962e-05,
+      "initial_retrieval_seconds": 5.511954899993725,
       "rewrite_retrieval_seconds": 0.0,
-      "generation_seconds": 14.291000899997016,
-      "case_seconds": 21.777314999999362
+      "generation_seconds": 11.63054700000066,
+      "case_seconds": 17.242875600000843
     },
     {
       "id": "eval_5f40fab8ea55",
@@ -659,11 +659,11 @@
         "Final answer passed runtime grounding and relevance checks."
       ],
       "smoke_answer_correct": true,
-      "route_seconds": 0.00010959999781334773,
-      "initial_retrieval_seconds": 5.61791240000457,
+      "route_seconds": 8.22000001790002e-05,
+      "initial_retrieval_seconds": 4.953369299997576,
       "rewrite_retrieval_seconds": 0.0,
-      "generation_seconds": 12.811279499997909,
-      "case_seconds": 18.597516300003917
+      "generation_seconds": 12.31871929999761,
+      "case_seconds": 17.454132099999697
     },
     {
       "id": "eval_733c08d301e8",
@@ -706,11 +706,11 @@
         "Correctly abstained when evidence was insufficient."
       ],
       "smoke_answer_correct": false,
-      "route_seconds": 8.890000026440248e-05,
-      "initial_retrieval_seconds": 5.104765199997928,
-      "rewrite_retrieval_seconds": 4.914540000005218,
-      "generation_seconds": 8.299997716676444e-06,
-      "case_seconds": 10.515113599998585
+      "route_seconds": 7.560000085504726e-05,
+      "initial_retrieval_seconds": 4.610520299997006,
+      "rewrite_retrieval_seconds": 4.381550799997058,
+      "generation_seconds": 3.9000005926936865e-06,
+      "case_seconds": 9.452775500001735
     },
     {
       "id": "eval_b80b5654cdcc",
@@ -758,11 +758,11 @@
         "1 unsupported draft claim(s) were removed before the final answer."
       ],
       "smoke_answer_correct": true,
-      "route_seconds": 5.499999679159373e-05,
-      "initial_retrieval_seconds": 1.955370600000606,
+      "route_seconds": 5.3499999921768904e-05,
+      "initial_retrieval_seconds": 1.7961056999993161,
       "rewrite_retrieval_seconds": 0.0,
-      "generation_seconds": 9.981159800001478,
-      "case_seconds": 12.052811200002907
+      "generation_seconds": 9.106081500001892,
+      "case_seconds": 11.009473400001298
     },
     {
       "id": "eval_be412cb54feb",
@@ -805,11 +805,11 @@
         "Correctly abstained when evidence was insufficient."
       ],
       "smoke_answer_correct": false,
-      "route_seconds": 0.00010629999451339245,
-      "initial_retrieval_seconds": 4.91871070000343,
-      "rewrite_retrieval_seconds": 5.0189616000061505,
-      "generation_seconds": 3.999994078185409e-06,
-      "case_seconds": 9.94070329999522
+      "route_seconds": 8.019999950192869e-05,
+      "initial_retrieval_seconds": 4.185255399999733,
+      "rewrite_retrieval_seconds": 4.105852900000173,
+      "generation_seconds": 3.5000048228539526e-06,
+      "case_seconds": 8.293767499999376
     },
     {
       "id": "eval_2fa0f63fd209",
@@ -848,11 +848,11 @@
         "Correctly abstained when evidence was insufficient."
       ],
       "smoke_answer_correct": null,
-      "route_seconds": 0.0001982000030693598,
-      "initial_retrieval_seconds": 6.990762599998561,
-      "rewrite_retrieval_seconds": 6.266866899997694,
-      "generation_seconds": 5.49999822396785e-06,
-      "case_seconds": 13.262565100005304
+      "route_seconds": 8.739999611862004e-05,
+      "initial_retrieval_seconds": 5.358412500005215,
+      "rewrite_retrieval_seconds": 4.659218100001453,
+      "generation_seconds": 3.7999998312443495e-06,
+      "case_seconds": 10.0215584999969
     },
     {
       "id": "eval_36827e3d0adf",
@@ -891,11 +891,11 @@
         "Generation abstained even though evidence was considered sufficient."
       ],
       "smoke_answer_correct": null,
-      "route_seconds": 8.349999552592635e-05,
-      "initial_retrieval_seconds": 4.21585480000067,
+      "route_seconds": 7.970000297063962e-05,
+      "initial_retrieval_seconds": 3.424925900006201,
       "rewrite_retrieval_seconds": 0.0,
-      "generation_seconds": 13.83481749999919,
-      "case_seconds": 18.052544400001352
+      "generation_seconds": 9.500695900002029,
+      "case_seconds": 12.92730329999904
     },
     {
       "id": "eval_52bfece07a6c",
@@ -934,11 +934,11 @@
         "Correctly abstained when evidence was insufficient."
       ],
       "smoke_answer_correct": null,
-      "route_seconds": 0.00012789999891538173,
-      "initial_retrieval_seconds": 4.9723009999943315,
-      "rewrite_retrieval_seconds": 4.336582500000077,
-      "generation_seconds": 4.29999636253342e-06,
-      "case_seconds": 9.344094799998857
+      "route_seconds": 7.700000423938036e-05,
+      "initial_retrieval_seconds": 4.012467900000047,
+      "rewrite_retrieval_seconds": 3.8171887999997125,
+      "generation_seconds": 5.900001269765198e-06,
+      "case_seconds": 7.879370599999675
     },
     {
       "id": "eval_5457d2a4c687",
@@ -977,11 +977,11 @@
         "Correctly abstained when evidence was insufficient."
       ],
       "smoke_answer_correct": null,
-      "route_seconds": 0.00010149999434361234,
-      "initial_retrieval_seconds": 5.0162240999998176,
-      "rewrite_retrieval_seconds": 5.350549200004025,
-      "generation_seconds": 6.70000008540228e-06,
-      "case_seconds": 10.371937399999297
+      "route_seconds": 9.57000011112541e-05,
+      "initial_retrieval_seconds": 4.570446199999424,
+      "rewrite_retrieval_seconds": 4.708476300002076,
+      "generation_seconds": 3.6999990697950125e-06,
+      "case_seconds": 9.28278400000272
     },
     {
       "id": "eval_f1e3e6ebe75c",
@@ -1020,11 +1020,11 @@
         "Correctly abstained when evidence was insufficient."
       ],
       "smoke_answer_correct": null,
-      "route_seconds": 0.00016290000348817557,
-      "initial_retrieval_seconds": 5.416810800001258,
-      "rewrite_retrieval_seconds": 5.081367200000386,
-      "generation_seconds": 6.599999323952943e-06,
-      "case_seconds": 10.50532530000055
+      "route_seconds": 9.760000102687627e-05,
+      "initial_retrieval_seconds": 4.761671399995976,
+      "rewrite_retrieval_seconds": 4.57128830000147,
+      "generation_seconds": 3.9000005926936865e-06,
+      "case_seconds": 9.338166600005934
     }
   ]
 }
