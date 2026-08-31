@@ -78,16 +78,19 @@ class AnswerConsistencyResult:
     unique_citation_count: int
 
 
-class ل:
+class AnswerConsistencyGuard:
     """
-    Deterministic post-grounding guard.
+    Experimental post-grounding consistency guard.
 
-    This component does NOT attempt to solve the question.
+    IMPORTANT:
 
-    It prevents obviously inconsistent direct answers from
-    being attached to otherwise grounded evidence.
+    This component is retained only as an ablation artifact.
 
-    It introduces no new model and no new learned threshold.
+    It is currently NOT part of the production generator
+    pipeline.
+
+    The class remains available so historical diagnostics,
+    tests, and ablation results stay reproducible.
     """
 
     # ========================================================
@@ -103,6 +106,7 @@ class ل:
             r"[a-z0-9]+",
             (text or "").lower(),
         )
+
 
         return " ".join(
             tokens
@@ -131,7 +135,9 @@ class ل:
 
 
         return (
-            tokens[0]
+            tokens[
+                0
+            ]
             in
             YES_NO_STARTERS
         )
@@ -189,7 +195,7 @@ class ل:
 
 
     # ========================================================
-    # Direct answer helpers
+    # Yes / No direct-answer helper
     # ========================================================
 
     @classmethod
@@ -257,7 +263,9 @@ class ل:
             return False
 
 
-        for claim in relevant_claims:
+        for claim in (
+            relevant_claims
+        ):
 
             claim_text = (
                 cls._normalize(
@@ -283,19 +291,7 @@ class ل:
 
 
     # ========================================================
-    # Source-name trap
-    #
-    # Example:
-    #
-    # QUESTION:
-    # Which organization, discussed in articles from
-    # "The Roar | Sports Writers Blog", ...?
-    #
-    # WRONG:
-    # The Roar | Sports Writers Blog
-    #
-    # The publisher is evidence provenance, not necessarily
-    # the requested organization.
+    # Provenance/source trap
     # ========================================================
 
     @classmethod
@@ -353,7 +349,7 @@ class ل:
 
 
     # ========================================================
-    # Main
+    # Main validation
     # ========================================================
 
     def validate(
@@ -425,16 +421,6 @@ class ل:
                 )
 
 
-            # ------------------------------------------------
-            # Explicit comparison questions often require
-            # independent evidence for both sides.
-            #
-            # This is structural safety only.
-            #
-            # It does NOT decide whether the answer is
-            # semantically Yes or No.
-            # ------------------------------------------------
-
             if (
                 self._requires_multiple_evidence_items(
                     query
@@ -455,7 +441,6 @@ class ل:
 
 
             return AnswerConsistencyResult(
-
                 valid=(
                     len(
                         reasons
@@ -476,7 +461,7 @@ class ل:
 
 
         # ====================================================
-        # Entity / organization / person / source
+        # Entity
         # ====================================================
 
         if self._is_entity_question(
@@ -528,7 +513,6 @@ class ل:
 
 
             return AnswerConsistencyResult(
-
                 valid=(
                     len(
                         reasons
@@ -549,20 +533,18 @@ class ل:
 
 
         # ====================================================
-        # Other short-answer forms
-        #
-        # We deliberately do not invent additional rules for
-        # dates/numbers/free-form answers yet.
+        # Other answer types
         # ====================================================
 
         return AnswerConsistencyResult(
-
-            valid=True,
+            valid=
+                True,
 
             answer_type=
                 "other",
 
-            reasons=[],
+            reasons=
+                [],
 
             unique_citation_count=
                 unique_citation_count,

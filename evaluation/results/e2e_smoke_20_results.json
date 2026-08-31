@@ -4,45 +4,45 @@
     "total_cases": 20,
     "answerable_cases": 15,
     "null_cases": 5,
-    "answerable_answered": 3,
-    "answer_rate": 0.2,
-    "false_abstentions": 12,
-    "false_abstention_rate": 0.8,
+    "answerable_answered": 9,
+    "answer_rate": 0.6,
+    "false_abstentions": 6,
+    "false_abstention_rate": 0.4,
     "null_abstentions": 5,
     "null_abstention_rate": 1.0,
     "smoke_answer_scored": 15,
-    "smoke_answer_correct": 2,
-    "smoke_answer_accuracy": 0.13333333333333333,
-    "runtime_grader_passes": 11,
-    "runtime_grader_pass_rate": 0.55,
+    "smoke_answer_correct": 3,
+    "smoke_answer_accuracy": 0.2,
+    "runtime_grader_passes": 17,
+    "runtime_grader_pass_rate": 0.85,
     "answered_runtime_failures": 0,
     "runtime_unsupported_proxy_rate": 0.0,
-    "citation_valid_answered": 3,
+    "citation_valid_answered": 9,
     "citation_validity_rate": 1.0,
-    "mean_dataset_evidence_citation_precision": 0.6666666666666666,
-    "mean_dataset_evidence_citation_recall": 0.611111111111111,
+    "mean_dataset_evidence_citation_precision": 0.7777777777777778,
+    "mean_dataset_evidence_citation_recall": 0.48148148148148145,
     "rewrite_attempts": 8,
     "rewrite_rate": 0.4,
     "rewrite_rescues": 0,
     "rewrite_rescue_rate": 0.0,
-    "mean_case_seconds": 49.088834405000306,
-    "p95_case_seconds": 82.53238781000292,
-    "mean_generation_seconds_including_cold_start": 33.75087913500065,
-    "mean_generation_seconds_warm_provisional": 35.52724075789554,
-    "p95_generation_seconds_warm_provisional": 70.92544403999635,
+    "mean_case_seconds": 15.018736020000143,
+    "p95_case_seconds": 35.032920299998295,
+    "mean_generation_seconds_including_cold_start": 9.79924544500027,
+    "mean_generation_seconds_warm_provisional": 10.314994842105463,
+    "p95_generation_seconds_warm_provisional": 30.325538339997365,
     "by_question_type": {
       "comparison_query": {
         "count": 5,
-        "answered": 0,
-        "abstained": 5,
+        "answered": 3,
+        "abstained": 2,
         "smoke_scored": 5,
         "smoke_correct": 0,
         "smoke_accuracy": 0.0
       },
       "inference_query": {
         "count": 5,
-        "answered": 1,
-        "abstained": 4,
+        "answered": 2,
+        "abstained": 3,
         "smoke_scored": 5,
         "smoke_correct": 1,
         "smoke_accuracy": 0.2
@@ -57,11 +57,11 @@
       },
       "temporal_query": {
         "count": 5,
-        "answered": 2,
-        "abstained": 3,
+        "answered": 4,
+        "abstained": 1,
         "smoke_scored": 5,
-        "smoke_correct": 1,
-        "smoke_accuracy": 0.2
+        "smoke_correct": 2,
+        "smoke_accuracy": 0.4
       }
     }
   },
@@ -108,11 +108,11 @@
         "Correctly abstained when evidence was insufficient."
       ],
       "smoke_answer_correct": false,
-      "route_seconds": 0.0001906000034068711,
-      "initial_retrieval_seconds": 1.3885309000033885,
-      "rewrite_retrieval_seconds": 0.786500199996226,
-      "generation_seconds": 8.299997716676444e-06,
-      "case_seconds": 2.1804429999974673
+      "route_seconds": 0.00021710000146413222,
+      "initial_retrieval_seconds": 1.604482700000517,
+      "rewrite_retrieval_seconds": 0.8357058000001416,
+      "generation_seconds": 6.900001608300954e-06,
+      "case_seconds": 2.444908299999952
     },
     {
       "id": "eval_59af1023e6cf",
@@ -136,7 +136,7 @@
       "final_evidence_sufficient": true,
       "final_evidence_score": 0.6603,
       "answer": "I couldn't find enough supported and relevant claims in the retrieved evidence to answer reliably.",
-      "direct_answer": null,
+      "direct_answer": "Donald Trump",
       "raw_answer": "DIRECT_ANSWER: Donald Trump\n\nFACTS:\n- Donald Trump defrauded banks with 'fantasy' to build his real estate empire, judge rules in a major repudiation against the former president - Fortune\n- The FTX trial is bigger than Sam Bankman-Fried - The Verge",
       "abstained": true,
       "draft_claims": 2,
@@ -156,11 +156,11 @@
         "Generation abstained even though evidence was considered sufficient."
       ],
       "smoke_answer_correct": false,
-      "route_seconds": 9.1200003225822e-05,
-      "initial_retrieval_seconds": 1.1880153999954928,
+      "route_seconds": 9.429999772692099e-05,
+      "initial_retrieval_seconds": 1.2205873999992036,
       "rewrite_retrieval_seconds": 0.0,
-      "generation_seconds": 32.75615680000192,
-      "case_seconds": 34.243478600001254
+      "generation_seconds": 14.530622900001617,
+      "case_seconds": 16.029376800001046
     },
     {
       "id": "eval_5cd0e3b824db",
@@ -203,11 +203,11 @@
         "Correctly abstained when evidence was insufficient."
       ],
       "smoke_answer_correct": false,
-      "route_seconds": 0.00014620000001741573,
-      "initial_retrieval_seconds": 5.162424900001497,
-      "rewrite_retrieval_seconds": 4.930278599997109,
-      "generation_seconds": 3.6999990697950125e-06,
-      "case_seconds": 10.09595999999874
+      "route_seconds": 0.0001325999983237125,
+      "initial_retrieval_seconds": 0.793479899999511,
+      "rewrite_retrieval_seconds": 0.8220313999991049,
+      "generation_seconds": 3.5999983083456755e-06,
+      "case_seconds": 1.6190193000002182
     },
     {
       "id": "eval_c5a0d98021ee",
@@ -228,32 +228,36 @@
       "rewrite_rescued": false,
       "final_evidence_sufficient": true,
       "final_evidence_score": 0.85,
-      "answer": "I couldn't find enough supported and relevant claims in the retrieved evidence to answer reliably.",
-      "direct_answer": null,
+      "answer": "The Roar | Sports Writers Blog [1]\n- The Roar | Sports Writers Blog mentions that the QRU wants Rugby Australia to reinstate the annual $1.7 million in funding to each of the Super Rugby franchises. [1]\n- The Roar | Sports Writers Blog discusses the Wallabies' World Cup flop and expresses strong support for Rugby Australia to conduct a \"fully independent and transparent top-to-bottom review\" of the Wallabies program. [1]",
+      "direct_answer": "The Roar | Sports Writers Blog",
       "raw_answer": "DIRECT_ANSWER: The Roar | Sports Writers Blog\n\nFACTS:\n- The Roar | Sports Writers Blog discusses the Wallabies' World Cup flop and expresses strong support for Rugby Australia to conduct a \"fully independent and transparent top-to-bottom review\" of the Wallabies program.\n- The Roar | Sports Writers Blog mentions that the QRU wants Rugby Australia to reinstate the annual $1.7 million in funding to each of the Super Rugby franchises.",
-      "abstained": true,
+      "abstained": false,
       "draft_claims": 2,
       "supported_claims": 2,
       "unsupported_claims": 0,
       "relevant_claims": 2,
       "filtered_irrelevant_claims": 0,
-      "citation_valid": false,
-      "cited_ids": [],
-      "cited_document_ids": [],
-      "dataset_evidence_citation_precision": 0.0,
-      "dataset_evidence_citation_recall": 0.0,
-      "runtime_grader_passed": false,
-      "runtime_supported_claim_ratio": 0.0,
-      "runtime_relevance_score": null,
+      "citation_valid": true,
+      "cited_ids": [
+        1
+      ],
+      "cited_document_ids": [
+        "doc_0492"
+      ],
+      "dataset_evidence_citation_precision": 1.0,
+      "dataset_evidence_citation_recall": 0.5,
+      "runtime_grader_passed": true,
+      "runtime_supported_claim_ratio": 1.0,
+      "runtime_relevance_score": 0.7913,
       "runtime_reasons": [
-        "Generation abstained even though evidence was considered sufficient."
+        "Final answer passed runtime grounding and relevance checks."
       ],
       "smoke_answer_correct": false,
-      "route_seconds": 7.71000050008297e-05,
-      "initial_retrieval_seconds": 8.179118699998071,
+      "route_seconds": 7.229999755509198e-05,
+      "initial_retrieval_seconds": 0.9403840999984823,
       "rewrite_retrieval_seconds": 0.0,
-      "generation_seconds": 63.780258999999205,
-      "case_seconds": 71.96063359999971
+      "generation_seconds": 12.461147099998925,
+      "case_seconds": 13.496864799999457
     },
     {
       "id": "eval_ff33914e9156",
@@ -302,11 +306,11 @@
         "Final answer passed runtime grounding and relevance checks."
       ],
       "smoke_answer_correct": true,
-      "route_seconds": 7.159999950090423e-05,
-      "initial_retrieval_seconds": 9.448495999997249,
+      "route_seconds": 8.24999988253694e-05,
+      "initial_retrieval_seconds": 3.0047747999997227,
       "rewrite_retrieval_seconds": 0.0,
-      "generation_seconds": 44.12321080000402,
-      "case_seconds": 53.660719500003324
+      "generation_seconds": 11.361756300000707,
+      "case_seconds": 14.460213199999998
     },
     {
       "id": "eval_1e7d390adde0",
@@ -349,11 +353,11 @@
         "Correctly abstained when evidence was insufficient."
       ],
       "smoke_answer_correct": false,
-      "route_seconds": 9.440000576432794e-05,
-      "initial_retrieval_seconds": 13.100850799994078,
-      "rewrite_retrieval_seconds": 13.303034900003695,
-      "generation_seconds": 3.5000048228539526e-06,
-      "case_seconds": 26.406309099998907
+      "route_seconds": 0.00012129999959142879,
+      "initial_retrieval_seconds": 4.131980799997109,
+      "rewrite_retrieval_seconds": 4.0372152000018104,
+      "generation_seconds": 3.4000004234258085e-06,
+      "case_seconds": 8.171885199997632
     },
     {
       "id": "eval_4e23afea1f81",
@@ -374,32 +378,37 @@
       "rewrite_rescued": false,
       "final_evidence_sufficient": true,
       "final_evidence_score": 0.835,
-      "answer": "I couldn't find enough supported and relevant claims in the retrieved evidence to answer reliably.",
-      "direct_answer": null,
+      "answer": "No [6]\n- The article from Music Business Worldwide indicates that Artists are seeking deals that offer more control and better economics. [6]",
+      "direct_answer": "No",
       "raw_answer": "DIRECT_ANSWER: No\n\nFACTS:\n- The article from Wired suggests that Latin artists seek deals that offer more control and better economics.\n- The article from Music Business Worldwide indicates that Artists are seeking deals that offer more control and better economics.",
-      "abstained": true,
+      "abstained": false,
       "draft_claims": 2,
       "supported_claims": 1,
       "unsupported_claims": 1,
       "relevant_claims": 1,
       "filtered_irrelevant_claims": 0,
-      "citation_valid": false,
-      "cited_ids": [],
-      "cited_document_ids": [],
-      "dataset_evidence_citation_precision": 0.0,
-      "dataset_evidence_citation_recall": 0.0,
-      "runtime_grader_passed": false,
-      "runtime_supported_claim_ratio": 0.0,
-      "runtime_relevance_score": null,
+      "citation_valid": true,
+      "cited_ids": [
+        6
+      ],
+      "cited_document_ids": [
+        "doc_0211"
+      ],
+      "dataset_evidence_citation_precision": 1.0,
+      "dataset_evidence_citation_recall": 0.5,
+      "runtime_grader_passed": true,
+      "runtime_supported_claim_ratio": 1.0,
+      "runtime_relevance_score": 0.5933,
       "runtime_reasons": [
-        "Generation abstained even though evidence was considered sufficient."
+        "Final answer passed runtime grounding and relevance checks.",
+        "1 unsupported draft claim(s) were removed before the final answer."
       ],
       "smoke_answer_correct": false,
-      "route_seconds": 9.249999857274815e-05,
-      "initial_retrieval_seconds": 13.87640090000059,
+      "route_seconds": 9.819999831961468e-05,
+      "initial_retrieval_seconds": 4.642264099999011,
       "rewrite_retrieval_seconds": 0.0,
-      "generation_seconds": 61.214656100004504,
-      "case_seconds": 75.09284599999955
+      "generation_seconds": 24.830475900002057,
+      "case_seconds": 29.577680999998847
     },
     {
       "id": "eval_5c7fab04046b",
@@ -421,7 +430,7 @@
       "final_evidence_sufficient": true,
       "final_evidence_score": 0.7974,
       "answer": "I couldn't find enough supported and relevant claims in the retrieved evidence to answer reliably.",
-      "direct_answer": null,
+      "direct_answer": "No",
       "raw_answer": "DIRECT_ANSWER: No\n\nFACTS:\n- The 'The Guardian' article does not provide information comparing Everton's position in the Premier League to Bayern Munich's.\n- The article discusses Everton's recent performances and the upcoming match against Liverpool, but does not mention comparisons to Bayern Munich.",
       "abstained": true,
       "draft_claims": 2,
@@ -441,11 +450,11 @@
         "Generation abstained even though evidence was considered sufficient."
       ],
       "smoke_answer_correct": false,
-      "route_seconds": 7.170000026235357e-05,
-      "initial_retrieval_seconds": 11.88676029999624,
+      "route_seconds": 0.00010660000043571927,
+      "initial_retrieval_seconds": 3.852967399998306,
       "rewrite_retrieval_seconds": 0.0,
-      "generation_seconds": 70.38143699999637,
-      "case_seconds": 82.26995210000314
+      "generation_seconds": 31.134600000001228,
+      "case_seconds": 34.98906789999819
     },
     {
       "id": "eval_eb1a6bb45cb4",
@@ -466,32 +475,37 @@
       "rewrite_rescued": false,
       "final_evidence_sufficient": true,
       "final_evidence_score": 0.846,
-      "answer": "I couldn't find enough supported and relevant claims in the retrieved evidence to answer reliably.",
-      "direct_answer": null,
+      "answer": "No [2]\n- The TechCrunch article focuses on Gary Wang. [2]\n- Caroline Ellison's admission of guilt to federal criminal charges in relation to the FTX collapse. [2]",
+      "direct_answer": "No",
       "raw_answer": "DIRECT_ANSWER: No\n\nFACTS:\n- The Fortune article does not mention Sam Bankman-Fried being responsible for the alleged deceit behind FTX's success.\n- The TechCrunch article focuses on Gary Wang and Caroline Ellison's admission of guilt to federal criminal charges in relation to the FTX collapse.",
-      "abstained": true,
+      "abstained": false,
       "draft_claims": 2,
       "supported_claims": 2,
       "unsupported_claims": 1,
       "relevant_claims": 2,
       "filtered_irrelevant_claims": 0,
-      "citation_valid": false,
-      "cited_ids": [],
-      "cited_document_ids": [],
-      "dataset_evidence_citation_precision": 0.0,
-      "dataset_evidence_citation_recall": 0.0,
-      "runtime_grader_passed": false,
-      "runtime_supported_claim_ratio": 0.0,
-      "runtime_relevance_score": null,
+      "citation_valid": true,
+      "cited_ids": [
+        2
+      ],
+      "cited_document_ids": [
+        "doc_0010"
+      ],
+      "dataset_evidence_citation_precision": 1.0,
+      "dataset_evidence_citation_recall": 0.5,
+      "runtime_grader_passed": true,
+      "runtime_supported_claim_ratio": 1.0,
+      "runtime_relevance_score": 0.8325,
       "runtime_reasons": [
-        "Generation abstained even though evidence was considered sufficient."
+        "Final answer passed runtime grounding and relevance checks.",
+        "1 unsupported draft claim(s) were removed before the final answer."
       ],
       "smoke_answer_correct": false,
-      "route_seconds": 8.760000491747633e-05,
-      "initial_retrieval_seconds": 11.695441299998492,
+      "route_seconds": 0.0001432999997632578,
+      "initial_retrieval_seconds": 5.519901599996956,
       "rewrite_retrieval_seconds": 0.0,
-      "generation_seconds": 75.82150739999634,
-      "case_seconds": 87.51866629999859
+      "generation_seconds": 30.235642599996936,
+      "case_seconds": 35.866115900000295
     },
     {
       "id": "eval_f3e9235ece5a",
@@ -513,32 +527,39 @@
       "rewrite_rescued": false,
       "final_evidence_sufficient": true,
       "final_evidence_score": 0.8221,
-      "answer": "I couldn't find enough supported and relevant claims in the retrieved evidence to answer reliably.",
-      "direct_answer": null,
+      "answer": "No [10][1]\n- The Sydney Morning Herald article focuses on the impact of an antitrust lawsuit on Amazon's stock price. [10]\n- The Mashable article suggests that Amazon's Cyber Monday includes both continued and new deals. [1]",
+      "direct_answer": "No",
       "raw_answer": "DIRECT_ANSWER: No\n\nFACTS:\n- The Mashable article suggests that Amazon's Cyber Monday includes both continued and new deals.\n- The Sydney Morning Herald article focuses on the impact of an antitrust lawsuit on Amazon's stock price.\n- The CNBC | World Business News Leader article discusses the opportunity of selling on Amazon, without mentioning any legal or promotional events.",
-      "abstained": true,
+      "abstained": false,
       "draft_claims": 3,
       "supported_claims": 2,
       "unsupported_claims": 1,
       "relevant_claims": 2,
       "filtered_irrelevant_claims": 0,
-      "citation_valid": false,
-      "cited_ids": [],
-      "cited_document_ids": [],
-      "dataset_evidence_citation_precision": 0.0,
-      "dataset_evidence_citation_recall": 0.0,
-      "runtime_grader_passed": false,
-      "runtime_supported_claim_ratio": 0.0,
-      "runtime_relevance_score": null,
+      "citation_valid": true,
+      "cited_ids": [
+        10,
+        1
+      ],
+      "cited_document_ids": [
+        "doc_0001",
+        "doc_0000"
+      ],
+      "dataset_evidence_citation_precision": 1.0,
+      "dataset_evidence_citation_recall": 0.6666666666666666,
+      "runtime_grader_passed": true,
+      "runtime_supported_claim_ratio": 1.0,
+      "runtime_relevance_score": 0.8964,
       "runtime_reasons": [
-        "Generation abstained even though evidence was considered sufficient."
+        "Final answer passed runtime grounding and relevance checks.",
+        "1 unsupported draft claim(s) were removed before the final answer."
       ],
       "smoke_answer_correct": false,
-      "route_seconds": 9.000000136438757e-05,
-      "initial_retrieval_seconds": 13.866431199996441,
+      "route_seconds": 9.760000102687627e-05,
+      "initial_retrieval_seconds": 5.064503500001592,
       "rewrite_retrieval_seconds": 0.0,
-      "generation_seconds": 60.417989800000214,
-      "case_seconds": 74.28620210000372
+      "generation_seconds": 13.516489400000864,
+      "case_seconds": 18.698198100002628
     },
     {
       "id": "eval_093af83d0219",
@@ -586,11 +607,11 @@
         "Final answer passed runtime grounding and relevance checks."
       ],
       "smoke_answer_correct": true,
-      "route_seconds": 3.6100005672778934e-05,
-      "initial_retrieval_seconds": 16.21501530000387,
+      "route_seconds": 4.320000152802095e-05,
+      "initial_retrieval_seconds": 6.248114400001214,
       "rewrite_retrieval_seconds": 0.0,
-      "generation_seconds": 43.30556790000264,
-      "case_seconds": 59.60911230000056
+      "generation_seconds": 13.236823399998684,
+      "case_seconds": 19.587171500003024
     },
     {
       "id": "eval_5f40fab8ea55",
@@ -611,8 +632,8 @@
       "rewrite_rescued": false,
       "final_evidence_sufficient": true,
       "final_evidence_score": 0.7412,
-      "answer": "No [2][1]\n- The live score update and highlight excerpt for \"Chiefs vs. Packers\" also mentioned a player achieving a first down. [2]\n- The live score update and highlight excerpt for \"Jaguars vs. Saints\" mentioned a player achieving a first down. [1]",
-      "direct_answer": "No",
+      "answer": "The reporting style regarding live score updates and highlights from NFL games by Sporting News did not remain consistently the same between the articles featuring \"Jaguars vs. Saints\" on October 19, 2023, and \"Chiefs vs. Packers\" on December 3, 2023. [2][1]\n- The live score update and highlight excerpt for \"Chiefs vs. Packers\" also mentioned a player achieving a first down. [2]\n- The live score update and highlight excerpt for \"Jaguars vs. Saints\" mentioned a player achieving a first down. [1]",
+      "direct_answer": "The reporting style regarding live score updates and highlights from NFL games by Sporting News did not remain consistently the same between the articles featuring \"Jaguars vs. Saints\" on October 19, 2023, and \"Chiefs vs. Packers\" on December 3, 2023.",
       "raw_answer": "DIRECT_ANSWER: The reporting style regarding live score updates and highlights from NFL games by Sporting News did not remain consistently the same between the articles featuring \"Jaguars vs. Saints\" on October 19, 2023, and \"Chiefs vs. Packers\" on December 3, 2023.\n\nFACTS:\n- The live score update and highlight excerpt for \"Jaguars vs. Saints\" mentioned a player achieving a first down.\n- The live score update and highlight excerpt for \"Chiefs vs. Packers\" also mentioned a player achieving a first down.",
       "abstained": false,
       "draft_claims": 2,
@@ -633,16 +654,16 @@
       "dataset_evidence_citation_recall": 1.0,
       "runtime_grader_passed": true,
       "runtime_supported_claim_ratio": 1.0,
-      "runtime_relevance_score": 0.845,
+      "runtime_relevance_score": 0.9579,
       "runtime_reasons": [
         "Final answer passed runtime grounding and relevance checks."
       ],
       "smoke_answer_correct": false,
-      "route_seconds": 8.150000212481245e-05,
-      "initial_retrieval_seconds": 15.819104800000787,
+      "route_seconds": 8.189999789465219e-05,
+      "initial_retrieval_seconds": 5.949716600000102,
       "rewrite_retrieval_seconds": 0.0,
-      "generation_seconds": 56.36282119999669,
-      "case_seconds": 73.32501420000335
+      "generation_seconds": 14.867607399999542,
+      "case_seconds": 21.01329540000006
     },
     {
       "id": "eval_733c08d301e8",
@@ -685,11 +706,11 @@
         "Correctly abstained when evidence was insufficient."
       ],
       "smoke_answer_correct": false,
-      "route_seconds": 8.620000153314322e-05,
-      "initial_retrieval_seconds": 13.678040700004203,
-      "rewrite_retrieval_seconds": 13.093165999998746,
-      "generation_seconds": 4.499997885432094e-06,
-      "case_seconds": 31.50657279999723
+      "route_seconds": 9.209999916492961e-05,
+      "initial_retrieval_seconds": 4.810246199998801,
+      "rewrite_retrieval_seconds": 4.6322218000022986,
+      "generation_seconds": 3.7999998312443495e-06,
+      "case_seconds": 9.90177390000099
     },
     {
       "id": "eval_b80b5654cdcc",
@@ -711,32 +732,37 @@
       "rewrite_rescued": false,
       "final_evidence_sufficient": true,
       "final_evidence_score": 0.89,
-      "answer": "I couldn't find enough supported and relevant claims in the retrieved evidence to answer reliably.",
-      "direct_answer": null,
+      "answer": "No [1]\n- Swift confirmed that she attended Kelce's game at Arrowhead Stadium in September, dating him at the time. [1]\n- Taylor Swift revealed her connection with Travis Kelce in July after he confessed on his podcast. [1]",
+      "direct_answer": "No",
       "raw_answer": "DIRECT_ANSWER: No\n\nFACTS:\n- Taylor Swift revealed her connection with Travis Kelce in July after he confessed on his podcast.\n- Swift confirmed that she attended Kelce's game at Arrowhead Stadium in September, dating him at the time.\n- The independent report from The Independent - Life and Style does not mention any conflicting information regarding Swift and Kelce's relationship.",
-      "abstained": true,
+      "abstained": false,
       "draft_claims": 3,
       "supported_claims": 2,
       "unsupported_claims": 1,
       "relevant_claims": 2,
       "filtered_irrelevant_claims": 0,
-      "citation_valid": false,
-      "cited_ids": [],
-      "cited_document_ids": [],
+      "citation_valid": true,
+      "cited_ids": [
+        1
+      ],
+      "cited_document_ids": [
+        "doc_0295"
+      ],
       "dataset_evidence_citation_precision": 0.0,
       "dataset_evidence_citation_recall": 0.0,
-      "runtime_grader_passed": false,
-      "runtime_supported_claim_ratio": 0.0,
-      "runtime_relevance_score": null,
+      "runtime_grader_passed": true,
+      "runtime_supported_claim_ratio": 1.0,
+      "runtime_relevance_score": 0.7301,
       "runtime_reasons": [
-        "Generation abstained even though evidence was considered sufficient."
+        "Final answer passed runtime grounding and relevance checks.",
+        "1 unsupported draft claim(s) were removed before the final answer."
       ],
-      "smoke_answer_correct": false,
-      "route_seconds": 5.480000254465267e-05,
-      "initial_retrieval_seconds": 4.799593700001424,
+      "smoke_answer_correct": true,
+      "route_seconds": 5.3499999921768904e-05,
+      "initial_retrieval_seconds": 1.7803863999979512,
       "rewrite_retrieval_seconds": 0.0,
-      "generation_seconds": 57.71248270000069,
-      "case_seconds": 62.513279099999636
+      "generation_seconds": 9.862499899998511,
+      "case_seconds": 11.792526699999144
     },
     {
       "id": "eval_be412cb54feb",
@@ -758,32 +784,37 @@
       "rewrite_rescued": false,
       "final_evidence_sufficient": true,
       "final_evidence_score": 0.78,
-      "answer": "I couldn't find enough supported and relevant claims in the retrieved evidence to answer reliably.",
-      "direct_answer": null,
+      "answer": "No [1]\n- The Age reported a class action lawsuit against Google, accusing it of anticompetitive behavior related to AI and other technologies. [1]",
+      "direct_answer": "No",
       "raw_answer": "DIRECT_ANSWER: No\n\nFACTS:\n- The Age reported a class action lawsuit against Google, accusing it of anticompetitive behavior related to AI and other technologies.\n- The Verge covered the Epic v. Google case, focusing on the dispute over the app store and the potential for a larger antitrust lawsuit.\n- TechCrunch reported on Google's search query revenues and the ongoing antitrust trials involving Google and Apple.",
-      "abstained": true,
+      "abstained": false,
       "draft_claims": 3,
       "supported_claims": 1,
       "unsupported_claims": 2,
       "relevant_claims": 1,
       "filtered_irrelevant_claims": 0,
-      "citation_valid": false,
-      "cited_ids": [],
-      "cited_document_ids": [],
-      "dataset_evidence_citation_precision": 0.0,
-      "dataset_evidence_citation_recall": 0.0,
-      "runtime_grader_passed": false,
-      "runtime_supported_claim_ratio": 0.0,
-      "runtime_relevance_score": null,
+      "citation_valid": true,
+      "cited_ids": [
+        1
+      ],
+      "cited_document_ids": [
+        "doc_0033"
+      ],
+      "dataset_evidence_citation_precision": 1.0,
+      "dataset_evidence_citation_recall": 0.3333333333333333,
+      "runtime_grader_passed": true,
+      "runtime_supported_claim_ratio": 1.0,
+      "runtime_relevance_score": 0.6928,
       "runtime_reasons": [
-        "Generation abstained even though evidence was considered sufficient."
+        "Final answer passed runtime grounding and relevance checks.",
+        "2 unsupported draft claim(s) were removed before the final answer."
       ],
       "smoke_answer_correct": false,
-      "route_seconds": 7.919999916339293e-05,
-      "initial_retrieval_seconds": 12.069071599995368,
+      "route_seconds": 8.24999988253694e-05,
+      "initial_retrieval_seconds": 4.398063399999955,
       "rewrite_retrieval_seconds": 0.0,
-      "generation_seconds": 65.58676739999646,
-      "case_seconds": 77.65710740000213
+      "generation_seconds": 10.85941350000212,
+      "case_seconds": 15.36755120000089
     },
     {
       "id": "eval_2fa0f63fd209",
@@ -822,11 +853,11 @@
         "Correctly abstained when evidence was insufficient."
       ],
       "smoke_answer_correct": null,
-      "route_seconds": 8.649999654153362e-05,
-      "initial_retrieval_seconds": 13.519466999998258,
-      "rewrite_retrieval_seconds": 13.634432899998501,
-      "generation_seconds": 4.4000043999403715e-06,
-      "case_seconds": 27.358904400003667
+      "route_seconds": 9.330000102636404e-05,
+      "initial_retrieval_seconds": 4.650799199996982,
+      "rewrite_retrieval_seconds": 4.446639300000243,
+      "generation_seconds": 4.2000028770416975e-06,
+      "case_seconds": 9.124469500002306
     },
     {
       "id": "eval_36827e3d0adf",
@@ -845,7 +876,7 @@
       "final_evidence_sufficient": true,
       "final_evidence_score": 0.7963,
       "answer": "I couldn't find enough supported and relevant claims in the retrieved evidence to answer reliably.",
-      "direct_answer": null,
+      "direct_answer": "Nigeria",
       "raw_answer": "DIRECT_ANSWER: Nigeria\n\nFACTS:\n- France backs African mobile video startup StarNews Mobile in a $3 million round.\n- Nigeria is projected to experience rapid economic growth due to its ambitious plans to boost rice production by 2025.",
       "abstained": true,
       "draft_claims": 2,
@@ -865,11 +896,11 @@
         "Generation abstained even though evidence was considered sufficient."
       ],
       "smoke_answer_correct": null,
-      "route_seconds": 7.929999992484227e-05,
-      "initial_retrieval_seconds": 9.922093999994104,
+      "route_seconds": 7.32000007701572e-05,
+      "initial_retrieval_seconds": 3.070644600000378,
       "rewrite_retrieval_seconds": 0.0,
-      "generation_seconds": 43.55469060000178,
-      "case_seconds": 53.4781359999979
+      "generation_seconds": 9.087798299999122,
+      "case_seconds": 12.159770499998558
     },
     {
       "id": "eval_52bfece07a6c",
@@ -908,11 +939,11 @@
         "Correctly abstained when evidence was insufficient."
       ],
       "smoke_answer_correct": null,
-      "route_seconds": 0.00015379999967990443,
-      "initial_retrieval_seconds": 10.515089300002728,
-      "rewrite_retrieval_seconds": 9.861694899998838,
-      "generation_seconds": 3.6000055843032897e-06,
-      "case_seconds": 20.40985080000246
+      "route_seconds": 7.729999924777076e-05,
+      "initial_retrieval_seconds": 3.598591799996939,
+      "rewrite_retrieval_seconds": 3.3044291000005614,
+      "generation_seconds": 3.6000019463244826e-06,
+      "case_seconds": 6.922311800000898
     },
     {
       "id": "eval_5457d2a4c687",
@@ -951,11 +982,11 @@
         "Correctly abstained when evidence was insufficient."
       ],
       "smoke_answer_correct": null,
-      "route_seconds": 0.00010689999908208847,
-      "initial_retrieval_seconds": 12.662870399995882,
-      "rewrite_retrieval_seconds": 13.789233900002728,
-      "generation_seconds": 4.4000043999403715e-06,
-      "case_seconds": 29.786607099995308
+      "route_seconds": 9.59999997576233e-05,
+      "initial_retrieval_seconds": 4.257534899999882,
+      "rewrite_retrieval_seconds": 4.727519500000199,
+      "generation_seconds": 3.4000004234258085e-06,
+      "case_seconds": 9.92639280000003
     },
     {
       "id": "eval_f1e3e6ebe75c",
@@ -994,11 +1025,11 @@
         "Correctly abstained when evidence was insufficient."
       ],
       "smoke_answer_correct": null,
-      "route_seconds": 0.00010469999688211828,
-      "initial_retrieval_seconds": 14.059368599999289,
-      "rewrite_retrieval_seconds": 14.349047199997585,
-      "generation_seconds": 3.5999983083456755e-06,
-      "case_seconds": 28.41689369999949
+      "route_seconds": 9.630000204197131e-05,
+      "initial_retrieval_seconds": 4.933579000000464,
+      "rewrite_retrieval_seconds": 4.282130100000359,
+      "generation_seconds": 3.2999996619764715e-06,
+      "case_seconds": 9.226126599998679
     }
   ]
 }

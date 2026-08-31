@@ -1104,6 +1104,13 @@ class GroundedGenerator:
         # DIRECT_ANSWER does NOT enter ClaimGrounder/NLI.
         # ====================================================
 
+        # ====================================================
+        # Step 3:
+        # Ground generated FACTS only.
+        #
+        # DIRECT_ANSWER is not passed to NLI.
+        # ====================================================
+
         self._load_claim_grounder()
 
 
@@ -1124,6 +1131,367 @@ class GroundedGenerator:
             )
         )
 
+
+        # ====================================================
+        # Diagnostic only:
+        #
+        # Show exactly what happened to every generated fact.
+        #
+        # This block does NOT influence any decision.
+        # ====================================================
+
+        print(
+            "\n===== CLAIM GROUNDING ====="
+        )
+
+
+        print(
+            "Supported claims:",
+            grounded_claims.supported_count,
+        )
+
+
+        print(
+            "Unsupported claims:",
+            grounded_claims.unsupported_count,
+        )
+
+
+        citation_metadata = {}
+
+
+        for item in (
+            context.items
+        ):
+
+            citation_metadata[
+                item.citation_id
+            ] = {
+                "source":
+                    getattr(
+                        item,
+                        "source",
+                        "",
+                    ),
+
+                "title":
+                    getattr(
+                        item,
+                        "title",
+                        "",
+                    ),
+            }
+
+
+        for (
+            claim_index,
+            claim,
+        ) in enumerate(
+            grounded_claims.claims,
+            start=1,
+        ):
+
+            metadata = (
+                citation_metadata.get(
+                    claim.citation_id,
+                    {},
+                )
+            )
+
+
+            print(
+                "\n"
+                +
+                "-" * 80
+            )
+
+
+            print(
+                f"GROUND CLAIM {claim_index}"
+            )
+
+
+            print(
+                "-" * 80
+            )
+
+
+            print(
+                "Claim:",
+                claim.claim,
+            )
+
+
+            print(
+                "Supported:",
+                claim.supported,
+            )
+
+
+            print(
+                "Citation ID:",
+                claim.citation_id,
+            )
+
+
+            print(
+                "Citation source:",
+                metadata.get(
+                    "source"
+                ),
+            )
+
+
+            print(
+                "Citation title:",
+                metadata.get(
+                    "title"
+                ),
+            )
+
+
+            print(
+                "NLI label:",
+                claim.label,
+            )
+
+
+            print(
+                "Entailment score:",
+                claim.entailment_score,
+            )
+
+
+            print(
+                "Evidence relevance score:",
+                claim.evidence_relevance_score,
+            )
+
+
+            print(
+                "Premise mode:",
+                claim.premise_mode,
+            )
+
+
+            print(
+                "Supporting text:"
+            )
+
+
+            print(
+                claim.supporting_text
+            )
+
+
+        # ====================================================
+        # Gate 4:
+        # No generated evidence fact was supported.
+        # ====================================================
+
+        if (
+            grounded_claims.supported_count
+            ==
+            0
+        ):
+
+            return GenerationResult(
+                answer=
+                    GROUNDING_FAILURE_MESSAGE,
+
+                raw_answer=
+                    raw_answer,
+
+                direct_answer=
+                    parsed.direct_answer,
+
+                draft_direct_answer=
+                    parsed.direct_answer,
+
+                abstained=
+                    True,
+
+                cited_ids=
+                    [],
+
+                invalid_citation_ids=
+                    [],
+
+                citation_valid=
+                    False,
+
+                model_name=
+                    self.model_name,
+
+                draft_claims=
+                    len(
+                        parsed.evidence_facts
+                    ),
+
+                supported_claims=
+                    0,
+
+                unsupported_claims=(
+                    grounded_claims
+                    .unsupported_count
+                ),
+
+                relevant_claims=
+                    0,
+
+                filtered_irrelevant_claims=
+                    0,
+            )
+
+
+        # ====================================================
+        # Step 4:
+        # RelevanceFilter V2
+        #
+        # IMPORTANT:
+        #
+        # This must happen BEFORE any code references
+        # relevance_result.
+        #
+        # Production baseline:
+        #
+        # supported claims
+        #     ↓
+        # malformed guard
+        #     ↓
+        # BGE ranking
+        #     ↓
+        # frozen safety floor
+        #     ↓
+        # global top-k
+        # ====================================================
+
+        relevance_result = (
+            self.relevance_filter.filter(
+                query=
+                    query,
+
+                grounded_claims=
+                    grounded_claims,
+            )
+        )
+
+
+        # ====================================================
+        # Relevance diagnostics
+        # ====================================================
+
+        print(
+            "\n===== CLAIM RELEVANCE ====="
+        )
+
+
+        print(
+            "Relevant claims:",
+            len(
+                relevance_result
+                .relevant_claims
+            ),
+        )
+
+
+        print(
+            "Filtered irrelevant claims:",
+            len(
+                relevance_result
+                .filtered_claims
+            ),
+        )
+
+
+        for claim in (
+            relevance_result
+            .relevant_claims
+        ):
+
+            print(
+                "KEEP:",
+                claim.relevance_score,
+                claim.claim,
+            )
+
+
+        for claim in (
+            relevance_result
+            .filtered_claims
+        ):
+
+            print(
+                "FILTER:",
+                claim.relevance_score,
+                claim.claim,
+            )
+
+
+        # ====================================================
+        # Gate 5:
+        # Grounded claims existed, but none survived the
+        # frozen relevance safety policy.
+        # ====================================================
+
+        if not (
+            relevance_result
+            .relevant_claims
+        ):
+
+            return GenerationResult(
+                answer=
+                    GROUNDING_FAILURE_MESSAGE,
+
+                raw_answer=
+                    raw_answer,
+
+                direct_answer=
+                    parsed.direct_answer,
+
+                draft_direct_answer=
+                    parsed.direct_answer,
+
+                abstained=
+                    True,
+
+                cited_ids=
+                    [],
+
+                invalid_citation_ids=
+                    [],
+
+                citation_valid=
+                    False,
+
+                model_name=
+                    self.model_name,
+
+                draft_claims=
+                    len(
+                        parsed.evidence_facts
+                    ),
+
+                supported_claims=(
+                    grounded_claims
+                    .supported_count
+                ),
+
+                unsupported_claims=(
+                    grounded_claims
+                    .unsupported_count
+                ),
+
+                relevant_claims=
+                    0,
+
+                filtered_irrelevant_claims=(
+                    len(
+                        relevance_result
+                        .filtered_claims
+                    )
+                ),
+            )
 
         # ====================================================
         # Gate 4:
@@ -1202,17 +1570,9 @@ class GroundedGenerator:
         # top-k surviving claims
         # ====================================================
 
-        relevance_result = (
-            self.relevance_filter.filter(
-                query=
-                    query,
-
-                grounded_claims=
-                    grounded_claims,
-
-                context=
-                    context,
-            )
+        self.relevance_filter.filter(
+            query=query,
+            grounded_claims=grounded_claims,
         )
 
 
@@ -1236,32 +1596,6 @@ class GroundedGenerator:
                 relevance_result
                 .filtered_claims
             ),
-        )
-        print(
-            "Selection mode:",
-            relevance_result
-            .selection_mode,
-        )
-
-
-        print(
-            "Adaptive budget:",
-            relevance_result
-            .adaptive_budget,
-        )
-
-
-        print(
-            "Required sources:",
-            relevance_result
-            .required_sources,
-        )
-
-
-        print(
-            "Covered sources:",
-            relevance_result
-            .covered_sources,
         )
 
         for claim in (
