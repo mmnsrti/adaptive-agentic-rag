@@ -78,7 +78,7 @@ class AnswerConsistencyResult:
     unique_citation_count: int
 
 
-class AnswerConsistencyGuard:
+class ل:
     """
     Deterministic post-grounding guard.
 

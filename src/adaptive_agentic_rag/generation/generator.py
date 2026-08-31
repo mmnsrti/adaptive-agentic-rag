@@ -25,10 +25,6 @@ from adaptive_agentic_rag.generation.relevance_filter import (
     ClaimRelevanceFilter,
 )
 
-from adaptive_agentic_rag.generation.constrained_answer_synthesis import (
-    ConstrainedAnswerSynthesizer,
-)
-
 from adaptive_agentic_rag.generation.citation import (
     validate_citations,
 )
@@ -98,7 +94,7 @@ class ParsedDraft:
 
 
 # ============================================================
-# Final result
+# Final generation result
 # ============================================================
 
 @dataclass
@@ -108,25 +104,13 @@ class GenerationResult:
 
     raw_answer: str | None
 
-    # --------------------------------------------------------
-    # IMPORTANT:
-    #
-    # direct_answer is now the FINAL synthesized answer.
-    #
-    # For yes/no questions it may differ from the original
-    # Qwen draft.
-    # --------------------------------------------------------
-
     direct_answer: str | None
 
     # --------------------------------------------------------
-    # Original free-form Qwen answer before constrained
-    # synthesis.
+    # Evaluation compatibility.
     #
-    # This allows evaluation such as:
-    #
-    # draft_direct_answer = "No"
-    # direct_answer       = "Yes"
+    # In the production single-pass architecture,
+    # draft_direct_answer == direct_answer.
     # --------------------------------------------------------
 
     draft_direct_answer: str | None
@@ -198,14 +182,17 @@ class GroundedGenerator:
 
 
         # ====================================================
-        # Supported claims are ranked against the original
-        # question.
+        # ClaimRelevanceFilter V2
         #
-        # RelevanceFilter V2 includes:
+        # IMPORTANT:
         #
-        # calibrated catastrophic relevance safety floor
-        # +
-        # top-k among surviving claims.
+        # This is the production relevance filter containing:
+        #
+        # - supported-claim filtering
+        # - calibrated catastrophic relevance safety floor
+        # - top-k selection among surviving claims
+        #
+        # Do not replace this with the old top-k-only filter.
         # ====================================================
 
         self.relevance_filter = (
@@ -216,28 +203,6 @@ class GroundedGenerator:
                 max_relevant_claims=
                     max_relevant_claims,
             )
-        )
-
-
-        # ====================================================
-        # Final constrained synthesis.
-        #
-        # This component does NOT load another model.
-        #
-        # It reuses the already-loaded generator model and:
-        #
-        # yes/no:
-        #   scores only "Yes" vs "No"
-        #
-        # entity:
-        #   verifies draft entity against grounded claims
-        #
-        # other:
-        #   preserves draft answer
-        # ====================================================
-
-        self.answer_synthesizer = (
-            ConstrainedAnswerSynthesizer()
         )
 
 
@@ -295,7 +260,7 @@ class GroundedGenerator:
 
 
     # ========================================================
-    # Grounder loading
+    # Claim grounder loading
     # ========================================================
 
     def _load_claim_grounder(
@@ -440,9 +405,9 @@ class GroundedGenerator:
 
 
         # ----------------------------------------------------
-        # Generator is not trusted to assign citations.
+        # Qwen is NOT trusted to assign citations.
         #
-        # Any accidental citation markers are removed.
+        # Grounder assigns citations later.
         # ----------------------------------------------------
 
         text = re.sub(
@@ -465,7 +430,7 @@ class GroundedGenerator:
 
 
     # ========================================================
-    # Normalize explicit model abstention
+    # Explicit model abstention normalization
     # ========================================================
 
     @staticmethod
@@ -502,7 +467,9 @@ class GroundedGenerator:
 
 
     # ========================================================
-    # Parse:
+    # Parse structured model output
+    #
+    # Expected production format:
     #
     # DIRECT_ANSWER: ...
     #
@@ -511,7 +478,8 @@ class GroundedGenerator:
     # - ...
     #
     #
-    # Keep baseline behavior for compatibility.
+    # Legacy bullet-only output remains supported because
+    # generation contract tests depend on this compatibility.
     # ========================================================
 
     @classmethod
@@ -542,9 +510,9 @@ class GroundedGenerator:
 
 
             # =================================================
-            # Direct answer
+            # DIRECT_ANSWER
             #
-            # DRAFT_ANSWER remains accepted for compatibility
+            # DRAFT_ANSWER remains supported for compatibility
             # with older diagnostic artifacts.
             # =================================================
 
@@ -622,8 +590,8 @@ class GroundedGenerator:
             # =================================================
             # Bullet fact
             #
-            # Baseline parser intentionally supports legacy
-            # bullet-only generation artifacts too.
+            # Legacy bullet-only model output is intentionally
+            # still accepted.
             # =================================================
 
             bullet_match = re.match(
@@ -659,8 +627,8 @@ class GroundedGenerator:
             # =================================================
             # Small-model fallback:
             #
-            # after FACTS: accept standalone lines when the
-            # bullet marker was omitted.
+            # After FACTS:, accept a standalone line even when
+            # the model forgets the bullet marker.
             # =================================================
 
             if inside_facts:
@@ -683,7 +651,7 @@ class GroundedGenerator:
 
 
         # ====================================================
-        # Deduplicate while preserving order
+        # Deduplicate facts while preserving generation order
         # ====================================================
 
         unique = []
@@ -725,7 +693,7 @@ class GroundedGenerator:
 
 
     # ========================================================
-    # Convert parsed facts into Grounder input
+    # Convert FACTS into ClaimGrounder input
     # ========================================================
 
     @staticmethod
@@ -744,71 +712,17 @@ class GroundedGenerator:
 
 
     # ========================================================
-    # Reusable grounding/synthesis failure
-    # ========================================================
-
-    def _grounding_failure(
-        self,
-        *,
-        raw_answer,
-        draft_direct_answer,
-        draft_claims,
-        supported_claims,
-        unsupported_claims,
-        relevant_claims,
-        filtered_irrelevant_claims,
-        direct_answer=None,
-    ) -> GenerationResult:
-
-        return GenerationResult(
-            answer=
-                GROUNDING_FAILURE_MESSAGE,
-
-            raw_answer=
-                raw_answer,
-
-            direct_answer=
-                direct_answer,
-
-            draft_direct_answer=
-                draft_direct_answer,
-
-            abstained=
-                True,
-
-            cited_ids=
-                [],
-
-            invalid_citation_ids=
-                [],
-
-            citation_valid=
-                False,
-
-            model_name=
-                self.model_name,
-
-            draft_claims=
-                draft_claims,
-
-            supported_claims=
-                supported_claims,
-
-            unsupported_claims=
-                unsupported_claims,
-
-            relevant_claims=
-                relevant_claims,
-
-            filtered_irrelevant_claims=
-                filtered_irrelevant_claims,
-        )
-
-
-    # ========================================================
-    # Final answer rendering
+    # Build final grounded answer
     #
-    # direct_answer is now the POST-SYNTHESIS answer.
+    # DIRECT_ANSWER still comes from Qwen.
+    #
+    # Supporting facts come ONLY from:
+    #
+    # supported
+    # +
+    # relevant
+    #
+    # grounded claims.
     # ========================================================
 
     @staticmethod
@@ -822,7 +736,9 @@ class GroundedGenerator:
 
         citation_ids = list(
             dict.fromkeys(
-                claim.citation_id
+                (
+                    claim.citation_id
+                )
 
                 for claim
                 in relevant_claims
@@ -895,7 +811,7 @@ class GroundedGenerator:
         # Gate 1:
         # Evidence Grader rejected current evidence.
         #
-        # Do not load/run generator.
+        # Do not load Qwen.
         # ====================================================
 
         if not evidence_sufficient:
@@ -947,15 +863,7 @@ class GroundedGenerator:
 
         # ====================================================
         # Step 1:
-        # Original single-pass structured generation.
-        #
-        # Qwen still produces:
-        #
-        # DIRECT_ANSWER
-        # +
-        # FACTS
-        #
-        # DIRECT_ANSWER is now considered a DRAFT.
+        # Structured single-pass generation
         # ====================================================
 
         self._load_generator()
@@ -979,6 +887,7 @@ class GroundedGenerator:
             "\n===== RAW GENERATION ====="
         )
 
+
         print(
             raw_answer
         )
@@ -986,7 +895,7 @@ class GroundedGenerator:
 
         # ====================================================
         # Step 2:
-        # Parse draft answer separately from factual claims.
+        # Parse DIRECT_ANSWER separately from FACTS
         # ====================================================
 
         parsed = (
@@ -1002,7 +911,7 @@ class GroundedGenerator:
 
 
         print(
-            "Draft direct answer:",
+            "Direct answer:",
             parsed.direct_answer,
         )
 
@@ -1085,19 +994,40 @@ class GroundedGenerator:
 
         # ====================================================
         # Gate 3:
-        # Structured generation contract failed.
+        # Structured output contract failed.
         # ====================================================
 
         if not (
             parsed.direct_answer
         ):
 
-            return self._grounding_failure(
+            return GenerationResult(
+                answer=
+                    GROUNDING_FAILURE_MESSAGE,
+
                 raw_answer=
                     raw_answer,
 
+                direct_answer=
+                    None,
+
                 draft_direct_answer=
                     None,
+
+                abstained=
+                    True,
+
+                cited_ids=
+                    [],
+
+                invalid_citation_ids=
+                    [],
+
+                citation_valid=
+                    False,
+
+                model_name=
+                    self.model_name,
 
                 draft_claims=
                     len(
@@ -1122,12 +1052,33 @@ class GroundedGenerator:
             parsed.evidence_facts
         ):
 
-            return self._grounding_failure(
+            return GenerationResult(
+                answer=
+                    GROUNDING_FAILURE_MESSAGE,
+
                 raw_answer=
                     raw_answer,
 
+                direct_answer=
+                    parsed.direct_answer,
+
                 draft_direct_answer=
                     parsed.direct_answer,
+
+                abstained=
+                    True,
+
+                cited_ids=
+                    [],
+
+                invalid_citation_ids=
+                    [],
+
+                citation_valid=
+                    False,
+
+                model_name=
+                    self.model_name,
 
                 draft_claims=
                     0,
@@ -1150,7 +1101,7 @@ class GroundedGenerator:
         # Step 3:
         # Ground FACTS only.
         #
-        # Draft DIRECT_ANSWER still does not enter NLI.
+        # DIRECT_ANSWER does NOT enter ClaimGrounder/NLI.
         # ====================================================
 
         self._load_claim_grounder()
@@ -1176,7 +1127,7 @@ class GroundedGenerator:
 
         # ====================================================
         # Gate 4:
-        # No generated evidence fact is supported.
+        # None of the generated evidence facts are supported.
         # ====================================================
 
         if (
@@ -1185,12 +1136,33 @@ class GroundedGenerator:
             0
         ):
 
-            return self._grounding_failure(
+            return GenerationResult(
+                answer=
+                    GROUNDING_FAILURE_MESSAGE,
+
                 raw_answer=
                     raw_answer,
 
+                direct_answer=
+                    parsed.direct_answer,
+
                 draft_direct_answer=
                     parsed.direct_answer,
+
+                abstained=
+                    True,
+
+                cited_ids=
+                    [],
+
+                invalid_citation_ids=
+                    [],
+
+                citation_valid=
+                    False,
+
+                model_name=
+                    self.model_name,
 
                 draft_claims=
                     len(
@@ -1215,13 +1187,19 @@ class GroundedGenerator:
 
         # ====================================================
         # Step 4:
-        # Query relevance over supported FACTS.
+        # Query relevance over SUPPORTED facts only.
         #
-        # RelevanceFilter V2:
+        # ClaimRelevanceFilter V2 performs:
         #
-        # catastrophic floor
-        # +
-        # top-k
+        # supported
+        #   ↓
+        # malformed guard
+        #   ↓
+        # BGE rerank
+        #   ↓
+        # calibrated safety floor
+        #   ↓
+        # top-k surviving claims
         # ====================================================
 
         relevance_result = (
@@ -1231,6 +1209,9 @@ class GroundedGenerator:
 
                 grounded_claims=
                     grounded_claims,
+
+                context=
+                    context,
             )
         )
 
@@ -1256,7 +1237,32 @@ class GroundedGenerator:
                 .filtered_claims
             ),
         )
+        print(
+            "Selection mode:",
+            relevance_result
+            .selection_mode,
+        )
 
+
+        print(
+            "Adaptive budget:",
+            relevance_result
+            .adaptive_budget,
+        )
+
+
+        print(
+            "Required sources:",
+            relevance_result
+            .required_sources,
+        )
+
+
+        print(
+            "Covered sources:",
+            relevance_result
+            .covered_sources,
+        )
 
         for claim in (
             relevance_result
@@ -1284,7 +1290,8 @@ class GroundedGenerator:
 
         # ====================================================
         # Gate 5:
-        # Supported claims exist, but none are query-relevant.
+        # Supported claims exist but none are sufficiently
+        # relevant to the original question.
         # ====================================================
 
         if not (
@@ -1292,12 +1299,33 @@ class GroundedGenerator:
             .relevant_claims
         ):
 
-            return self._grounding_failure(
+            return GenerationResult(
+                answer=
+                    GROUNDING_FAILURE_MESSAGE,
+
                 raw_answer=
                     raw_answer,
 
+                direct_answer=
+                    parsed.direct_answer,
+
                 draft_direct_answer=
                     parsed.direct_answer,
+
+                abstained=
+                    True,
+
+                cited_ids=
+                    [],
+
+                invalid_citation_ids=
+                    [],
+
+                citation_valid=
+                    False,
+
+                model_name=
+                    self.model_name,
 
                 draft_claims=
                     len(
@@ -1328,251 +1356,29 @@ class GroundedGenerator:
 
         # ====================================================
         # Step 5:
-        # CONSTRAINED ANSWER SYNTHESIS
-        #
-        # This is the key new architecture.
-        #
-        #
-        # yes/no
-        # -------
-        #
-        # Ignore Qwen's free-form Yes/No draft.
-        #
-        # Score:
-        #
-        # P(Yes | question + VERIFIED facts)
-        #
-        # versus:
-        #
-        # P(No | question + VERIFIED facts)
-        #
-        #
-        # entity
-        # ------
-        #
-        # Validate Qwen's draft entity against VERIFIED facts.
-        #
-        #
-        # other
-        # -----
-        #
-        # Preserve Qwen's original direct answer.
-        # ====================================================
-
-        synthesis = (
-            self.answer_synthesizer.synthesize(
-                query=
-                    query,
-
-                draft_direct_answer=
-                    parsed.direct_answer,
-
-                relevant_claims=(
-                    relevance_result
-                    .relevant_claims
-                ),
-
-                context=
-                    context,
-
-                model=
-                    self.model,
-
-                tokenizer=
-                    self.tokenizer,
-
-                device=
-                    self.device,
-            )
-        )
-
-
-        print(
-            "\n===== CONSTRAINED ANSWER SYNTHESIS ====="
-        )
-
-
-        print(
-            "Mode:",
-            synthesis.mode,
-        )
-
-
-        print(
-            "Accepted:",
-            synthesis.accepted,
-        )
-
-
-        print(
-            "Draft answer:",
-            parsed.direct_answer,
-        )
-
-
-        print(
-            "Final answer:",
-            synthesis.final_answer,
-        )
-
-
-        if (
-            synthesis.yes_score
-            is not None
-        ):
-
-            print(
-                "Yes score:",
-                round(
-                    synthesis.yes_score,
-                    4,
-                ),
-            )
-
-
-        if (
-            synthesis.no_score
-            is not None
-        ):
-
-            print(
-                "No score:",
-                round(
-                    synthesis.no_score,
-                    4,
-                ),
-            )
-
-
-        print(
-            "Unique citations:",
-            synthesis.unique_citation_count,
-        )
-
-
-        for reason in (
-            synthesis.reasons
-        ):
-
-            print(
-                "INFO:",
-                reason,
-            )
-
-
-        # ====================================================
-        # Gate 6:
-        # We could not safely produce final answer.
-        # ====================================================
-
-        if not (
-            synthesis.accepted
-        ):
-
-            return self._grounding_failure(
-                raw_answer=
-                    raw_answer,
-
-                draft_direct_answer=
-                    parsed.direct_answer,
-
-                direct_answer=
-                    None,
-
-                draft_claims=
-                    len(
-                        parsed.evidence_facts
-                    ),
-
-                supported_claims=(
-                    grounded_claims
-                    .supported_count
-                ),
-
-                unsupported_claims=(
-                    grounded_claims
-                    .unsupported_count
-                ),
-
-                relevant_claims=(
-                    len(
-                        relevance_result
-                        .relevant_claims
-                    )
-                ),
-
-                filtered_irrelevant_claims=(
-                    len(
-                        relevance_result
-                        .filtered_claims
-                    )
-                ),
-            )
-
-
-        final_direct_answer = (
-            synthesis.final_answer
-        )
-
-
-        if not final_direct_answer:
-
-            return self._grounding_failure(
-                raw_answer=
-                    raw_answer,
-
-                draft_direct_answer=
-                    parsed.direct_answer,
-
-                direct_answer=
-                    None,
-
-                draft_claims=
-                    len(
-                        parsed.evidence_facts
-                    ),
-
-                supported_claims=(
-                    grounded_claims
-                    .supported_count
-                ),
-
-                unsupported_claims=(
-                    grounded_claims
-                    .unsupported_count
-                ),
-
-                relevant_claims=(
-                    len(
-                        relevance_result
-                        .relevant_claims
-                    )
-                ),
-
-                filtered_irrelevant_claims=(
-                    len(
-                        relevance_result
-                        .filtered_claims
-                    )
-                ),
-            )
-
-
-        # ====================================================
-        # Step 6:
-        # Final answer + verified supporting facts.
+        # Build final answer.
         #
         # IMPORTANT:
         #
-        # We use final_direct_answer.
+        # No AnswerConsistencyGuard.
         #
-        # Not parsed.direct_answer.
+        # No ConstrainedAnswerSynthesizer.
+        #
+        # No second Qwen pass.
+        #
+        # No Yes/No logit scoring.
+        #
+        # Production baseline:
+        #
+        # original DIRECT_ANSWER
+        # +
+        # verified relevant facts
         # ====================================================
 
         final_answer = (
             self._build_grounded_answer(
                 direct_answer=
-                    final_direct_answer,
+                    parsed.direct_answer,
 
                 relevant_claims=(
                     relevance_result
@@ -1583,8 +1389,8 @@ class GroundedGenerator:
 
 
         # ====================================================
-        # Step 7:
-        # Citation validation.
+        # Step 6:
+        # Citation validation
         # ====================================================
 
         citation_validation = (
@@ -1598,6 +1404,11 @@ class GroundedGenerator:
         )
 
 
+        # ====================================================
+        # Gate 6:
+        # Invalid citation structure
+        # ====================================================
+
         if not (
             citation_validation.valid
         ):
@@ -1609,16 +1420,8 @@ class GroundedGenerator:
                 raw_answer=
                     raw_answer,
 
-                # --------------------------------------------
-                # Final synthesized answer.
-                # --------------------------------------------
-
                 direct_answer=
-                    final_direct_answer,
-
-                # --------------------------------------------
-                # Original Qwen draft.
-                # --------------------------------------------
+                    parsed.direct_answer,
 
                 draft_direct_answer=
                     parsed.direct_answer,
@@ -1684,16 +1487,8 @@ class GroundedGenerator:
             raw_answer=
                 raw_answer,
 
-            # ------------------------------------------------
-            # FINAL answer after constrained synthesis.
-            # ------------------------------------------------
-
             direct_answer=
-                final_direct_answer,
-
-            # ------------------------------------------------
-            # Original Qwen draft preserved for evaluation.
-            # ------------------------------------------------
+                parsed.direct_answer,
 
             draft_direct_answer=
                 parsed.direct_answer,
