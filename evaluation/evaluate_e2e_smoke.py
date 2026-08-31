@@ -10,6 +10,13 @@ from adaptive_agentic_rag.orchestration.nodes import (
     RAGNodes,
 )
 
+from adaptive_agentic_rag.orchestration.graph import (
+    route_after_evidence,
+)
+
+
+MAX_RETRIES = 1
+
 
 DATASET_PATH = Path(
     "evaluation/datasets/"
@@ -620,6 +627,9 @@ def run_example(
 
         "retry_count":
             0,
+
+        "max_retries":
+            MAX_RETRIES,
     }
 
 
@@ -709,6 +719,23 @@ def run_example(
     )
 
 
+    # ========================================================
+    # Production-aligned adaptive retry routing
+    #
+    # IMPORTANT:
+    #
+    # The evaluator must not implement its own retry policy.
+    # route_after_evidence() is the single source of truth
+    # shared with the production LangGraph.
+    # ========================================================
+
+    initial_evidence_route = (
+        route_after_evidence(
+            state
+        )
+    )
+
+
     rewrite_attempted = False
 
     rewrite_rescued = False
@@ -719,19 +746,13 @@ def run_example(
 
 
     # ========================================================
-    # Self-correction:
-    #
-    # insufficient evidence
-    # →
-    # query rewrite
-    # →
-    # retrieval retry
-    # →
-    # evidence re-grade
+    # Policy-approved self-correction
     # ========================================================
 
-    if not (
-        initial_evidence_sufficient
+    if (
+        initial_evidence_route
+        ==
+        "rewrite"
     ):
 
         rewrite_attempted = True
@@ -791,6 +812,27 @@ def run_example(
         )
 
 
+    elif (
+        initial_evidence_route
+        in {
+            "generate",
+            "abstain",
+        }
+    ):
+
+        pass
+
+
+    else:
+
+        raise RuntimeError(
+            (
+                "Unsupported initial evidence route: "
+                f"{initial_evidence_route!r}"
+            )
+        )
+
+
     final_evidence_sufficient = (
         state[
             "evidence_sufficient"
@@ -803,6 +845,27 @@ def run_example(
             "evidence_score"
         ]
     )
+
+
+    final_evidence_route = (
+        route_after_evidence(
+            state
+        )
+    )
+
+
+    if (
+        final_evidence_route
+        ==
+        "rewrite"
+    ):
+
+        raise RuntimeError(
+            (
+                "Adaptive retry policy requested another "
+                "rewrite after the configured retry budget."
+            )
+        )
 
 
     # ========================================================
@@ -977,6 +1040,9 @@ def run_example(
         "initial_evidence_score":
             initial_evidence_score,
 
+        "initial_evidence_route":
+            initial_evidence_route,
+
         "rewrite_attempted":
             rewrite_attempted,
 
@@ -991,6 +1057,9 @@ def run_example(
 
         "final_evidence_score":
             final_evidence_score,
+
+        "final_evidence_route":
+            final_evidence_route,
 
         # ----------------------------------------------------
         # Generation
@@ -1479,6 +1548,28 @@ def summarize(
         }
 
 
+    initial_route_distribution = (
+        Counter(
+            record[
+                "initial_evidence_route"
+            ]
+            for record
+            in records
+        )
+    )
+
+
+    final_route_distribution = (
+        Counter(
+            record[
+                "final_evidence_route"
+            ]
+            for record
+            in records
+        )
+    )
+
+
     return {
         "dataset":
             str(
@@ -1683,6 +1774,20 @@ def summarize(
         ),
 
         # ----------------------------------------------------
+        # Adaptive retry routing
+        # ----------------------------------------------------
+
+        "initial_evidence_route_distribution":
+            dict(
+                initial_route_distribution
+            ),
+
+        "final_evidence_route_distribution":
+            dict(
+                final_route_distribution
+            ),
+
+        # ----------------------------------------------------
         # Latency
         # ----------------------------------------------------
 
@@ -1855,6 +1960,14 @@ def main():
 
 
             print(
+                "Initial evidence route:",
+                record[
+                    "initial_evidence_route"
+                ],
+            )
+
+
+            print(
                 "Rewrite attempted:",
                 record[
                     "rewrite_attempted"
@@ -1899,6 +2012,14 @@ def main():
                     ],
                     4,
                 ),
+            )
+
+
+            print(
+                "Final evidence route:",
+                record[
+                    "final_evidence_route"
+                ],
             )
 
 
@@ -2028,6 +2149,9 @@ def main():
 
         json.dump(
             {
+                "max_retries":
+                    MAX_RETRIES,
+
                 "summary":
                     summary,
 
