@@ -1,96 +1,175 @@
 from collections import defaultdict
 
 
-
 def reciprocal_rank_fusion(
     result_lists,
-    top_k=20,
-    k=60
+    top_k: int = 20,
+    k: int = 60,
 ):
 
+    if top_k <= 0:
 
-    scores = defaultdict(float)
+        return []
+
+
+    scores = defaultdict(
+        float
+    )
+
 
     documents = {}
 
 
+    # ========================================================
+    # Fuse rankings
+    # ========================================================
 
     for results in result_lists:
 
-
-        for rank, doc in enumerate(
+        for rank, document in enumerate(
             results,
-            start=1
+            start=1,
         ):
 
-
-            doc_id = doc["id"]
-
-
-            #
-            # RRF score
-            #
-            scores[doc_id] += (
-                1 /
-                (k + rank)
+            document_id = (
+                document[
+                    "id"
+                ]
             )
 
 
+            # =================================================
+            # Standard Reciprocal Rank Fusion
             #
-            # Keep best document object
+            # RRF deliberately ignores incompatible source
+            # score scales such as:
             #
-            if doc_id not in documents:
+            # Dense cosine score
+            # BM25 score
+            #
+            # and uses ranking positions instead.
+            # =================================================
 
-                documents[doc_id] = doc.copy()
+            scores[
+                document_id
+            ] += (
+                1.0
+                /
+                (
+                    k
+                    +
+                    rank
+                )
+            )
+
+
+            # =================================================
+            # Preserve the first document representation.
+            # =================================================
+
+            if (
+                document_id
+                not in documents
+            ):
+
+                documents[
+                    document_id
+                ] = (
+                    document.copy()
+                )
 
 
             else:
 
+                # ---------------------------------------------
+                # Dense results generally carry vectors,
+                # BM25 results generally do not.
                 #
-                # Dense result has vector
-                # BM25 usually doesn't
-                #
+                # Preserve the vector if it appears in another
+                # retrieval list.
+                # ---------------------------------------------
+
                 if (
-                    "vector" in doc
+                    "vector"
+                    in document
                     and
-                    "vector" not in documents[doc_id]
+                    "vector"
+                    not in documents[
+                        document_id
+                    ]
                 ):
 
-                    documents[doc_id]["vector"] = (
-                        doc["vector"]
+                    documents[
+                        document_id
+                    ][
+                        "vector"
+                    ] = (
+                        document[
+                            "vector"
+                        ]
                     )
 
 
-
-
+    # ========================================================
+    # Rank fused candidates
+    # ========================================================
 
     ranked = sorted(
 
         scores.items(),
 
-        key=lambda x: x[1],
+        key=lambda item:
+            item[1],
 
-        reverse=True
-
+        reverse=True,
     )
-
 
 
     output = []
 
 
+    for (
+        document_id,
+        rrf_score,
+    ) in ranked[
+        :top_k
+    ]:
 
-    for doc_id, score in ranked[:top_k]:
+        item = (
+            documents[
+                document_id
+            ].copy()
+        )
 
 
-        item = documents[doc_id].copy()
+        # ====================================================
+        # Canonical downstream score at the Hybrid stage
+        # ====================================================
+
+        item[
+            "score"
+        ] = float(
+            rrf_score
+        )
 
 
-        item["score"] = score
+        # ====================================================
+        # Preserve explicit provenance / observability
+        #
+        # Later the Cross-Encoder may replace item["score"],
+        # but this diagnostic value survives.
+        # ====================================================
+
+        item[
+            "rrf_score"
+        ] = float(
+            rrf_score
+        )
 
 
-        output.append(item)
-
+        output.append(
+            item
+        )
 
 
     return output

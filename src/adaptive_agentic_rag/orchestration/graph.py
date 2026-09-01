@@ -1,101 +1,220 @@
 from langgraph.graph import (
     START,
     END,
-    StateGraph
+    StateGraph,
 )
 
 from adaptive_agentic_rag.orchestration.state import (
     AgentState,
-    create_initial_state
+    create_initial_state,
 )
 
 from adaptive_agentic_rag.orchestration.nodes import (
-    RAGNodes
+    RAGNodes,
+)
+
+from adaptive_agentic_rag.orchestration.adaptive_retry_policy import (
+    AdaptiveRetryPolicy,
+    RetryAction,
+)
+
+from adaptive_agentic_rag.orchestration.corpus_source_availability import (
+    CorpusSourceAvailability,
 )
 
 
-# ==========================================================
+# ============================================================
+# Shared lazy corpus-source catalog
+#
+# No corpus file is loaded during module import.
+#
+# The component loads the source catalog only if the retry
+# policy actually encounters a partial explicit-source miss.
+#
+# One graph process therefore builds the catalog once.
+# ============================================================
+
+_CORPUS_SOURCE_AVAILABILITY = (
+    CorpusSourceAvailability()
+)
+
+
+# ============================================================
 # Conditional routing after evidence grading
-# ==========================================================
+# ============================================================
 
 def route_after_evidence(
-    state: AgentState
+    state: AgentState,
+    *,
+    source_availability=None,
 ) -> str:
+    """
+    Decide what the graph should do after evidence grading.
 
-    #
-    # Evidence sufficient:
-    #
-    # move to grounded generation.
-    #
+        grade_evidence
+              ↓
+        AdaptiveRetryPolicy
+              │
+        ┌─────┼─────┐
+        │     │     │
+        ▼     ▼     ▼
+    generate retry abstain
+
+    Retry now requires:
+
+    1. evidence insufficiency,
+    2. remaining retry budget,
+    3. partial explicit-source coverage,
+    4. missing source actually existing in the corpus.
+
+    This prevents structurally impossible retrieval retries.
+    """
+
+    evidence_sufficient = (
+        state.get(
+            "evidence_sufficient"
+        )
+    )
+
 
     if (
-        state[
-            "evidence_sufficient"
-        ]
-        is True
+        evidence_sufficient
+        is None
+    ):
+
+        raise ValueError(
+            "Cannot route after evidence grading "
+            "without evidence_sufficient."
+        )
+
+
+    retry_count = (
+        state.get(
+            "retry_count",
+            0,
+        )
+        or 0
+    )
+
+
+    max_retries = (
+        state.get(
+            "max_retries",
+            0,
+        )
+        or 0
+    )
+
+
+    evidence_reasons = list(
+        state.get(
+            "evidence_reasons",
+            [],
+        )
+        or []
+    )
+
+
+    # ========================================================
+    # Dependency injection
+    #
+    # LangGraph invokes this function with only `state`,
+    # therefore production uses the shared lazy catalog.
+    #
+    # Tests can inject a deterministic fake availability
+    # implementation through the optional keyword argument.
+    # ========================================================
+
+    if (
+        source_availability
+        is None
+    ):
+
+        source_availability = (
+            _CORPUS_SOURCE_AVAILABILITY
+        )
+
+
+    retry_policy = (
+        AdaptiveRetryPolicy(
+            max_retries=
+                int(
+                    max_retries
+                ),
+
+            source_availability=
+                source_availability,
+        )
+    )
+
+
+    decision = (
+        retry_policy.decide(
+            evidence_sufficient=
+                bool(
+                    evidence_sufficient
+                ),
+
+            retry_count=
+                int(
+                    retry_count
+                ),
+
+            evidence_reasons=
+                evidence_reasons,
+        )
+    )
+
+
+    if (
+        decision.action
+        ==
+        RetryAction.GENERATE
     ):
 
         return "generate"
 
 
-    #
-    # Evidence insufficient.
-    #
-    # Check whether self-correction
-    # still has retry budget.
-    #
-
-    retry_count = (
-        state[
-            "retry_count"
-        ]
-    )
-
-
-    max_retries = (
-        state[
-            "max_retries"
-        ]
-    )
-
-
     if (
-        retry_count
-        <
-        max_retries
+        decision.action
+        ==
+        RetryAction.RETRY
     ):
 
         return "rewrite"
 
 
-    #
-    # No evidence and retry budget
-    # exhausted.
-    #
+    if (
+        decision.action
+        ==
+        RetryAction.ABSTAIN
+    ):
 
-    return "abstain"
+        return "abstain"
 
 
-# ==========================================================
+    raise RuntimeError(
+        (
+            "Unsupported retry-policy action: "
+            f"{decision.action!r}"
+        )
+    )
+
+
+# ============================================================
 # Main Graph
-# ==========================================================
+# ============================================================
 
 class AdaptiveRAGGraph:
 
-    def __init__(self):
-
-        # --------------------------------------------------
-        # Shared application services
-        # --------------------------------------------------
+    def __init__(
+        self,
+    ):
 
         self.nodes = (
             RAGNodes()
         )
 
-
-        # --------------------------------------------------
-        # Graph definition
-        # --------------------------------------------------
 
         builder = (
             StateGraph(
@@ -104,98 +223,96 @@ class AdaptiveRAGGraph:
         )
 
 
-        # ==================================================
+        # ====================================================
         # Nodes
-        # ==================================================
+        # ====================================================
 
         builder.add_node(
             "route_query",
-            self.nodes.route_query
+            self.nodes.route_query,
         )
 
 
         builder.add_node(
             "retrieve",
-            self.nodes.retrieve
+            self.nodes.retrieve,
         )
 
 
         builder.add_node(
             "build_context",
-            self.nodes.build_context
+            self.nodes.build_context,
         )
 
 
         builder.add_node(
             "grade_evidence",
-            self.nodes.grade_evidence
+            self.nodes.grade_evidence,
         )
 
 
         builder.add_node(
             "rewrite_query",
-            self.nodes.rewrite_query
+            self.nodes.rewrite_query,
         )
 
 
         builder.add_node(
             "generate",
-            self.nodes.generate
+            self.nodes.generate,
         )
 
 
         builder.add_node(
             "abstain",
-            self.nodes.abstain
+            self.nodes.abstain,
         )
 
 
         builder.add_node(
             "grade_answer",
-            self.nodes.grade_answer
+            self.nodes.grade_answer,
         )
 
 
-        # ==================================================
+        # ====================================================
         # Main forward path
-        # ==================================================
+        # ====================================================
 
         builder.add_edge(
             START,
-            "route_query"
+            "route_query",
         )
 
 
         builder.add_edge(
             "route_query",
-            "retrieve"
+            "retrieve",
         )
 
 
         builder.add_edge(
             "retrieve",
-            "build_context"
+            "build_context",
         )
 
 
         builder.add_edge(
             "build_context",
-            "grade_evidence"
+            "grade_evidence",
         )
 
 
-        # ==================================================
-        # Conditional evidence routing
-        # ==================================================
+        # ====================================================
+        # Adaptive evidence routing
+        # ====================================================
 
         builder.add_conditional_edges(
-
             "grade_evidence",
 
             route_after_evidence,
 
             {
-
                 "generate":
                     "generate",
 
@@ -203,73 +320,68 @@ class AdaptiveRAGGraph:
                     "rewrite_query",
 
                 "abstain":
-                    "abstain"
-            }
+                    "abstain",
+            },
         )
 
 
-        # ==================================================
+        # ====================================================
         # Self-correction loop
-        # ==================================================
+        #
+        # Only recoverable, corpus-available structural misses
+        # may enter this loop.
+        # ====================================================
 
         builder.add_edge(
             "rewrite_query",
-            "retrieve"
+            "retrieve",
         )
 
 
-        # ==================================================
-        # Both successful answers and abstentions
-        # must be graded.
-        # ==================================================
+        # ====================================================
+        # Answer grading
+        # ====================================================
 
         builder.add_edge(
             "generate",
-            "grade_answer"
+            "grade_answer",
         )
 
 
         builder.add_edge(
             "abstain",
-            "grade_answer"
+            "grade_answer",
         )
 
-
-        # ==================================================
-        # Final exit
-        # ==================================================
 
         builder.add_edge(
             "grade_answer",
-            END
+            END,
         )
 
-
-        # ==================================================
-        # Compile
-        # ==================================================
 
         self.graph = (
             builder.compile()
         )
 
 
-    # ======================================================
+    # ========================================================
     # Execute
-    # ======================================================
+    # ========================================================
 
     def run(
         self,
         query: str,
-        max_retries: int = 1
+        max_retries: int = 1,
     ) -> AgentState:
 
         initial_state = (
             create_initial_state(
+                query=
+                    query,
 
-                query=query,
-
-                max_retries=max_retries
+                max_retries=
+                    max_retries,
             )
         )
 
@@ -284,10 +396,12 @@ class AdaptiveRAGGraph:
         return final_state
 
 
-    # ======================================================
+    # ========================================================
     # Cleanup
-    # ======================================================
+    # ========================================================
 
-    def close(self):
+    def close(
+        self,
+    ):
 
         self.nodes.close()

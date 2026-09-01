@@ -42,6 +42,12 @@ class AgentState(TypedDict):
 
     retrieved_results: list[dict[str, Any]]
 
+    # Missing publishers explicitly targeted during a
+    # structurally approved retry.
+    #
+    # Empty during normal first-pass retrieval.
+    retry_target_sources: list[str]
+
 
     # --------------------------------------------------
     # Context
@@ -99,6 +105,7 @@ class AgentState(TypedDict):
 
     filtered_irrelevant_claims: int
 
+
     # --------------------------------------------------
     # Citation validation
     # --------------------------------------------------
@@ -128,66 +135,97 @@ class AgentState(TypedDict):
 
 def create_initial_state(
     query: str,
-    max_retries: int = 1
+    max_retries: int = 1,
 ) -> AgentState:
 
     return AgentState(
+        original_query=
+            query,
 
-        original_query=query,
+        current_query=
+            query,
 
-        current_query=query,
+        query_type=
+            None,
 
-        query_type=None,
+        retrieval_strategy=
+            None,
 
-        retrieval_strategy=None,
+        use_reranker=
+            False,
 
-        use_reranker=False,
+        use_mmr=
+            False,
 
-        use_mmr=False,
+        retrieved_results=
+            [],
 
-        retrieved_results=[],
+        retry_target_sources=
+            [],
 
-        context=None,
+        context=
+            None,
 
-        evidence_sufficient=None,
+        evidence_sufficient=
+            None,
 
-        evidence_score=None,
+        evidence_score=
+            None,
 
-        evidence_reasons=[],
+        evidence_reasons=
+            [],
 
-        retry_count=0,
+        retry_count=
+            0,
 
-        max_retries=max_retries,
+        max_retries=
+            max_retries,
 
-        rewritten=False,
+        rewritten=
+            False,
 
-        generation_result=None,
+        generation_result=
+            None,
 
-        generation_model_name=None,
+        generation_model_name=
+            None,
 
-        raw_answer=None,
+        raw_answer=
+            None,
 
-        final_answer=None,
+        final_answer=
+            None,
 
-        abstained=False,
+        abstained=
+            False,
 
-        supported_claims=0,
+        supported_claims=
+            0,
 
-        unsupported_claims=0,
+        unsupported_claims=
+            0,
 
-        relevant_claims=0,
+        relevant_claims=
+            0,
 
-        filtered_irrelevant_claims=0,
+        filtered_irrelevant_claims=
+            0,
 
-        citation_valid=None,
+        citation_valid=
+            None,
 
-        answer_grade=None,
+        answer_grade=
+            None,
 
-        answer_passed=None,
+        answer_passed=
+            None,
 
-        answer_relevance_score=None,
+        answer_relevance_score=
+            None,
 
-        answer_grade_reasons=[],
+        answer_grade_reasons=
+            [],
 
-        error=None
+        error=
+            None,
     )
