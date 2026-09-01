@@ -21,16 +21,6 @@ class RelevantClaim:
 
     relevance_score: float
 
-    supporting_text: str | None = None
-
-    entailment_score: float | None = None
-
-    label: str | None = None
-
-    evidence_relevance_score: float | None = None
-
-    premise_mode: str | None = None
-
 
 @dataclass
 class RelevanceFilterResult:
@@ -705,20 +695,10 @@ class ClaimRelevanceFilter:
 
             claim=(
                 original_claim.claim
-                getattr(
-                    original_claim,
-                    "claim",
-                    "",
-                )
             ),
 
             citation_id=(
                 original_claim.citation_id
-                getattr(
-                    original_claim,
-                    "citation_id",
-                    None,
-                )
             ),
 
             relevance_score=round(
@@ -728,36 +708,6 @@ class ClaimRelevanceFilter:
                     ]
                 ),
                 4,
-            ),
-
-            supporting_text=getattr(
-                original_claim,
-                "supporting_text",
-                None,
-            ),
-
-            entailment_score=getattr(
-                original_claim,
-                "entailment_score",
-                None,
-            ),
-
-            label=getattr(
-                original_claim,
-                "label",
-                None,
-            ),
-
-            evidence_relevance_score=getattr(
-                original_claim,
-                "evidence_relevance_score",
-                None,
-            ),
-
-            premise_mode=getattr(
-                original_claim,
-                "premise_mode",
-                None,
             ),
         )
 

@@ -892,9 +892,14 @@ class GroundedGenerator:
             )
 
 
-            print(
-                claim.supporting_text
-            )
+            try:
+                print(
+                    claim.supporting_text
+                )
+            except Exception:
+                print(
+                    str(claim.supporting_text).encode("ascii", errors="backslashreplace").decode("ascii")
+                )
 
 
     # ========================================================
@@ -922,7 +927,6 @@ class GroundedGenerator:
         context: BuiltContext | None = None,
     ) -> tuple[
         str,
-        RelationResolution,
         RelationResolution | StructuredVerificationResult,
     ]:
 
@@ -950,21 +954,24 @@ class GroundedGenerator:
                 RelationAwareAnswerResolver()
             )
 
-
             self.relation_resolver = (
                 resolver
             )
 
+
         if verifier is None:
+
             verifier = (
                 StructuredConclusionVerifier(
                     relation_resolver=
                         resolver,
                 )
             )
+
             self.structured_verifier = (
                 verifier
             )
+
 
         facts = [
             claim.claim
@@ -972,6 +979,7 @@ class GroundedGenerator:
             for claim
             in relevant_claims
         ]
+
 
         covered_sources = []
         all_context_sources = []
@@ -991,8 +999,6 @@ class GroundedGenerator:
                     seen.add(src)
                     covered_sources.append(src)
 
-        resolution = (
-            resolver.resolve(
             seen_ctx = set()
             for item in context.items:
                 src = getattr(item, "source", None)
@@ -1000,12 +1006,11 @@ class GroundedGenerator:
                     seen_ctx.add(src)
                     all_context_sources.append(src)
 
+
         verification = (
             verifier.verify(
                 query=
                     query,
-
-                facts=
                 draft_direct_answer=
                     draft_direct_answer,
                 grounded_facts=
@@ -1019,16 +1024,12 @@ class GroundedGenerator:
 
 
         if (
-            resolution.applied
             verification.applied
             and
-            resolution.resolved_answer
             verification.resolved_answer
         ):
 
             return (
-                resolution.resolved_answer,
-                resolution,
                 verification.resolved_answer,
                 verification,
             )
@@ -1036,7 +1037,6 @@ class GroundedGenerator:
 
         return (
             draft_direct_answer,
-            resolution,
             verification,
         )
 
@@ -1524,9 +1524,6 @@ class GroundedGenerator:
 
                 grounded_claims=
                     grounded_claims,
-
-                context=
-                    context,
             )
         )
 
@@ -1687,7 +1684,6 @@ class GroundedGenerator:
 
         print(
             "Applied:",
-            relation_resolution.applied,
             getattr(
                 relation_resolution,
                 "applied",
@@ -1697,8 +1693,6 @@ class GroundedGenerator:
 
 
         print(
-            "Relation type:",
-            relation_resolution.relation_type,
             "Relation / Mechanism:",
             getattr(
                 relation_resolution,
@@ -1714,7 +1708,6 @@ class GroundedGenerator:
 
         print(
             "Requested polarity:",
-            relation_resolution.requested_polarity,
             getattr(
                 relation_resolution,
                 "requested_polarity",
@@ -1745,7 +1738,6 @@ class GroundedGenerator:
 
         print(
             "Reason:",
-            relation_resolution.reason,
             getattr(
                 relation_resolution,
                 "reason",
