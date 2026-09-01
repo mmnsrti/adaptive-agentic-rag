@@ -341,13 +341,22 @@ pytest tests/test_adaptive_retry_policy.py tests/test_explicit_source_coverage.p
 
 ---
 
-## Demo & Showcase
+## Visual Demo & Interactive Showcase
 
-A complete terminal walkthrough and OpenAPI guide is available in [`docs/demo.md`](docs/demo.md):
-- **GET `/health`**: Liveness probe.
-- **GET `/ready`**: Readiness probe confirming pre-warmed models and Qdrant collection `multihop_chunks_v2`.
-- **GET `/v1/system`**: System architecture metadata and hardware diagnostics.
-- **POST `/v1/query`**: Multi-hop RAG inference, verified inline citations, structured observability traces, and safe fail-closed abstention (`UNKNOWN`).
+The repository includes a dedicated visual web dashboard alongside the FastAPI inference engine:
+
+![Adaptive Agentic RAG Visual Web Demo](docs/assets/demo/trace_mode.png)
+
+### Launching the Visual Dashboard
+1. **Start the API server**:
+   ```powershell
+   uvicorn adaptive_agentic_rag.api.app:create_app --factory --host 127.0.0.1 --port 8000
+   ```
+2. **Open the web dashboard**:
+   Navigate to [**http://127.0.0.1:8000/demo/**](http://127.0.0.1:8000/demo/) or run `python -m http.server 8080 --directory demo` and open [**http://127.0.0.1:8080**](http://127.0.0.1:8080).
+3. **CLI Demo**: Run `python scripts/demo_api.py` for automated terminal execution across all three approved scenarios.
+
+📖 [**View the complete Visual & CLI Demo Guide (docs/demo.md)**](docs/demo.md) with full scenario walkthroughs and screenshot gallery.
 
 ---
 

@@ -64,9 +64,19 @@ def create_app(
 
     # CORS configuration
     if allow_cors:
+        default_origins = [
+            "http://localhost:3000",
+            "http://127.0.0.1:3000",
+            "http://localhost:8000",
+            "http://127.0.0.1:8000",
+            "http://localhost:8080",
+            "http://127.0.0.1:8080",
+            "http://localhost:5500",
+            "http://127.0.0.1:5500",
+        ]
         app.add_middleware(
             CORSMiddleware,
-            allow_origins=cors_origins or ["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:8000"],
+            allow_origins=cors_origins or default_origins,
             allow_credentials=True,
             allow_methods=["GET", "POST", "OPTIONS"],
             allow_headers=["*"],
@@ -80,6 +90,13 @@ def create_app(
     app.include_router(health_router)
     app.include_router(system_router)
     app.include_router(query_router)
+
+    # Mount demo static interface if present
+    from pathlib import Path
+    from starlette.staticfiles import StaticFiles
+    demo_dir = Path(__file__).resolve().parents[3] / "demo"
+    if demo_dir.is_dir():
+        app.mount("/demo", StaticFiles(directory=str(demo_dir), html=True), name="demo")
 
     return app
 
