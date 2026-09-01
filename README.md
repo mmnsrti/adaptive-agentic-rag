@@ -2,6 +2,7 @@
 
 > **Production-oriented multi-hop RAG with hybrid retrieval, cross-encoder reranking, evidence-aware recovery, grounded generation, semantic verification, and safe abstention.**
 
+[![CI](https://github.com/mmnsrti/adaptive-agentic-rag/actions/workflows/ci.yml/badge.svg)](https://github.com/mmnsrti/adaptive-agentic-rag/actions/workflows/ci.yml)
 [![Python 3.12](https://img.shields.io/badge/Python-3.12-3776AB.svg?logo=python&logoColor=white)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-1.0.0-009688.svg?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![Tests Passing](https://img.shields.io/badge/Tests-179%20Passed%20%7C%200%20Failed-success.svg)](tests/)
@@ -314,15 +315,39 @@ uv pip install fastapi uvicorn httpx pytest
 ### 3. Launching the API Server
 ```powershell
 # Start Uvicorn ASGI server
-uvicorn adaptive_agentic_rag.api.app:app --host 127.0.0.1 --port 8000
+uvicorn adaptive_agentic_rag.api.app:create_app --factory --host 127.0.0.1 --port 8000
 ```
-Open [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs) in your browser for the interactive API playground.
+Open [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs) in your browser for the interactive Swagger API playground.
 
-### 4. Running the Test Suite
+### 4. Running the Interactive Demo Showcase
 ```powershell
-# Run the complete test suite (179 tests)
-python -m pytest -q
+# Run the live showcase script (Scenario A: Answered, Scenario B: Trace, Scenario C: Safe Abstention)
+python scripts/demo_api.py
+
+# Alternatively, run in-process without an external server
+python scripts/demo_api.py --in-process
 ```
+See the complete showcase guide in [**docs/demo.md**](docs/demo.md).
+
+### 5. Running the Test Suite
+```powershell
+# Run the complete local test suite across unit, graph, and API layers (179 tests)
+python -m pytest -q
+
+# Run the lightweight CI-safe unit & integration test suite (121 tests)
+pytest tests/test_adaptive_retry_policy.py tests/test_explicit_source_coverage.py tests/test_structured_conclusion_verifier.py tests/test_api_query.py -q
+```
+*Note*: The GitHub Actions CI pipeline automatically runs the portable, deterministic 121-test subset on every push, while the complete 179-test regression validates GPU-accelerated transformer backbones in the local environment.
+
+---
+
+## Demo & Showcase
+
+A complete terminal walkthrough and OpenAPI guide is available in [`docs/demo.md`](docs/demo.md):
+- **GET `/health`**: Liveness probe.
+- **GET `/ready`**: Readiness probe confirming pre-warmed models and Qdrant collection `multihop_chunks_v2`.
+- **GET `/v1/system`**: System architecture metadata and hardware diagnostics.
+- **POST `/v1/query`**: Multi-hop RAG inference, verified inline citations, structured observability traces, and safe fail-closed abstention (`UNKNOWN`).
 
 ---
 
