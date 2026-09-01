@@ -69,8 +69,6 @@ def load_examples():
 # This is intentionally lightweight.
 #
 # It is NOT the final answer-quality evaluator.
-# The existing V2 offline evaluator remains the more
-# sophisticated answer evaluation layer.
 # ============================================================
 
 def normalize_text(
@@ -345,6 +343,7 @@ def smoke_answer_correct(
         token_f1(
             prediction=
                 prediction,
+
             gold=
                 gold,
         )
@@ -363,8 +362,10 @@ def safe_mean(
 
     values = [
         value
+
         for value
         in values
+
         if value is not None
     ]
 
@@ -392,8 +393,10 @@ def percentile(
 
     values = sorted(
         value
+
         for value
         in values
+
         if value is not None
     )
 
@@ -403,9 +406,13 @@ def percentile(
         return None
 
 
-    if len(
-        values
-    ) == 1:
+    if (
+        len(
+            values
+        )
+        ==
+        1
+    ):
 
         return values[
             0
@@ -495,7 +502,6 @@ def citation_document_ids(
 ):
 
     citation_map = {
-
         item.citation_id:
             item.document_id
 
@@ -556,8 +562,11 @@ def dataset_citation_metrics(
     if not gold:
 
         return {
-            "precision": None,
-            "recall": None,
+            "precision":
+                None,
+
+            "recall":
+                None,
         }
 
 
@@ -577,8 +586,7 @@ def dataset_citation_metrics(
             cited
         )
         if cited
-        else
-        0.0
+        else 0.0
     )
 
 
@@ -630,6 +638,9 @@ def run_example(
 
         "max_retries":
             MAX_RETRIES,
+
+        "retry_target_sources":
+            [],
     }
 
 
@@ -722,11 +733,7 @@ def run_example(
     # ========================================================
     # Production-aligned adaptive retry routing
     #
-    # IMPORTANT:
-    #
-    # The evaluator must not implement its own retry policy.
-    # route_after_evidence() is the single source of truth
-    # shared with the production LangGraph.
+    # route_after_evidence() is the single source of truth.
     # ========================================================
 
     initial_evidence_route = (
@@ -881,10 +888,12 @@ def run_example(
         nodes.generator.generate(
             query=
                 question,
+
             context=
                 state[
                     "context"
                 ],
+
             evidence_sufficient=
                 final_evidence_sufficient,
         )
@@ -906,8 +915,10 @@ def run_example(
         nodes.answer_grader.grade(
             query=
                 question,
+
             generation_result=
                 generation_result,
+
             evidence_sufficient=
                 final_evidence_sufficient,
         )
@@ -929,6 +940,7 @@ def run_example(
         citation_document_ids(
             generation_result=
                 generation_result,
+
             context=
                 state[
                     "context"
@@ -941,6 +953,7 @@ def run_example(
         dataset_citation_metrics(
             cited_document_ids=
                 cited_document_ids,
+
             gold_evidence_ids=
                 example.get(
                     "evidence_document_ids",
@@ -969,6 +982,7 @@ def run_example(
 
             smoke_correct = False
 
+
         else:
 
             smoke_correct = (
@@ -980,6 +994,7 @@ def run_example(
                         generation_result
                         .answer
                     ),
+
                     gold=
                         example.get(
                             "answer"
@@ -987,6 +1002,10 @@ def run_example(
                 )
             )
 
+
+    # ========================================================
+    # Evaluation record
+    # ========================================================
 
     return {
         "id":
@@ -1010,7 +1029,7 @@ def run_example(
         "gold_evidence_ids":
             example.get(
                 "evidence_document_ids",
-                []
+                [],
             ),
 
         # ----------------------------------------------------
@@ -1072,6 +1091,16 @@ def run_example(
         "direct_answer":
             generation_result
             .direct_answer,
+
+        # IMPORTANT:
+        # Preserve Qwen's draft direct answer BEFORE
+        # RelationAwareAnswerResolver potentially changes it.
+        "draft_direct_answer":
+            getattr(
+                generation_result,
+                "draft_direct_answer",
+                None,
+            ),
 
         "raw_answer":
             generation_result
@@ -1191,8 +1220,10 @@ def summarize(
 
     answerable = [
         record
+
         for record
         in records
+
         if (
             record[
                 "question_type"
@@ -1205,8 +1236,10 @@ def summarize(
 
     null_examples = [
         record
+
         for record
         in records
+
         if (
             record[
                 "question_type"
@@ -1219,8 +1252,10 @@ def summarize(
 
     answered_answerable = [
         record
+
         for record
         in answerable
+
         if not (
             record[
                 "abstained"
@@ -1231,8 +1266,10 @@ def summarize(
 
     false_abstentions = [
         record
+
         for record
         in answerable
+
         if (
             record[
                 "abstained"
@@ -1243,8 +1280,10 @@ def summarize(
 
     null_abstentions = [
         record
+
         for record
         in null_examples
+
         if (
             record[
                 "abstained"
@@ -1255,8 +1294,10 @@ def summarize(
 
     rewrite_attempts = [
         record
+
         for record
         in records
+
         if (
             record[
                 "rewrite_attempted"
@@ -1267,8 +1308,10 @@ def summarize(
 
     rewrite_rescues = [
         record
+
         for record
         in rewrite_attempts
+
         if (
             record[
                 "rewrite_rescued"
@@ -1279,8 +1322,10 @@ def summarize(
 
     smoke_scored = [
         record
+
         for record
         in answerable
+
         if (
             record[
                 "smoke_answer_correct"
@@ -1292,8 +1337,10 @@ def summarize(
 
     smoke_correct = [
         record
+
         for record
         in smoke_scored
+
         if (
             record[
                 "smoke_answer_correct"
@@ -1304,8 +1351,10 @@ def summarize(
 
     runtime_passes = [
         record
+
         for record
         in records
+
         if (
             record[
                 "runtime_grader_passed"
@@ -1316,8 +1365,10 @@ def summarize(
 
     citation_valid_answered = [
         record
+
         for record
         in answered_answerable
+
         if (
             record[
                 "citation_valid"
@@ -1330,8 +1381,10 @@ def summarize(
         record[
             "dataset_evidence_citation_precision"
         ]
+
         for record
         in answered_answerable
+
         if (
             record[
                 "dataset_evidence_citation_precision"
@@ -1345,8 +1398,10 @@ def summarize(
         record[
             "dataset_evidence_citation_recall"
         ]
+
         for record
         in answered_answerable
+
         if (
             record[
                 "dataset_evidence_citation_recall"
@@ -1360,6 +1415,7 @@ def summarize(
         record[
             "case_seconds"
         ]
+
         for record
         in records
     ]
@@ -1367,8 +1423,10 @@ def summarize(
 
     generation_records = [
         record
+
         for record
         in records
+
         if (
             record[
                 "generation_seconds"
@@ -1383,6 +1441,7 @@ def summarize(
         record[
             "generation_seconds"
         ]
+
         for record
         in generation_records
     ]
@@ -1390,9 +1449,6 @@ def summarize(
 
     # ========================================================
     # First generator invocation includes lazy model load.
-    #
-    # Exclude exactly the first generator invocation from
-    # provisional warm-generation latency.
     # ========================================================
 
     warm_generation_times = (
@@ -1412,17 +1468,14 @@ def summarize(
 
     # ========================================================
     # Runtime unsupported proxy
-    #
-    # This is NOT gold faithfulness.
-    #
-    # It only captures answered cases rejected by the runtime
-    # grounding/relevance/citation grader.
     # ========================================================
 
     answered_runtime_failures = [
         record
+
         for record
         in answered_answerable
+
         if not (
             record[
                 "runtime_grader_passed"
@@ -1430,6 +1483,10 @@ def summarize(
         )
     ]
 
+
+    # ========================================================
+    # Question-type breakdown
+    # ========================================================
 
     by_question_type = {}
 
@@ -1439,6 +1496,7 @@ def summarize(
             record[
                 "question_type"
             ]
+
             for record
             in records
         )
@@ -1451,8 +1509,10 @@ def summarize(
 
         subset = [
             record
+
             for record
             in records
+
             if (
                 record[
                     "question_type"
@@ -1465,19 +1525,24 @@ def summarize(
 
         answered = [
             record
+
             for record
             in subset
+
             if not (
                 record[
                     "abstained"
-            ])
+                ]
+            )
         ]
 
 
         correct = [
             record
+
             for record
             in subset
+
             if (
                 record[
                     "smoke_answer_correct"
@@ -1489,8 +1554,10 @@ def summarize(
 
         scored = [
             record
+
             for record
             in subset
+
             if (
                 record[
                     "smoke_answer_correct"
@@ -1534,17 +1601,19 @@ def summarize(
                     correct
                 ),
 
-            "smoke_accuracy": (
-                len(
-                    correct
-                )
-                /
-                len(
-                    scored
-                )
-                if scored
-                else None
-            ),
+            "smoke_accuracy":
+                (
+                    len(
+                        correct
+                    )
+                    /
+                    len(
+                        scored
+                    )
+
+                    if scored
+                    else None
+                ),
         }
 
 
@@ -1553,6 +1622,7 @@ def summarize(
             record[
                 "initial_evidence_route"
             ]
+
             for record
             in records
         )
@@ -1564,6 +1634,7 @@ def summarize(
             record[
                 "final_evidence_route"
             ]
+
             for record
             in records
         )
@@ -1598,51 +1669,57 @@ def summarize(
                 answered_answerable
             ),
 
-        "answer_rate": (
-            len(
-                answered_answerable
-            )
-            /
-            len(
-                answerable
-            )
-            if answerable
-            else None
-        ),
+        "answer_rate":
+            (
+                len(
+                    answered_answerable
+                )
+                /
+                len(
+                    answerable
+                )
+
+                if answerable
+                else None
+            ),
 
         "false_abstentions":
             len(
                 false_abstentions
             ),
 
-        "false_abstention_rate": (
-            len(
-                false_abstentions
-            )
-            /
-            len(
-                answerable
-            )
-            if answerable
-            else None
-        ),
+        "false_abstention_rate":
+            (
+                len(
+                    false_abstentions
+                )
+                /
+                len(
+                    answerable
+                )
+
+                if answerable
+                else None
+            ),
 
         "null_abstentions":
             len(
                 null_abstentions
             ),
 
-        "null_abstention_rate": (
-            len(
-                null_abstentions
-            )
-            /
-            len(
-                null_examples
-            )
-            if null_examples
-            else None
-        ),
+        "null_abstention_rate":
+            (
+                len(
+                    null_abstentions
+                )
+                /
+                len(
+                    null_examples
+                )
+
+                if null_examples
+                else None
+            ),
 
         # ----------------------------------------------------
         # Smoke answer correctness
@@ -1658,17 +1735,19 @@ def summarize(
                 smoke_correct
             ),
 
-        "smoke_answer_accuracy": (
-            len(
-                smoke_correct
-            )
-            /
-            len(
-                smoke_scored
-            )
-            if smoke_scored
-            else None
-        ),
+        "smoke_answer_accuracy":
+            (
+                len(
+                    smoke_correct
+                )
+                /
+                len(
+                    smoke_scored
+                )
+
+                if smoke_scored
+                else None
+            ),
 
         # ----------------------------------------------------
         # Runtime grader
@@ -1679,32 +1758,36 @@ def summarize(
                 runtime_passes
             ),
 
-        "runtime_grader_pass_rate": (
-            len(
-                runtime_passes
-            )
-            /
-            total
-            if total
-            else None
-        ),
+        "runtime_grader_pass_rate":
+            (
+                len(
+                    runtime_passes
+                )
+                /
+                total
+
+                if total
+                else None
+            ),
 
         "answered_runtime_failures":
             len(
                 answered_runtime_failures
             ),
 
-        "runtime_unsupported_proxy_rate": (
-            len(
-                answered_runtime_failures
-            )
-            /
-            len(
-                answered_answerable
-            )
-            if answered_answerable
-            else None
-        ),
+        "runtime_unsupported_proxy_rate":
+            (
+                len(
+                    answered_runtime_failures
+                )
+                /
+                len(
+                    answered_answerable
+                )
+
+                if answered_answerable
+                else None
+            ),
 
         # ----------------------------------------------------
         # Citations
@@ -1715,17 +1798,19 @@ def summarize(
                 citation_valid_answered
             ),
 
-        "citation_validity_rate": (
-            len(
-                citation_valid_answered
-            )
-            /
-            len(
-                answered_answerable
-            )
-            if answered_answerable
-            else None
-        ),
+        "citation_validity_rate":
+            (
+                len(
+                    citation_valid_answered
+                )
+                /
+                len(
+                    answered_answerable
+                )
+
+                if answered_answerable
+                else None
+            ),
 
         "mean_dataset_evidence_citation_precision":
             safe_mean(
@@ -1746,32 +1831,36 @@ def summarize(
                 rewrite_attempts
             ),
 
-        "rewrite_rate": (
-            len(
-                rewrite_attempts
-            )
-            /
-            total
-            if total
-            else None
-        ),
+        "rewrite_rate":
+            (
+                len(
+                    rewrite_attempts
+                )
+                /
+                total
+
+                if total
+                else None
+            ),
 
         "rewrite_rescues":
             len(
                 rewrite_rescues
             ),
 
-        "rewrite_rescue_rate": (
-            len(
-                rewrite_rescues
-            )
-            /
-            len(
-                rewrite_attempts
-            )
-            if rewrite_attempts
-            else None
-        ),
+        "rewrite_rescue_rate":
+            (
+                len(
+                    rewrite_rescues
+                )
+                /
+                len(
+                    rewrite_attempts
+                )
+
+                if rewrite_attempts
+                else None
+            ),
 
         # ----------------------------------------------------
         # Adaptive retry routing
@@ -1844,9 +1933,11 @@ def main():
         "=" * 100
     )
 
+
     print(
         "E2E SMOKE BENCHMARK"
     )
+
 
     print(
         "=" * 100
@@ -1885,6 +1976,7 @@ def main():
                 "=" * 100
             )
 
+
             print(
                 (
                     f"[{index}/"
@@ -1892,6 +1984,7 @@ def main():
                     f"{example.get('question_type')}"
                 )
             )
+
 
             print(
                 "=" * 100
@@ -1901,6 +1994,7 @@ def main():
             print(
                 "QUESTION:"
             )
+
 
             print(
                 example[
@@ -1913,6 +2007,7 @@ def main():
                 "\nGOLD:"
             )
 
+
             print(
                 example.get(
                     "answer"
@@ -1924,6 +2019,7 @@ def main():
                 run_example(
                     nodes=
                         nodes,
+
                     example=
                         example,
                 )
@@ -1988,6 +2084,7 @@ def main():
                     ],
                 )
 
+
                 print(
                     "Rewrite rescued:",
                     record[
@@ -2027,10 +2124,27 @@ def main():
                 "\nANSWER:"
             )
 
+
             print(
                 record[
                     "answer"
                 ]
+            )
+
+
+            print(
+                "\nDraft direct answer:",
+                record[
+                    "draft_direct_answer"
+                ],
+            )
+
+
+            print(
+                "Final direct answer:",
+                record[
+                    "direct_answer"
+                ],
             )
 
 
@@ -2117,9 +2231,11 @@ def main():
         "=" * 100
     )
 
+
     print(
         "SUMMARY"
     )
+
 
     print(
         "=" * 100
@@ -2167,6 +2283,7 @@ def main():
     print(
         "\nSaved:"
     )
+
 
     print(
         OUTPUT_PATH
