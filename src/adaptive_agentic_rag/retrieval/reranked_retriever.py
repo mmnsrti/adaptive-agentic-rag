@@ -34,21 +34,8 @@ class RerankedRetriever:
         final_top_k: int = 5,
         mmr_lambda: float = 0.7,
         bm25_corpus_path: str = DEFAULT_BM25_CORPUS_PATH,
+        source_target_top_k: int = 20,
     ):
-
-        # ====================================================
-        # Backward-compatible Dense ownership
-        #
-        # Preferred production usage:
-        #
-        # RerankedRetriever(
-        #     dense_retriever=shared_dense
-        # )
-        #
-        # Standalone usage remains supported:
-        #
-        # RerankedRetriever()
-        # ====================================================
 
         if dense_retriever is None:
 
@@ -61,8 +48,10 @@ class RerankedRetriever:
             HybridRetriever(
                 dense_retriever=
                     dense_retriever,
+
                 final_top_k=
                     hybrid_top_k,
+
                 bm25_corpus_path=
                     bm25_corpus_path,
             )
@@ -98,8 +87,229 @@ class RerankedRetriever:
             bm25_corpus_path
         )
 
+        self.source_target_top_k = (
+            source_target_top_k
+        )
+
 
         self._closed = False
+
+
+    # ========================================================
+    # Stable candidate identity
+    # ========================================================
+
+    @staticmethod
+    def _candidate_key(
+        item: dict,
+    ):
+
+        chunk_id = (
+            item.get(
+                "id"
+            )
+        )
+
+
+        if chunk_id:
+
+            return str(
+                chunk_id
+            )
+
+
+        return (
+            str(
+                item.get(
+                    "document_id",
+                    "",
+                )
+            ),
+            str(
+                item.get(
+                    "text",
+                    "",
+                )
+            )[
+                :200
+            ],
+        )
+
+
+    # ========================================================
+    # Merge normal + source-targeted candidate pools
+    # ========================================================
+
+    @classmethod
+    def _merge_candidates(
+        cls,
+        normal_candidates: list[dict],
+        targeted_candidates: list[dict],
+    ) -> list[dict]:
+
+        output = []
+
+        by_key = {}
+
+
+        for candidate in (
+            list(
+                normal_candidates
+                or []
+            )
+            +
+            list(
+                targeted_candidates
+                or []
+            )
+        ):
+
+            key = (
+                cls._candidate_key(
+                    candidate
+                )
+            )
+
+
+            existing = (
+                by_key.get(
+                    key
+                )
+            )
+
+
+            if existing is None:
+
+                copy = dict(
+                    candidate
+                )
+
+
+                by_key[
+                    key
+                ] = (
+                    copy
+                )
+
+
+                output.append(
+                    copy
+                )
+
+
+                continue
+
+
+            # ------------------------------------------------
+            # Preserve vector from whichever path has one.
+            # ------------------------------------------------
+
+            if (
+                existing.get(
+                    "vector"
+                )
+                is None
+                and
+                candidate.get(
+                    "vector"
+                )
+                is not None
+            ):
+
+                existing[
+                    "vector"
+                ] = (
+                    candidate[
+                        "vector"
+                    ]
+                )
+
+
+            # ------------------------------------------------
+            # Preserve source-target provenance.
+            # ------------------------------------------------
+
+            if candidate.get(
+                "source_targeted"
+            ):
+
+                existing[
+                    "source_targeted"
+                ] = True
+
+
+                existing[
+                    "source_target"
+                ] = (
+                    candidate.get(
+                        "source_target"
+                    )
+                )
+
+
+        return output
+
+
+    # ========================================================
+    # Candidate generation
+    #
+    # Normal:
+    #
+    # MultiQuery Hybrid
+    #
+    # Retry:
+    #
+    # MultiQuery Hybrid
+    #       +
+    # source-constrained BM25
+    #
+    # Both feed the SAME reranker.
+    # ========================================================
+
+    def _collect_candidates(
+        self,
+        *,
+        query: str,
+        top_k: int,
+        target_sources: list[str] | None,
+    ) -> list[dict]:
+
+        normal_candidates = (
+            self.multi_query.search(
+                query,
+                top_k=
+                    top_k,
+            )
+        )
+
+
+        if not target_sources:
+
+            return normal_candidates
+
+
+        targeted_candidates = (
+            self.hybrid
+            .bm25
+            .search_by_sources(
+                query=
+                    query,
+
+                sources=
+                    list(
+                        target_sources
+                    ),
+
+                top_k_per_source=
+                    self.source_target_top_k,
+            )
+        )
+
+
+        return self._merge_candidates(
+            normal_candidates,
+            targeted_candidates,
+        )
 
 
     # ========================================================
@@ -110,6 +320,7 @@ class RerankedRetriever:
         self,
         query: str,
         top_k: int | None = None,
+        target_sources: list[str] | None = None,
     ) -> list[dict]:
 
         if top_k is None:
@@ -151,14 +362,25 @@ class RerankedRetriever:
 
 
         # ====================================================
-        # 1. Multi-query hybrid candidate generation
+        # 1. Candidate generation
+        #
+        # target_sources=None:
+        #     exact previous production behavior
+        #
+        # target_sources=[...]:
+        #     normal pool + source-targeted BM25 injection
         # ====================================================
 
         candidates = (
-            self.multi_query.search(
-                query,
+            self._collect_candidates(
+                query=
+                    query,
+
                 top_k=
                     multi_query_candidate_k,
+
+                target_sources=
+                    target_sources,
             )
         )
 
@@ -171,7 +393,7 @@ class RerankedRetriever:
         # ====================================================
         # 2. ONE cross-encoder rerank
         #
-        # Always against the original query.
+        # Same behavior for normal and targeted retrieval.
         # ====================================================
 
         reranked = (
@@ -190,12 +412,7 @@ class RerankedRetriever:
 
 
         # ====================================================
-        # 3. Ensure every candidate has a Dense vector
-        #
-        # Dense-origin candidates normally already have one.
-        #
-        # BM25-only candidates may not, so only those missing
-        # vectors are embedded here.
+        # 3. Ensure Dense vector
         # ====================================================
 
         valid_documents = []
@@ -205,8 +422,10 @@ class RerankedRetriever:
 
         for item in reranked:
 
-            vector = item.get(
-                "vector"
+            vector = (
+                item.get(
+                    "vector"
+                )
             )
 
 
@@ -222,18 +441,23 @@ class RerankedRetriever:
                                 "text"
                             ]
                         ]
-                    )[0]
+                    )[
+                        0
+                    ]
                 )
 
 
                 item[
                     "vector"
-                ] = vector
+                ] = (
+                    vector
+                )
 
 
             valid_documents.append(
                 item
             )
+
 
             document_embeddings.append(
                 vector
@@ -259,25 +483,33 @@ class RerankedRetriever:
             .dense
             .embedder
             .encode_queries(
-                [query]
-            )[0]
+                [
+                    query
+                ]
+            )[
+                0
+            ]
         )
 
 
         # ====================================================
-        # 5. MMR diversity selection
+        # 5. Same MMR
         # ====================================================
 
         selected = (
             mmr_select(
                 query_embedding=
                     query_embedding,
+
                 document_embeddings=
                     document_embeddings,
+
                 documents=
                     reranked,
+
                 top_k=
                     top_k,
+
                 lambda_param=
                     self.mmr_lambda,
             )
@@ -285,15 +517,7 @@ class RerankedRetriever:
 
 
         # ====================================================
-        # 6. Public final score
-        #
-        # Downstream consumers should see the strongest
-        # semantic ranking signal:
-        #
-        #     Cross-Encoder rerank score
-        #
-        # Earlier retrieval diagnostics such as RRF scores
-        # remain available in their own metadata fields.
+        # 6. Same public scoring contract
         # ====================================================
 
         for item in selected:

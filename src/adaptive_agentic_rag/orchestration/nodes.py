@@ -1,9 +1,11 @@
+import ast
+
 from typing import Any
 
 from adaptive_agentic_rag.agents.query_router import (
     QueryRouter,
 )
-import ast
+
 from adaptive_agentic_rag.agents.evidence_grader import (
     EvidenceGrader,
 )
@@ -67,6 +69,21 @@ class RAGNodes:
                            ↓                     ↓
                      V2 fast path       Constrained Semantic
                                               Rescue
+
+    Retry architecture
+    ------------------
+
+        explicit source miss
+                ↓
+        AdaptiveRetryPolicy
+                ↓
+        CorpusSourceAvailability
+                ↓
+        rewrite_query
+                ↓
+        retry_target_sources
+                ↓
+        source-targeted retrieval
     """
 
     def __init__(
@@ -104,10 +121,6 @@ class RAGNodes:
 
         # ==================================================
         # Hard structural source coverage
-        #
-        # No model.
-        # No threshold.
-        # No I/O.
         # ==================================================
 
         self.source_coverage_guard = (
@@ -118,8 +131,7 @@ class RAGNodes:
         # ==================================================
         # Semantic rescue
         #
-        # IMPORTANT:
-        # reuse already-loaded reranker.
+        # Reuse already-loaded reranker.
         # ==================================================
 
         self.semantic_rescue = (
@@ -197,15 +209,15 @@ class RAGNodes:
             value
         )
 
+
     # ======================================================
     # Evidence telemetry list extraction
     #
-    # QueryRewriter V2 consumes the structural source
-    # telemetry produced by ExplicitSourceCoverageGuard.
+    # QueryRewriter V2 and source-targeted retry consume
+    # structural source telemetry produced by
+    # ExplicitSourceCoverageGuard.
     #
-    # Fail closed:
-    #
-    # malformed/missing telemetry -> []
+    # Malformed/missing telemetry fails closed to [].
     # ======================================================
 
     @staticmethod
@@ -280,13 +292,10 @@ class RAGNodes:
 
 
         return []
+
+
     # ======================================================
     # Structured-result accessor
-    #
-    # Rescue can be returned as:
-    #
-    # - dataclass / namespace
-    # - dict in tests
     # ======================================================
 
     @staticmethod
@@ -491,21 +500,6 @@ class RAGNodes:
 
     # ======================================================
     # Semantic rescue telemetry
-    #
-    # IMPORTANT:
-    #
-    # Preserve historical telemetry strings:
-    #
-    # semantic_rescue=sufficient
-    # semantic_rescue=insufficient
-    #
-    # evidence_path=constrained_semantic_rescue
-    #
-    # Existing tests and previous experiment artifacts
-    # depend on these strings.
-    #
-    # New telemetry can be ADDED, but old telemetry must
-    # not be renamed.
     # ======================================================
 
     def _semantic_rescue_reasons(
@@ -544,10 +538,6 @@ class RAGNodes:
         ]
 
 
-        # ==================================================
-        # Threshold telemetry
-        # ==================================================
-
         threshold = (
             self._result_value(
                 rescue_result,
@@ -567,10 +557,6 @@ class RAGNodes:
             )
 
 
-        # ==================================================
-        # Required fraction
-        # ==================================================
-
         required_fraction = (
             self._result_value(
                 rescue_result,
@@ -589,10 +575,6 @@ class RAGNodes:
                 )
             )
 
-
-        # ==================================================
-        # Requirement telemetry
-        # ==================================================
 
         requirement_count = (
             self._result_value(
@@ -651,12 +633,6 @@ class RAGNodes:
             )
 
 
-        # ==================================================
-        # Missing query sources
-        #
-        # Preserve if available from rescue diagnostics.
-        # ==================================================
-
         missing_query_sources = (
             self._result_value(
                 rescue_result,
@@ -675,10 +651,6 @@ class RAGNodes:
                 )
             )
 
-
-        # ==================================================
-        # Supporting document IDs
-        # ==================================================
 
         supporting_document_ids = (
             self._result_value(
@@ -699,10 +671,6 @@ class RAGNodes:
             )
 
 
-        # ==================================================
-        # Historical evidence-path contract
-        # ==================================================
-
         if sufficient:
 
             reasons.append(
@@ -711,6 +679,7 @@ class RAGNodes:
                     "constrained_semantic_rescue"
                 )
             )
+
 
         else:
 
@@ -775,6 +744,16 @@ class RAGNodes:
     # ======================================================
     # Node 2
     # Retrieval
+    #
+    # First attempt:
+    #
+    #     retry_target_sources=[]
+    #     -> canonical retrieval unchanged
+    #
+    # Approved retry:
+    #
+    #     retry_target_sources=["The Age"]
+    #     -> source-targeted candidate injection
     # ======================================================
 
     def retrieve(
@@ -789,10 +768,23 @@ class RAGNodes:
         )
 
 
+        retry_target_sources = list(
+            state.get(
+                "retry_target_sources",
+                [],
+            )
+            or []
+        )
+
+
         retrieval_output = (
             self.retriever.search(
                 query,
-                top_k=10,
+                top_k=
+                    10,
+
+                target_sources=
+                    retry_target_sources,
             )
         )
 
@@ -814,7 +806,7 @@ class RAGNodes:
     # Node 3
     # Context construction
     #
-    # ContextBuilder uses original query semantics.
+    # ContextBuilder always uses original user semantics.
     # ======================================================
 
     def build_context(
@@ -845,9 +837,8 @@ class RAGNodes:
             self.context_builder.build(
                 results,
 
-                query=(
-                    context_query
-                ),
+                query=
+                    context_query,
             )
         )
 
@@ -861,16 +852,6 @@ class RAGNodes:
     # ======================================================
     # Node 4
     # Evidence grading
-    #
-    # Pipeline:
-    #
-    # EvidenceGrader V2
-    #       ↓
-    # Explicit Source Coverage
-    #       ↓
-    # V2 fast path
-    #       OR
-    # Constrained Semantic Rescue
     # ======================================================
 
     def grade_evidence(
@@ -922,17 +903,14 @@ class RAGNodes:
 
         grade = (
             self.evidence_grader.grade(
-                query=(
-                    original_query
-                ),
+                query=
+                    original_query,
 
-                context=(
-                    context
-                ),
+                context=
+                    context,
 
-                query_type=(
-                    query_type
-                ),
+                query_type=
+                    query_type,
             )
         )
 
@@ -950,15 +928,6 @@ class RAGNodes:
         # ==================================================
         # Stage B
         # Explicit Source Coverage
-        #
-        # Some tests instantiate RAGNodes using:
-        #
-        # object.__new__(RAGNodes)
-        #
-        # In that case __init__ is skipped.
-        #
-        # Lazy construction keeps those architecture tests
-        # backwards compatible.
         # ==================================================
 
         source_coverage_guard = (
@@ -984,22 +953,17 @@ class RAGNodes:
 
         source_coverage = (
             source_coverage_guard.check(
-                query=(
-                    original_query
-                ),
+                query=
+                    original_query,
 
-                context=(
-                    context
-                ),
+                context=
+                    context,
             )
         )
 
 
         # ==================================================
-        # HARD structural rejection
-        #
-        # Missing explicitly required publisher/source
-        # cannot be compensated by semantic similarity.
+        # HARD structural source rejection
         # ==================================================
 
         if not (
@@ -1045,13 +1009,6 @@ class RAGNodes:
             )
 
 
-            # ----------------------------------------------
-            # Preserve true V2 score.
-            #
-            # Structural veto changes boolean sufficiency,
-            # not the diagnostic score.
-            # ----------------------------------------------
-
             return {
                 "evidence_sufficient":
                     False,
@@ -1066,10 +1023,7 @@ class RAGNodes:
 
         # ==================================================
         # Stage C
-        # Base V2 fast path
-        #
-        # If V2 is sufficient AND explicit source coverage
-        # passes, do not call semantic rescue.
+        # V2 fast path
         # ==================================================
 
         if grade.sufficient:
@@ -1116,26 +1070,18 @@ class RAGNodes:
         # ==================================================
         # Stage D
         # Constrained Semantic Rescue
-        #
-        # Only reached when:
-        #
-        # 1. explicit source coverage passes
-        # 2. Base V2 rejects
         # ==================================================
 
         rescue_result = (
             self.semantic_rescue.analyze(
-                query=(
-                    original_query
-                ),
+                query=
+                    original_query,
 
-                context=(
-                    context
-                ),
+                context=
+                    context,
 
-                query_type=(
-                    query_type
-                ),
+                query_type=
+                    query_type,
             )
         )
 
@@ -1181,12 +1127,6 @@ class RAGNodes:
         )
 
 
-        # ==================================================
-        # Preserve original V2 evidence score.
-        #
-        # Rescue changes the boolean decision only.
-        # ==================================================
-
         return {
             "evidence_sufficient":
                 rescue_sufficient,
@@ -1202,19 +1142,17 @@ class RAGNodes:
     # ======================================================
     # Node 5
     # Query rewriting
-    # ======================================================
-
-    # ======================================================
-    # Node 5
-    # Query rewriting
     #
-    # V2:
+    # Critical handoff:
     #
-    # Evidence telemetry
-    #       ↓
-    # missing publisher(s)
-    #       ↓
-    # source-targeted retrieval rewrite
+    # evidence_reasons
+    #      ↓
+    # missing_sources
+    #      ├── QueryRewriter V2
+    #      └── retry_target_sources
+    #
+    # retry_target_sources survives evidence reset and is
+    # consumed by the next retrieve node.
     # ======================================================
 
     def rewrite_query(
@@ -1254,14 +1192,7 @@ class RAGNodes:
 
 
         # ==================================================
-        # IMPORTANT:
-        #
-        # Capture evidence telemetry BEFORE resetting the
-        # retrieval-round state below.
-        #
-        # AdaptiveRetryPolicy has already approved this retry.
-        # QueryRewriter now needs to know the structural
-        # reason for that decision.
+        # Capture telemetry BEFORE clearing evidence state.
         # ==================================================
 
         evidence_reasons = list(
@@ -1330,8 +1261,21 @@ class RAGNodes:
             "rewritten":
                 True,
 
+            # ==============================================
+            # CRITICAL:
+            #
+            # This was missing in the actual production
+            # nodes.py and was why source-targeted retrieval
+            # never activated during frozen500.
+            # ==============================================
+
+            "retry_target_sources":
+                list(
+                    missing_sources
+                ),
+
             # ----------------------------------------------
-            # Reset retrieval-round state.
+            # Reset previous retrieval round.
             # ----------------------------------------------
 
             "retrieved_results":
@@ -1349,6 +1293,8 @@ class RAGNodes:
             "evidence_reasons":
                 [],
         }
+
+
     # ======================================================
     # Node 6
     # Grounded generation
@@ -1398,15 +1344,14 @@ class RAGNodes:
 
         result = (
             self.generator.generate(
-                query=(
-                    original_query
-                ),
+                query=
+                    original_query,
 
-                context=(
-                    context
-                ),
+                context=
+                    context,
 
-                evidence_sufficient=True,
+                evidence_sufficient=
+                    True,
             )
         )
 
@@ -1450,23 +1395,16 @@ class RAGNodes:
             )
 
 
-        # ==================================================
-        # Reuse generator's safety path.
-        #
-        # evidence_sufficient=False means Qwen is not run.
-        # ==================================================
-
         result = (
             self.generator.generate(
-                query=(
-                    original_query
-                ),
+                query=
+                    original_query,
 
-                context=(
-                    context
-                ),
+                context=
+                    context,
 
-                evidence_sufficient=False,
+                evidence_sufficient=
+                    False,
             )
         )
 
@@ -1527,17 +1465,14 @@ class RAGNodes:
 
         grade = (
             self.answer_grader.grade(
-                query=(
-                    original_query
-                ),
+                query=
+                    original_query,
 
-                generation_result=(
-                    generation_result
-                ),
+                generation_result=
+                    generation_result,
 
-                evidence_sufficient=(
-                    evidence_sufficient
-                ),
+                evidence_sufficient=
+                    evidence_sufficient,
             )
         )
 

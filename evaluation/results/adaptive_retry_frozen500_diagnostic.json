@@ -19,8 +19,8 @@
       "rewrite": 4
     },
     "final_route_distribution": {
-      "generate": 311,
-      "abstain": 189
+      "generate": 312,
+      "abstain": 188
     },
     "retry_candidates": 4,
     "retry_candidate_rate": 0.008,
@@ -52,17 +52,17 @@
         "abstain": 32
       }
     },
-    "rewrite_rescues": 1,
-    "rewrite_rescue_rate": 0.25,
-    "rewrite_retrieval_improved": 0,
+    "rewrite_rescues": 2,
+    "rewrite_rescue_rate": 0.5,
+    "rewrite_retrieval_improved": 2,
     "rewrite_retrieval_harmed": 0,
-    "rewrite_retrieval_unchanged": 2,
-    "rewrite_context_improved": 0,
+    "rewrite_retrieval_unchanged": 0,
+    "rewrite_context_improved": 2,
     "rewrite_context_harmed": 0,
-    "rewrite_context_unchanged": 2,
-    "mean_rewrite_retrieval_recall_delta": 0.0,
-    "mean_rewrite_context_recall_delta": 0.0,
-    "mean_rewrite_evidence_score_delta": 0.017625000000000002,
+    "rewrite_context_unchanged": 0,
+    "mean_rewrite_retrieval_recall_delta": 0.33333333333333337,
+    "mean_rewrite_context_recall_delta": 0.33333333333333337,
+    "mean_rewrite_evidence_score_delta": 0.019600000000000006,
     "retry_missing_source_count_distribution": {
       "1_missing": 4
     },
@@ -172,35 +172,35 @@
       "final_retrieved_document_ids": [
         "doc_0288",
         "doc_0144",
-        "doc_0343",
         "doc_0294",
         "doc_0553",
-        "doc_0037",
-        "doc_0489",
+        "doc_0058",
         "doc_0394",
-        "doc_0119",
-        "doc_0004"
+        "doc_0179",
+        "doc_0037",
+        "doc_0149",
+        "doc_0119"
       ],
       "final_context_document_ids": [
         "doc_0288",
         "doc_0144",
-        "doc_0343",
         "doc_0294",
         "doc_0553",
-        "doc_0037",
-        "doc_0489",
+        "doc_0058",
         "doc_0394",
-        "doc_0119",
-        "doc_0004"
+        "doc_0179",
+        "doc_0037",
+        "doc_0149",
+        "doc_0119"
       ],
-      "final_retrieval_gold_recall": 0.6666666666666666,
-      "final_context_gold_recall": 0.6666666666666666,
-      "final_context_gold_complete": false,
+      "final_retrieval_gold_recall": 1.0,
+      "final_context_gold_recall": 1.0,
+      "final_context_gold_complete": true,
       "final_evidence_sufficient": true,
-      "final_evidence_score": 0.8449,
+      "final_evidence_score": 0.8308,
       "final_evidence_reasons": [
         "Evidence appears sufficient.",
-        "Potentially weak evidence citations: [1, 2, 3, 5, 6, 9, 10]",
+        "Potentially weak evidence citations: [1, 2, 4, 5, 7, 8, 9, 10]",
         "explicit_source_coverage=satisfied",
         "required_sources=['Sporting News', 'CBSSports.com']",
         "covered_sources=['Sporting News', 'CBSSports.com']",
@@ -217,9 +217,9 @@
       ],
       "final_missing_sources": [],
       "final_route": "generate",
-      "rewrite_retrieval_recall_delta": 0.0,
-      "rewrite_context_recall_delta": 0.0,
-      "rewrite_evidence_score_delta": 0.028200000000000003
+      "rewrite_retrieval_recall_delta": 0.33333333333333337,
+      "rewrite_context_recall_delta": 0.33333333333333337,
+      "rewrite_evidence_score_delta": 0.014100000000000001
     },
     {
       "id": "eval_aa44caaeae76",
@@ -295,10 +295,10 @@
         "doc_0457",
         "doc_0536",
         "doc_0278",
-        "doc_0006",
         "doc_0025",
-        "doc_0345",
-        "doc_0121"
+        "doc_0101",
+        "doc_0371",
+        "doc_0284"
       ],
       "final_context_document_ids": [
         "doc_0233",
@@ -307,10 +307,10 @@
         "doc_0457",
         "doc_0536",
         "doc_0278",
-        "doc_0006",
         "doc_0025",
-        "doc_0345",
-        "doc_0121"
+        "doc_0101",
+        "doc_0371",
+        "doc_0284"
       ],
       "final_retrieval_gold_recall": null,
       "final_context_gold_recall": null,
@@ -322,7 +322,7 @@
         "Potentially weak evidence citations: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",
         "Explicit source coverage failed.",
         "required_sources=['The Guardian', 'The New York Times']",
-        "available_sources=['Yahoo News', 'TechCrunch', 'Fortune', 'Cnbc | World Business News Leader', 'Sporting News', 'The Guardian', 'The Verge']",
+        "available_sources=['Yahoo News', 'TechCrunch', 'Fortune', 'Cnbc | World Business News Leader', 'The Guardian']",
         "covered_sources=['The Guardian']",
         "missing_sources=['The New York Times']",
         "evidence_path=explicit_source_coverage_reject"
@@ -410,8 +410,8 @@
       "rewrite_attempted": true,
       "rewritten_query": "The Age portrayal Google's market practices October 22 2023 remained consistent depiction Epic Google case class action antitrust suit filed against",
       "retry_count": 1,
-      "retry_outcome": "retry_not_rescued",
-      "rewrite_rescued": false,
+      "retry_outcome": "retry_rescued",
+      "rewrite_rescued": true,
       "final_retrieved_document_ids": [
         "doc_0042",
         "doc_0033",
@@ -419,7 +419,9 @@
         "doc_0015",
         "doc_0299",
         "doc_0355",
-        "doc_0237"
+        "doc_0237",
+        "doc_0032",
+        "doc_0027"
       ],
       "final_context_document_ids": [
         "doc_0042",
@@ -428,40 +430,39 @@
         "doc_0015",
         "doc_0299",
         "doc_0355",
-        "doc_0237"
+        "doc_0237",
+        "doc_0032",
+        "doc_0027"
       ],
-      "final_retrieval_gold_recall": 0.6666666666666666,
-      "final_context_gold_recall": 0.6666666666666666,
-      "final_context_gold_complete": false,
-      "final_evidence_sufficient": false,
-      "final_evidence_score": 0.78,
+      "final_retrieval_gold_recall": 1.0,
+      "final_context_gold_recall": 1.0,
+      "final_context_gold_complete": true,
+      "final_evidence_sufficient": true,
+      "final_evidence_score": 0.802,
       "final_evidence_reasons": [
         "Evidence appears sufficient.",
-        "Potentially weak evidence citations: [1, 3, 5]",
-        "Explicit source coverage failed.",
+        "Potentially weak evidence citations: [1, 3, 5, 8, 9]",
+        "explicit_source_coverage=satisfied",
         "required_sources=['The Age', 'The Verge', 'TechCrunch']",
-        "available_sources=['TechCrunch', 'The Verge']",
-        "covered_sources=['The Verge', 'TechCrunch']",
-        "missing_sources=['The Age']",
-        "evidence_path=explicit_source_coverage_reject"
+        "covered_sources=['The Age', 'The Verge', 'TechCrunch']",
+        "evidence_path=v2"
       ],
-      "final_evidence_path": "explicit_source_coverage_reject",
+      "final_evidence_path": "v2",
       "final_required_sources": [
         "The Age",
         "The Verge",
         "TechCrunch"
       ],
       "final_covered_sources": [
+        "The Age",
         "The Verge",
         "TechCrunch"
       ],
-      "final_missing_sources": [
-        "The Age"
-      ],
-      "final_route": "abstain",
-      "rewrite_retrieval_recall_delta": 0.0,
-      "rewrite_context_recall_delta": 0.0,
-      "rewrite_evidence_score_delta": 0.0
+      "final_missing_sources": [],
+      "final_route": "generate",
+      "rewrite_retrieval_recall_delta": 0.33333333333333337,
+      "rewrite_context_recall_delta": 0.33333333333333337,
+      "rewrite_evidence_score_delta": 0.02200000000000002
     },
     {
       "id": "eval_ffba71206ed9",
@@ -540,8 +541,8 @@
         "doc_0250",
         "doc_0558",
         "doc_0104",
-        "doc_0351",
-        "doc_0102"
+        "doc_0316",
+        "doc_0351"
       ],
       "final_context_document_ids": [
         "doc_0600",
@@ -552,8 +553,8 @@
         "doc_0250",
         "doc_0558",
         "doc_0104",
-        "doc_0351",
-        "doc_0102"
+        "doc_0316",
+        "doc_0351"
       ],
       "final_retrieval_gold_recall": null,
       "final_context_gold_recall": null,
@@ -10439,35 +10440,35 @@
       "final_retrieved_document_ids": [
         "doc_0288",
         "doc_0144",
-        "doc_0343",
         "doc_0294",
         "doc_0553",
-        "doc_0037",
-        "doc_0489",
+        "doc_0058",
         "doc_0394",
-        "doc_0119",
-        "doc_0004"
+        "doc_0179",
+        "doc_0037",
+        "doc_0149",
+        "doc_0119"
       ],
       "final_context_document_ids": [
         "doc_0288",
         "doc_0144",
-        "doc_0343",
         "doc_0294",
         "doc_0553",
-        "doc_0037",
-        "doc_0489",
+        "doc_0058",
         "doc_0394",
-        "doc_0119",
-        "doc_0004"
+        "doc_0179",
+        "doc_0037",
+        "doc_0149",
+        "doc_0119"
       ],
-      "final_retrieval_gold_recall": 0.6666666666666666,
-      "final_context_gold_recall": 0.6666666666666666,
-      "final_context_gold_complete": false,
+      "final_retrieval_gold_recall": 1.0,
+      "final_context_gold_recall": 1.0,
+      "final_context_gold_complete": true,
       "final_evidence_sufficient": true,
-      "final_evidence_score": 0.8449,
+      "final_evidence_score": 0.8308,
       "final_evidence_reasons": [
         "Evidence appears sufficient.",
-        "Potentially weak evidence citations: [1, 2, 3, 5, 6, 9, 10]",
+        "Potentially weak evidence citations: [1, 2, 4, 5, 7, 8, 9, 10]",
         "explicit_source_coverage=satisfied",
         "required_sources=['Sporting News', 'CBSSports.com']",
         "covered_sources=['Sporting News', 'CBSSports.com']",
@@ -10484,9 +10485,9 @@
       ],
       "final_missing_sources": [],
       "final_route": "generate",
-      "rewrite_retrieval_recall_delta": 0.0,
-      "rewrite_context_recall_delta": 0.0,
-      "rewrite_evidence_score_delta": 0.028200000000000003
+      "rewrite_retrieval_recall_delta": 0.33333333333333337,
+      "rewrite_context_recall_delta": 0.33333333333333337,
+      "rewrite_evidence_score_delta": 0.014100000000000001
     },
     {
       "id": "eval_0917bb98093d",
@@ -19356,10 +19357,10 @@
         "doc_0457",
         "doc_0536",
         "doc_0278",
-        "doc_0006",
         "doc_0025",
-        "doc_0345",
-        "doc_0121"
+        "doc_0101",
+        "doc_0371",
+        "doc_0284"
       ],
       "final_context_document_ids": [
         "doc_0233",
@@ -19368,10 +19369,10 @@
         "doc_0457",
         "doc_0536",
         "doc_0278",
-        "doc_0006",
         "doc_0025",
-        "doc_0345",
-        "doc_0121"
+        "doc_0101",
+        "doc_0371",
+        "doc_0284"
       ],
       "final_retrieval_gold_recall": null,
       "final_context_gold_recall": null,
@@ -19383,7 +19384,7 @@
         "Potentially weak evidence citations: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",
         "Explicit source coverage failed.",
         "required_sources=['The Guardian', 'The New York Times']",
-        "available_sources=['Yahoo News', 'TechCrunch', 'Fortune', 'Cnbc | World Business News Leader', 'Sporting News', 'The Guardian', 'The Verge']",
+        "available_sources=['Yahoo News', 'TechCrunch', 'Fortune', 'Cnbc | World Business News Leader', 'The Guardian']",
         "covered_sources=['The Guardian']",
         "missing_sources=['The New York Times']",
         "evidence_path=explicit_source_coverage_reject"
@@ -20305,8 +20306,8 @@
       "rewrite_attempted": true,
       "rewritten_query": "The Age portrayal Google's market practices October 22 2023 remained consistent depiction Epic Google case class action antitrust suit filed against",
       "retry_count": 1,
-      "retry_outcome": "retry_not_rescued",
-      "rewrite_rescued": false,
+      "retry_outcome": "retry_rescued",
+      "rewrite_rescued": true,
       "final_retrieved_document_ids": [
         "doc_0042",
         "doc_0033",
@@ -20314,7 +20315,9 @@
         "doc_0015",
         "doc_0299",
         "doc_0355",
-        "doc_0237"
+        "doc_0237",
+        "doc_0032",
+        "doc_0027"
       ],
       "final_context_document_ids": [
         "doc_0042",
@@ -20323,40 +20326,39 @@
         "doc_0015",
         "doc_0299",
         "doc_0355",
-        "doc_0237"
+        "doc_0237",
+        "doc_0032",
+        "doc_0027"
       ],
-      "final_retrieval_gold_recall": 0.6666666666666666,
-      "final_context_gold_recall": 0.6666666666666666,
-      "final_context_gold_complete": false,
-      "final_evidence_sufficient": false,
-      "final_evidence_score": 0.78,
+      "final_retrieval_gold_recall": 1.0,
+      "final_context_gold_recall": 1.0,
+      "final_context_gold_complete": true,
+      "final_evidence_sufficient": true,
+      "final_evidence_score": 0.802,
       "final_evidence_reasons": [
         "Evidence appears sufficient.",
-        "Potentially weak evidence citations: [1, 3, 5]",
-        "Explicit source coverage failed.",
+        "Potentially weak evidence citations: [1, 3, 5, 8, 9]",
+        "explicit_source_coverage=satisfied",
         "required_sources=['The Age', 'The Verge', 'TechCrunch']",
-        "available_sources=['TechCrunch', 'The Verge']",
-        "covered_sources=['The Verge', 'TechCrunch']",
-        "missing_sources=['The Age']",
-        "evidence_path=explicit_source_coverage_reject"
+        "covered_sources=['The Age', 'The Verge', 'TechCrunch']",
+        "evidence_path=v2"
       ],
-      "final_evidence_path": "explicit_source_coverage_reject",
+      "final_evidence_path": "v2",
       "final_required_sources": [
         "The Age",
         "The Verge",
         "TechCrunch"
       ],
       "final_covered_sources": [
+        "The Age",
         "The Verge",
         "TechCrunch"
       ],
-      "final_missing_sources": [
-        "The Age"
-      ],
-      "final_route": "abstain",
-      "rewrite_retrieval_recall_delta": 0.0,
-      "rewrite_context_recall_delta": 0.0,
-      "rewrite_evidence_score_delta": 0.0
+      "final_missing_sources": [],
+      "final_route": "generate",
+      "rewrite_retrieval_recall_delta": 0.33333333333333337,
+      "rewrite_context_recall_delta": 0.33333333333333337,
+      "rewrite_evidence_score_delta": 0.02200000000000002
     },
     {
       "id": "eval_d787b7da6ca0",
@@ -52302,8 +52304,8 @@
         "doc_0250",
         "doc_0558",
         "doc_0104",
-        "doc_0351",
-        "doc_0102"
+        "doc_0316",
+        "doc_0351"
       ],
       "final_context_document_ids": [
         "doc_0600",
@@ -52314,8 +52316,8 @@
         "doc_0250",
         "doc_0558",
         "doc_0104",
-        "doc_0351",
-        "doc_0102"
+        "doc_0316",
+        "doc_0351"
       ],
       "final_retrieval_gold_recall": null,
       "final_context_gold_recall": null,

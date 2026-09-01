@@ -11,17 +11,6 @@ from adaptive_agentic_rag.retrieval.reranked_retriever import (
 )
 
 
-# ============================================================
-# Canonical retrieval configuration
-#
-# V2-A won the frozen retrieval evaluation:
-#
-# - 1000-char chunks
-# - 100-char overlap
-# - Dense embedding = raw chunk text
-# - BM25 = title + source + chunk text
-# ============================================================
-
 DEFAULT_DENSE_COLLECTION = (
     "multihop_chunks_v2"
 )
@@ -52,35 +41,19 @@ class AdaptiveRetriever:
             bm25_corpus_path
         )
 
-        # ====================================================
-        # Router
-        # ====================================================
 
-        self.router = QueryRouter()
-
-        # ====================================================
-        # Shared Dense retriever
-        #
-        # The same embedding model / Qdrant client is reused
-        # by both the simple Dense path and the heavy path.
-        # ====================================================
-
-        self.dense = DenseRetriever(
-            collection_name=
-                collection_name
+        self.router = (
+            QueryRouter()
         )
 
-        # ====================================================
-        # Heavy retrieval path
-        #
-        # Dense and BM25 MUST use the same chunking version.
-        #
-        # V2 Dense:
-        #     multihop_chunks_v2
-        #
-        # V2 BM25:
-        #     processed_corpus_v2.json
-        # ====================================================
+
+        self.dense = (
+            DenseRetriever(
+                collection_name=
+                    collection_name
+            )
+        )
+
 
         self.reranked = (
             RerankedRetriever(
@@ -92,7 +65,9 @@ class AdaptiveRetriever:
             )
         )
 
+
         self._closed = False
+
 
     # ========================================================
     # Search
@@ -102,6 +77,7 @@ class AdaptiveRetriever:
         self,
         query: str,
         top_k: int = 5,
+        target_sources: list[str] | None = None,
     ) -> dict:
 
         if (
@@ -118,10 +94,6 @@ class AdaptiveRetriever:
                     [],
             }
 
-        # ====================================================
-        # Step 1
-        # Decide retrieval strategy
-        # ====================================================
 
         decision = (
             self.router.route(
@@ -129,12 +101,53 @@ class AdaptiveRetriever:
             )
         )
 
+
+        target_sources = [
+            str(
+                source
+            ).strip()
+
+            for source in (
+                target_sources
+                or []
+            )
+
+            if str(
+                source
+            ).strip()
+        ]
+
+
         # ====================================================
-        # Step 2
-        # Simple query
+        # Structurally approved source-targeted retry
+        #
+        # Always uses the heavy retrieval path because the
+        # source-targeted candidate injection occurs before
+        # the shared cross-encoder reranker.
+        #
+        # Normal routing remains unchanged when the list is
+        # empty.
         # ====================================================
 
-        if (
+        if target_sources:
+
+            results = (
+                self.reranked.search(
+                    query,
+                    top_k=
+                        top_k,
+
+                    target_sources=
+                        target_sources,
+                )
+            )
+
+
+        # ====================================================
+        # Normal simple query
+        # ====================================================
+
+        elif (
             decision[
                 "retrieval_strategy"
             ]
@@ -145,13 +158,14 @@ class AdaptiveRetriever:
             results = (
                 self.dense.search(
                     query,
-                    top_k=top_k,
+                    top_k=
+                        top_k,
                 )
             )
 
+
         # ====================================================
-        # Step 3
-        # Multi-hop / complex query
+        # Normal hard query
         # ====================================================
 
         else:
@@ -159,9 +173,11 @@ class AdaptiveRetriever:
             results = (
                 self.reranked.search(
                     query,
-                    top_k=top_k,
+                    top_k=
+                        top_k,
                 )
             )
+
 
         return {
             "decision":
@@ -170,6 +186,7 @@ class AdaptiveRetriever:
             "results":
                 results,
         }
+
 
     # ========================================================
     # Cleanup
@@ -180,15 +197,9 @@ class AdaptiveRetriever:
     ):
 
         if self._closed:
+
             return
 
-        # RerankedRetriever
-        # -> HybridRetriever
-        # -> shared DenseRetriever
-        #
-        # Therefore closing reranked already closes the
-        # shared Qdrant client. Do NOT close self.dense
-        # a second time.
 
         self.reranked.close()
 
