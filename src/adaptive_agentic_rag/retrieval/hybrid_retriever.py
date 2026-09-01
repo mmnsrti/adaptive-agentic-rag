@@ -12,7 +12,7 @@ from adaptive_agentic_rag.retrieval.rrf import (
 
 
 DEFAULT_BM25_CORPUS_PATH = (
-    "data/processed/processed_corpus.json"
+    "data/processed/processed_corpus_v2.json"
 )
 
 

@@ -19,9 +19,7 @@ from adaptive_agentic_rag.retrieval.multi_query_retriever import (
 )
 
 
-DEFAULT_BM25_CORPUS_PATH = (
-    "data/processed/processed_corpus.json"
-)
+DEFAULT_BM25_CORPUS_PATH = "data/processed/processed_corpus_v2.json"
 
 
 class RerankedRetriever:

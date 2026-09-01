@@ -27,7 +27,7 @@ class BM25Retriever:
         self,
         corpus_path: str = (
             "data/processed/"
-            "processed_corpus.json"
+            "processed_corpus_v2.json"
         ),
     ):
 

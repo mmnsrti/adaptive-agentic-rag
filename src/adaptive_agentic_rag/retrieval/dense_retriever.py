@@ -12,7 +12,7 @@ class DenseRetriever:
 
     def __init__(
         self,
-        collection_name: str = "multihop_chunks"
+        collection_name: str = "multihop_chunks_v2"
     ):
 
         self.embedder = EmbeddingModel()
