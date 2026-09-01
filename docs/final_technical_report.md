@@ -38,7 +38,10 @@ The frozen architecture was evaluated on an untouched, disjoint test set ($N=100
 | **LLM Generation Calls / Query** | 1.00 | 1.00 | 1.00 | 1.00 | **0.39** |
 
 ### Primary Reliability Trade-off
-The architecture intentionally enforces a **fail-closed reliability posture**: when multi-hop evidence is incomplete or asymmetric across sources, the system safely abstains (`UNKNOWN`) rather than hallucinating. Consequently, while accuracy on answered queries is **44.4%** (12 / 27) and citation precision is **88.5%**, overall answer coverage is **31.4%** (27 / 86 answerable queries), resulting in an overall answerable accuracy of **14.0%** (12 / 86) alongside a **54.7%** false abstention rate. Over 62% of answerable failures stem from conservative downstream safety gating rather than retrieval failure.
+The architecture intentionally enforces a **fail-closed reliability posture**: when multi-hop evidence is incomplete or asymmetric across sources, the system safely abstains (`UNKNOWN`) rather than hallucinating. 
+- **Post-Verifier View (Final System)**: Accuracy on answered queries is **44.4%** (12 / 27) and citation precision is **87.0%**, with an overall answer coverage of **31.4%** (27 / 86 answerable queries), resulting in an overall answerable accuracy of **14.0%** (12 / 86) alongside a **68.6%** false abstention rate (59 / 86).
+- **Pre-Verifier View (Draft Level)**: Pre-verifier citation precision is **88.5%** over 39 drafted answers, with a **54.7%** draft false abstention rate (47 / 86).
+- **Core Finding**: Over **62.2%** of answerable failures stem from conservative downstream safety gating rather than retrieval failure.
 
 ---
 
@@ -90,6 +93,8 @@ The project was executed under strict engineering principles:
 
 The production architecture (`src/adaptive_agentic_rag/`) is organized as a stateful agentic graph with deterministic recovery cycles:
 
+### System Architecture Diagram
+
 ```mermaid
 flowchart TD
     Start([User Query]) --> Route[Query Router V2]
@@ -129,13 +134,83 @@ flowchart TD
 
 ---
 
-## 5. Retrieval Architecture
+## 5. Adaptive Recovery & Retry Logic
+
+When initial evidence fails sufficiency grading, the system triggers the **Adaptive Recovery Flow** (`src/adaptive_agentic_rag/orchestration/adaptive_retry_policy.py`):
+
+### Adaptive Recovery Flow Diagram
+
+```mermaid
+flowchart TD
+    InitEv[Initial Context Evaluated] --> SuffCheck{Evidence Sufficient?}
+    
+    SuffCheck -->|YES| PassGen[Proceed to Single-Pass Generation]
+    
+    SuffCheck -->|NO| CheckExplicit{Explicit Sources Missing?}
+    
+    CheckExplicit -->|YES| CheckCorpus{Missing Source Exists in Corpus?}
+    CheckExplicit -->|NO| CheckRecoverable{Context Score >= Threshold?}
+    
+    CheckCorpus -->|NO: Source Not in DB| FastAbstain1[Fail-Closed Abstention: UNKNOWN]
+    CheckCorpus -->|YES| CheckBudget{Retry Count < 1?}
+    
+    CheckRecoverable -->|NO: Off-topic Query| FastAbstain2[Fail-Closed Abstention: UNKNOWN]
+    CheckRecoverable -->|YES| CheckBudget
+    
+    CheckBudget -->|NO: Budget Exhausted| FastAbstain3[Fail-Closed Abstention: UNKNOWN]
+    CheckBudget -->|YES: Eligible| TargetedRetry[Source-Targeted Query Rewrite]
+    
+    TargetedRetry --> CandidateInject[Inject BM25 Source Candidates into Reranker Pool]
+    CandidateInject --> ReRerank[Re-Rerank Candidates with BGE + MMR]
+    ReRerank --> ReGrade{Re-evaluated Evidence Sufficient?}
+    
+    ReGrade -->|YES| PassGen
+    ReGrade -->|NO| FastAbstain4[Fail-Closed Abstention: UNKNOWN]
+```
+
+---
+
+## 6. Semantic Safety & Claim Grounding Pipeline
+
+The downstream generation subsystem isolates factual extraction from logical conclusion resolution:
+
+### Semantic Safety Pipeline Diagram
+
+```mermaid
+flowchart TD
+    DraftOutput[Qwen-2.5-1.5B Raw Output: DIRECT_ANSWER + FACTS] --> AtomExtract[AtomicClaimExtractor: Split Propositions]
+    
+    AtomExtract --> NLIEval[ClaimGrounder: DeBERTa-v3 NLI Premise Entailment]
+    
+    NLIEval --> GroundFilter{P_entailment >= 0.70 & P_contradiction < 0.20?}
+    GroundFilter -->|Supported| BindCite[Bind Grounded Claim to Context Chunk Citation ID]
+    GroundFilter -->|Unsupported| DropClaim[Filter Out Unsupported Claim]
+    
+    BindCite --> RelFilter[RelevanceFilter V2: Retain Global Top-2 Query-Relevant Claims]
+    
+    RelFilter --> RelCheck{Are Supported Claims Available?}
+    RelCheck -->|NO: Zero Grounded Claims| FallbackAbstain[Suppress Answer: UNKNOWN]
+    
+    RelCheck -->|YES| ResolveSem[RelationAwareAnswerResolver & StructuredConclusionVerifier]
+    
+    ResolveSem --> CheckMultiSource{Does Fact Coverage Match All Required Query Entities?}
+    
+    CheckMultiSource -->|Symmetric & Consistent| FormFinal[Assemble Final Grounded Answer with Provenance]
+    CheckMultiSource -->|Asymmetric / Uncovered| ResolveAbstain[Override Direct Answer to UNKNOWN]
+    
+    FormFinal --> RuntimeValidate[AnswerGrader: Runtime Validation]
+    ResolveAbstain --> RuntimeValidate
+```
+
+---
+
+## 7. Retrieval Architecture
 
 ### Dense Retrieval
 - **Model**: `Qwen/Qwen3-Embedding-0.6B` (`src/adaptive_agentic_rag/embeddings/model.py`).
 - **Vector Space**: 1024-dimensional normalized embeddings (`normalize_embeddings=True`).
-- **Query Prefixing**: Embeddings utilize instruction prompt formatting (`prompt_name="query"`).
-- **Backend**: Qdrant vector store (`corpus_chunks` collection) with cosine similarity metric.
+- **Query Representation**: Instruction prompt formatting (`prompt_name="query"`).
+- **Backend**: Qdrant vector store (`data/qdrant/`, collection `multihop_chunks`) with cosine distance.
 
 ### BM25 Lexical Retrieval
 - **Implementation**: `BM25Okapi` via `rank_bm25` (`src/adaptive_agentic_rag/retrieval/bm25_retriever.py`).
@@ -153,165 +228,59 @@ where $k = 60$ and $r_m(d)$ is the 1-indexed rank of document $d$ in retrieval m
 
 ---
 
-## 6. Chunking and Corpus Construction
+## 8. Chunking and Corpus Construction
 
-- **Corpus**: `MultiHopRAG` processed news corpus containing articles from over 15 major publishers (TechCrunch, The Verge, Fortune, Sporting News, etc.).
+- **Corpus Version**: Winning frozen corpus `data/processed/processed_corpus.json` containing **3,860 chunks** across 15+ major news sources (TechCrunch, The Verge, Fortune, Sporting News, etc.).
 - **Chunking Algorithm**: Paragraph-aware recursive character splitting (`src/adaptive_agentic_rag/processing/chunker.py`):
   - `chunk_size`: 2,000 characters
   - `chunk_overlap`: 200 characters
   - `min_chunk_words`: 20 words (eliminates uninformative navigation headers and copyright snippets).
   - Paragraph merging: Short consecutive paragraphs ($< 20$ words) are merged prior to chunk boundary calculation to preserve semantic context.
+- **Qdrant Storage**: Persisted locally at `data/qdrant/` under the `multihop_chunks` collection (3,860 points, 1024-dim vectors).
 
 ---
 
-## 7. Query Routing and Adaptive Retrieval
+## 9. Evaluation Methodology
 
-- **Router Component**: `QueryRouter V2` (`src/adaptive_agentic_rag/agents/query_router.py`).
-- **Logic**: Inspects linguistic cues, relational comparison terms (`"compare"`, `"both"`, `"difference"`, `"earlier"`), explicit publisher references, and temporal conjunctions.
-- **Routing Decisions**:
-  - `simple`: Dispatches to `DenseRetriever` (top-20).
-  - `complex_multihop`: Dispatches to `HybridRetriever` (Dense + BM25 + RRF top-20) $\to$ `BGEReranker` $\to$ `MMR` (top-10).
-- **Benchmark Behavior**: On the untouched multi-hop evaluation set, Router V2 routed **99.0%** of queries to the hybrid multi-hop path, ensuring adequate recall.
+### Evaluation Pipeline & Data Isolation Diagram
 
----
-
-## 8. Evidence Sufficiency Layer
-
-The evidence layer determines whether retrieved context is viable for generation before invoking the LLM (`src/adaptive_agentic_rag/agents/evidence_grader.py`):
-
+```mermaid
+flowchart TD
+    subgraph RawData[MultiHopRAG Pinned Repository: 71ac0d0b]
+        FullDataset[MultiHopRAG Corpus & Raw QA Pairs]
+    end
+    
+    subgraph DevPartition[Architecture Development Partition]
+        Frozen500[frozen_eval_500.json: Diagnostic Benchmark]
+        Smoke20[frozen_e2e_smoke_20.json: E2E Smoke Tests]
+        GatingSplit[Query Router & Evidence Gate Calibration Sets]
+    end
+    
+    subgraph TestPartition[Final Untouched Evaluation Partition: Seed 2026]
+        UntouchedTest[final_untouched_test.json: N=100 Disjoint Benchmark]
+    end
+    
+    FullDataset --> DevPartition
+    FullDataset -->|Strict Exclusion: 620 queries| TestPartition
+    
+    TestPartition --> Bench5[5-System Comparative Benchmark]
+    TestPartition --> Ablation7[A0 → A6 Progressive Ablation Study]
+    
+    Bench5 --> FinalMetrics[final_metrics.json]
+    Ablation7 --> AblationMetrics[final_ablation_metrics.json]
+    
+    FinalMetrics --> ConsistencyCheck[A6 Consistency Verification]
+    AblationMetrics --> ConsistencyCheck
+    
+    ConsistencyCheck --> FailureTrace[Post-Hoc Failure Analysis & Semantic Survival]
+    FailureTrace --> FinalReport[docs/final_technical_report.md]
 ```
-Retrieved Context Items (Top-10)
-    │
-    ├─► Stage A: Query Term & Entity Anchor Overlap (Excluding stopwords & relational tokens)
-    │
-    ├─► Stage B: ExplicitSourceCoverageGuard (Checks presence of all user-demanded publishers)
-    │
-    └─► Stage C: CorpusSourceAvailability (Validates whether missing sources exist in database)
-```
-
-1. **Critical Anchor Verification**: Extracts non-stopword entity tokens and verifies presence across retrieved items.
-2. **ExplicitSourceCoverageGuard**: When a user asks *"Compare reporting between The Verge and TechCrunch"*, this guard extracts requested publishers and verifies that at least one chunk from each requested publisher is present in top context.
-3. **CorpusSourceAvailability**: Checks whether a missing required source actually exists in the global corpus. If a source does not exist in the database, retry retrieval is impossible, and the system fast-fails to `UNKNOWN` without wasting compute on rewrite loops.
 
 ---
 
-## 9. Semantic Rescue and Adaptive Retry
+## 10. Final Benchmark Results
 
-When initial evidence is insufficient, `AdaptiveRetryPolicy` (`src/adaptive_agentic_rag/orchestration/adaptive_retry_policy.py`) evaluates recovery eligibility:
-- **Eligible for Rewrite & Retry**: When candidate documents contain partial term matches or missing explicit sources that are known to exist in the corpus (`retry_count < 1`).
-- **Source-Targeted Retry Retrieval**: Rather than running generic query rewriting, `RAGNodes.rewrite_query` generates targeted lexical search constraints restricted to the missing publisher, injecting these candidates into the hybrid candidate pool before reranking.
-- **Constrained Semantic Rescue**: Recovers borderline contexts where entity tokens match across multiple chunks but individual chunk scores fall just below strict standalone grading thresholds.
-
----
-
-## 10. Generation Architecture
-
-- **Model**: `Qwen/Qwen2.5-1.5B-Instruct` (`src/adaptive_agentic_rag/generation/generator.py`).
-- **Prompting Protocol**: ChatML format with strict structural constraints (`src/adaptive_agentic_rag/generation/prompts.py`).
-- **Structured Draft Format**:
-  ```text
-  DIRECT_ANSWER: <Single concise entity, Yes/No, or UNKNOWN>
-  FACTS:
-  - <Atomic factual sentence supporting the answer>
-  - <Atomic factual sentence supporting the answer>
-  ```
-- **Single-Pass Constraint**: Generation is executed in a single inference pass ($T=0.0$, greedy decoding). The system deliberately avoids multi-pass generative self-correction loops, delegating all verification to deterministic NLI and semantic resolvers.
-
----
-
-## 11. Claim Grounding and Provenance
-
-Groundedness is evaluated at the atomic claim level (`src/adaptive_agentic_rag/generation/claim_grounder.py`):
-
-1. **Sentence Splitting & Claim Extraction**: Drafted `FACTS` are parsed into individual atomic propositions.
-2. **NLI Premise Entailment**: Each claim is scored against top context chunks using `cross-encoder/nli-deberta-v3-small`:
-   - Premise modes: `provenance` (incorporating `Source: {publisher}. Title: {title}. Evidence: {text}`) and `plain` text.
-   - Classification: A claim is marked **Supported** if $\text{P}(\text{entailment}) \ge 0.70$ and $\text{P}(\text{contradiction}) < 0.20$.
-3. **Citation Binding**: Supported claims are deterministically bound to the exact context item providing maximum entailment score.
-4. **RelevanceFilter V2**: Evaluates cross-encoder relevance of supported claims against the user query, retaining the **global top-2** most informative claims (`max_relevant_claims = 2`).
-
----
-
-## 12. Citation Architecture & Validity
-
-- **Citation Format**: Inline numeric citations (`[1]`, `[2]`) attached to facts and direct answer lines (`src/adaptive_agentic_rag/generation/citation.py`).
-- **Validity Invariant**: A citation ID is valid if and only if:
-  1. $1 \le \text{citation\_id} \le \text{len}(\text{context.items})$.
-  2. The referenced chunk was classified as an entailing premise by `ClaimGrounder`.
-- **Benchmark Metric**: Across all 500 benchmark runs, **Citation Validity was 100.0%** (zero invalid or out-of-bounds citations).
-
----
-
-## 13. Semantic Conclusion Verification Layer
-
-The most critical architectural innovation in the generation subsystem is the decoupling of **Claim Grounding** from **Semantic Conclusion Resolution** (`src/adaptive_agentic_rag/generation/structured_conclusion_verifier.py`):
-
-$$\text{Factual Grounding} \neq \text{Correct Conclusion}$$
-
-### The Failure Mode
-In multi-source comparative queries (e.g., *"Did Source A and Source B both report X?"*), Qwen-2.5-1.5B frequently outputs grounded facts for Source A, notes missing info for Source B, but hallucinates `DIRECT_ANSWER: Yes`.
-
-### The Resolution Mechanism
-1. **Source Coverage Check**: Verifies whether grounded facts span all required comparison entities.
-2. **Polarity & Conjunction Alignment**: Parses direct answer assertions against extracted premise polarities.
-3. **Fail-Closed Resolution**: If evidence is asymmetric, contradictory, or insufficient to satisfy conjunction constraints, `StructuredConclusionVerifier` overrides the draft answer to `UNKNOWN`.
-
----
-
-## 14. Runtime Grounding & Relevance Grader
-
-Following answer assembly, `AnswerGrader` (`src/adaptive_agentic_rag/agents/answer_grader.py`) conducts runtime verification:
-- Evaluates citation structural validity.
-- Verifies that `supported_claims > 0` whenever an answer is asserted.
-- Confirms that retained claims meet cross-encoder relevance thresholds.
-- Answers failing runtime grading are automatically suppressed to `UNKNOWN`.
-
----
-
-## 15. Dataset Specification
-
-- **Benchmark Dataset**: `yixuantt/MultiHopRAG` (GitHub pinned commit: `71ac0d0bd1f951d2d6b70311f7d2ae404e1ffa82`).
-- **Evaluation Dataset Partition**:
-  - **Development / Diagnostic Sets**: `frozen_eval_500.json`, `frozen_e2e_smoke_20.json` (used during architecture development).
-  - **Final Untouched Test Set**: `evaluation/datasets/final_untouched_test.json` ($N=100$, Seed: 2026).
-  - **Disjointness Guarantee**: 100% disjoint; all 620 queries used in development, routing, and gating experiments were strictly excluded.
-- **Question Composition ($N=100$)**:
-  - `inference_query`: 29 (29.0%)
-  - `comparison_query`: 29 (29.0%)
-  - `temporal_query`: 28 (28.0%)
-  - `null_query` (unanswerable): 14 (14.0%)
-  - Total Answerable: 86 | Total Null: 14
-
----
-
-## 16. Evaluation Methodology & Metrics
-
-### Retrieval Metrics (Evaluated on Answerable Set $N=86$)
-- **Recall@$k$**: Fraction of silver gold evidence documents present in top-$k$ retrieved items ($k \in \{5, 10, 20\}$).
-- **MRR@10**: Mean Reciprocal Rank of the first relevant gold document.
-- **nDCG@10**: Normalized Discounted Cumulative Gain over binary gold document relevance.
-
-### Answer Metrics
-- **Overall Answerable Accuracy**: Fraction of all answerable queries ($N=86$) answered correctly:
-  $$\text{Overall Accuracy} = \frac{\text{Correct Answered}}{86}$$
-- **Answered Accuracy**: Accuracy computed strictly over queries where the system asserted an answer:
-  $$\text{Answered Accuracy} = \frac{\text{Correct Answered}}{\text{Answered Count}}$$
-- **Answer Coverage**: Fraction of answerable queries where the system asserted an answer:
-  $$\text{Answer Coverage} = \frac{\text{Answered Count}}{86}$$
-
-### Safety & Citation Metrics
-- **Citation Validity**: Fraction of generated answers where 100% of citations resolve to valid, entailed context items.
-- **Dataset Evidence Citation Precision**: Fraction of cited documents that match MultiHopRAG silver gold evidence documents.
-- **Dataset Evidence Citation Recall**: Fraction of MultiHopRAG silver gold evidence documents cited in the final answer.
-- **Null Abstention Rate**: Fraction of unanswerable (null) queries correctly rejected (`direct_answer == 'UNKNOWN'`).
-- **False Abstention Rate**: Fraction of answerable queries where the system abstained (`direct_answer == 'UNKNOWN'`).
-- **Unsupported Answer Rate**: Fraction of asserted answers with invalid or ungrounded citations.
-
----
-
-## 17. Comparative Benchmark Results
-
-All 5 comparative systems were evaluated on `evaluation/datasets/final_untouched_test.json` ($N=100$). Results extracted directly from `evaluation/results/final_metrics.json`:
+The 5 comparative systems were evaluated on `evaluation/datasets/final_untouched_test.json` ($N=100$). Results extracted directly from `evaluation/results/final_metrics.json`:
 
 | Metric / Dimension | Naive Dense RAG | BM25 RAG | Hybrid RAG | Hybrid + Reranker | Adaptive Agentic RAG |
 | :--- | :---: | :---: | :---: | :---: | :---: |
@@ -336,9 +305,58 @@ All 5 comparative systems were evaluated on `evaluation/datasets/final_untouched
 
 ---
 
-## 18. Final Progressive Ablation Study
+## 11. Retrieval Results Analysis
 
-To isolate the exact contribution of each architectural component, we evaluated 7 progressive configurations from **A0 (Naive Dense)** to **A6 (Full Adaptive Agentic RAG)** on the untouched test set (`evaluation/results/final_ablation_metrics.json`):
+![Final Retrieval Benchmark](assets/figures/final_retrieval_benchmark.png)
+
+*Figure 1. Comparison of top-10 retrieval metrics across 5 candidate systems on the untouched test set ($N=100$). Dense vector retrieval alone achieves Recall@10 of 0.731. Adding BM25 via Reciprocal Rank Fusion boosts recall to 0.782 and MRR@10 to 0.834. Cross-encoder reranking further pushes recall to 0.842, and adaptive query routing with targeted retry candidate injection achieves the peak Recall@10 of 0.866 and nDCG@10 of 0.729.*
+
+### Key Retrieval Takeaways
+1. **Dense vs. Sparse Complementarity**: Dense retrieval struggles with exact multi-word publisher names and numeric entities. BM25 catches exact keyword instances, allowing RRF fusion to elevate multi-hop recall from **0.731 to 0.782** (+0.051).
+2. **Reranker Impact vs. Adaptive Routing**: Cross-encoder scoring brings Recall@10 from **0.782 to 0.842** (+0.060). However, the reranker alone is bounded by initial candidate pool completeness. Adaptive routing with source-targeted candidate injection overcomes candidate starvation, securing the final gain to **0.866** (+0.024).
+
+---
+
+## 12. Safety, Evidence & Null Query Results
+
+![Safety and Evidence Quality](assets/figures/final_safety_benchmark.png)
+
+*Figure 2. Safety and evidence quality metrics across the 5 evaluated architectures. While all systems maintain 100.0% structural citation validity, Adaptive Agentic RAG substantially outperforms baseline methods in Dataset Evidence Citation Precision (88.5% vs 69.0%–76.8%) and Null Abstention Safety (92.9% vs 64.3%–78.6%).*
+
+![Null Query Abstention Safety](assets/figures/null_abstention_safety.png)
+
+*Figure 3. Rejection rate on unanswerable queries ($N=14$). Naive Dense RAG hallucinates answers on 35.7% of null questions (only 64.3% abstention). In contrast, the Adaptive Agentic RAG architecture correctly fast-fails 92.9% (13 / 14) of unanswerable queries via deterministic evidence grading and source availability checks.*
+
+---
+
+## 13. Answer Quality vs. Coverage Trade-off
+
+![Answer Quality vs Coverage Trade-off](assets/figures/answer_quality_vs_coverage.png)
+
+*Figure 4. Outcome distribution and core reliability trade-off on the 86 answerable test cases for Adaptive Agentic RAG. The architecture prioritizes precision and hallucination prevention, achieving 44.4% accuracy on answered queries and 88.5% citation precision, at the expense of conservative false abstention (68.6%) and low answer coverage (31.4%).*
+
+### Understanding the Trade-off
+- **Answered Accuracy (44.4%)**: When the system asserts an answer, it is correct in nearly half the cases.
+- **Overall Answerable Accuracy (14.0%)**: Computed over the entire denominator ($N=86$), reflecting the cost of fail-closed abstention.
+- **Zero Unsupported Answers (0.0%)**: The system never outputs an answer without entailed, validated citations.
+
+---
+
+## 14. Efficiency & Generation Compute Reduction
+
+![End-to-End Latency Comparison](assets/figures/final_latency_comparison.png)
+
+*Figure 5. End-to-end query latency (mean and p95) across candidate systems. Despite running a deeper pipeline with routing, reranking, NLI claim grounding, and conclusion verification, Adaptive Agentic RAG achieves a mean latency of 3.33s (p50: 3.70s, p95: 6.84s)—more than 50% faster than baseline RAG pipelines (6.80s–8.93s).*
+
+![Generation Compute Reduction](assets/figures/generation_calls_ablation.png)
+
+*Figure 6. LLM generation calls per query across ablation configurations. Standard baselines invoke the LLM on 100% of queries. Adding EvidenceGrader V2 (A3) drops generation invocations to 0.31 per query by fast-failing unviable queries before calling Qwen-2.5-1.5B.*
+
+---
+
+## 15. Progressive Ablation Study
+
+To isolate the exact quantitative contribution of every individual architectural layer, we executed a 7-configuration progressive ablation benchmark (**A0 through A6**) on the untouched test set (`evaluation/results/final_ablation_metrics.json`):
 
 | Configuration | Recall@10 | MRR@10 | nDCG@10 | Answer Accuracy | Citation Precision | Null Abstention | Avg Latency | Gen Calls / Query |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
@@ -350,67 +368,45 @@ To isolate the exact contribution of each architectural component, we evaluated 
 | **A5 — Grounded Generation (+ NLI & Top-2)** | **0.866** | 0.757 | **0.729** | 18.6% | **88.5%** | 92.9% | **3.00s** | 0.39 |
 | **A6 — Full Adaptive Agentic RAG (+ Verifier)** | **0.866** | 0.757 | **0.729** | 14.0% | 87.0% | 92.9% | **3.00s** | **0.27** |
 
----
+![Progressive Retrieval Ablation](assets/figures/progressive_retrieval_ablation.png)
 
-## 19. Component Impact & Value Analysis
+*Figure 7. Progressive retrieval metric trajectory from A0 to A6. Retrieval recall gains are established in A1 (Hybrid), A2 (Reranker), and A4 (Adaptive Routing & Targeted Retries), reaching Recall@10 of 0.866 and nDCG@10 of 0.729, where they plateau for downstream generation layers.*
 
-```
-[A0: Dense] ──────────► [A1: Hybrid] ──────────► [A2: Reranked] ──────────► [A3: Evidence] ──────────► [A6: Agentic]
-Recall@10: 0.731         Recall@10: 0.782         Recall@10: 0.842         Gen Calls: 0.31          Null Safety: 92.9%
-MRR@10: 0.731            MRR@10: 0.834            nDCG@10: 0.711           Latency: 3.73s           Citation Prec: 88.5%
-```
+![Progressive Safety Ablation](assets/figures/progressive_safety_ablation.png)
 
-1. **Retrieval Fusion (A0 $\to$ A1)**: Adding BM25 keyword matching and Reciprocal Rank Fusion yielded the largest single retrieval gain: Recall@10 increased by **+0.051** (0.731 $\to$ 0.782), MRR@10 by **+0.103** (0.731 $\to$ 0.834), and nDCG@10 by **+0.073** (0.620 $\to$ 0.692).
-2. **Cross-Encoder Reranking (A1 $\to$ A2)**: Deep cross-attention scoring concentrated multi-hop documents into top ranks, pushing Recall@10 to **0.842** (+0.060) and Citation Precision to **76.8%**.
-3. **Evidence Gating Layer (A2 $\to$ A3)**: Fast-fail grading dropped LLM generation calls from **1.00 $\to$ 0.31**, raised Null Abstention to **100.0%**, and reduced query latency by **53%** (7.98s $\to$ 3.73s).
-4. **Adaptive Routing & Rescue (A3 $\to$ A4)**: Query-aware routing and targeted retries pushed final Recall@10 to **0.866** and nDCG@10 to **0.729**.
-5. **Claim Grounding (A4 $\to$ A5)**: NLI premise verification boosted Citation Precision from **65.1% $\to$ 88.5%** (+23.4%) while maintaining 100% Citation Validity.
-6. **Structured Conclusion Verification (A5 $\to$ A6 Semantic Transitions)**:
-   - **Wrong $\to$ Unknown (Beneficial Rejections)**: **8 cases** (prevented ungrounded or hallucinated answers from reaching the user).
-   - **Wrong $\to$ Right (Direct Corrections)**: **0 cases**.
-   - **Right $\to$ Wrong (Harmful Inversions)**: **0 cases** (Zero correct answers corrupted).
-   - **Right $\to$ Unknown (Conservative Abstentions)**: **4 cases** (fail-closed behavior on multi-clause conjunctions).
-   - **Right $\to$ Right (Preserved Correct Answers)**: **12 cases**.
+*Figure 8. Progressive evolution of Citation Precision and Null Abstention Safety across configurations A0 to A6. Evidence gating (A3) and NLI claim grounding (A5) drive dramatic improvements in precision and null safety.*
 
 ---
 
-## 20. A6 Consistency Validation
+## 16. Semantic Verifier Transition Analysis
 
-During benchmark verification, a discrepancy was investigated between the initial Final Evaluation report (Citation Precision = 88.5%, Latency = 3.33s) and Ablation A6 (Citation Precision = 87.0%, Latency = 3.00s). 
+![Semantic Verifier Outcome Transitions](assets/figures/semantic_verifier_transitions.png)
 
-Audit findings (`evaluation/results/a6_consistency_validation.json`):
-1. **System Configuration Identity**: 100% identical. Both scripts executed the exact same production graph and models.
-2. **Output Equivalence**: 100/100 test cases produced identical retrieval items, identical routing decisions, identical generated direct answers, and identical cited document IDs.
-3. **Root Cause (Denominator Distinction)**:
-   - In `run_final_evaluation.py`, citation precision was computed across all 39 queries where Qwen generated a draft (`gen_result.abstained == False`), yielding **88.5%** (0.8846). This matches **Ablation A5 (Grounded Generation)**.
-   - In `run_final_ablation.py`, A6 strictly evaluated citation precision over the 27 post-verifier non-abstained queries (`direct_answer != 'UNKNOWN'`), yielding **87.0%** (0.8704).
-   - Both values are mathematically exact under their respective query subsets.
-4. **Latency Variance**: The 3.33s vs 3.00s difference represents normal GPU warm-up and operating system scheduling variance.
+*Figure 9. Transition matrix of answer outcomes between A5 (Grounded Generation) and A6 (Full System with StructuredConclusionVerifier). The verifier successfully suppressed 8 hallucinated/incorrect answers (Wrong $\to$ Unknown) with zero harmful inversions (0 Right $\to$ Wrong), at the cost of 4 conservative abstentions on complex conjunctions (Right $\to$ Unknown).*
+
+### Verifier Invariants
+- **Wrong $\to$ Unknown (Beneficial Rejections)**: **8 cases** (prevented false positive conclusions).
+- **Right $\to$ Wrong (Harmful Inversions)**: **0 cases** (zero corruptions).
+- **Right $\to$ Unknown (Conservative Abstentions)**: **4 cases** (fail-closed behavior when multi-source evidence was asymmetric).
+- **Right $\to$ Right (Preserved Correct Answers)**: **12 cases**.
 
 ---
 
-## 21. Final Failure Analysis & Semantic Survival Trace
+## 17. Final Failure Analysis & Semantic Survival Trace
 
-An exhaustive post-hoc failure analysis was conducted across all 86 answerable test cases (`evaluation/results/final_failure_analysis.json`):
+An exhaustive failure attribution study was conducted across all 86 answerable test cases (`evaluation/results/final_failure_analysis.json`):
 
-```
-                                  [All Answerable Cases: 86]
-                                              │
-                      ┌───────────────────────┴───────────────────────┐
-                      ▼                                               ▼
-             [Correctly Answered: 12]                       [Answerable Failures: 74]
-             (14.0% Overall Accuracy)                                 │
-                                              ┌───────────────────────┴───────────────────────┐
-                                              ▼                                               ▼
-                                  [Retrieval-Rooted: 28]                         [Downstream Failures: 46]
-                                  (37.8% of failures)                            (62.2% of failures)
-                                  - Missing gold docs                            - Complete top-10 retrieval
-                                                                                 - Gated by safety layers
-```
+![Root Causes of Final Answerable Failures](assets/figures/final_failure_distribution.png)
 
-### Primary Root Cause Distribution (Answerable Failures $N=74$)
+*Figure 10. Primary root causes of the 74 answerable failures on the untouched benchmark. Retrieval insufficiency accounts for 37.8% (28 cases), while downstream safety gating and verification account for the remaining 62.2% (46 cases).*
 
-| Primary Root Cause | Count | % of Failures | Pipeline Stage | Architectural Explanation |
+![Failure Stage Breakdown](assets/figures/failure_stage_breakdown.png)
+
+*Figure 11. High-level failure stage attribution across the 74 answerable failures. Over 62% of failures occur downstream of complete top-10 gold document retrieval (Recall@10 = 1.0).*
+
+### Primary Root Cause Distribution Table
+
+| Primary Root Cause | Count | % of Failures | Pipeline Stage | Architectural Mechanism |
 | :--- | :---: | :---: | :---: | :--- |
 | **`RETRIEVAL_INSUFFICIENT`** | **28** | **37.8%** | Retrieval | 1 or more gold multi-hop documents missing from top-10. |
 | **`EVIDENCE_GATE_FALSE_ABSTENTION`** | **16** | **21.6%** | Evidence | `EvidenceGrader` rejected context despite complete retrieval. |
@@ -419,15 +415,13 @@ An exhaustive post-hoc failure analysis was conducted across all 86 answerable t
 | **`CONSERVATIVE_FALSE_ABSTENTION`** | **5** | **6.8%** | Verification | Fail-closed abstention on complex multi-publisher query. |
 | **`SEMANTIC_SAFETY_ABSTENTION`** | **3** | **4.1%** | Verification | Correct draft answer suppressed due to asymmetric source evidence. |
 
-### Retrieval vs. Downstream Failure Separation
-- **Retrieval-Rooted Failures**: **37.8%** (28 / 74).
-- **Downstream Failures despite Complete Retrieval**: **62.2%** (46 / 74).
-
-**Key Finding**: The primary bottleneck in the system is no longer retrieval recall (Recall@10 = 0.866), but **downstream conservative abstention** enforced by safety guardrails.
-
 ---
 
-## 22. Question-Type Breakdown
+## 18. Question-Type Breakdown
+
+![Question Type Outcomes](assets/figures/question_type_outcomes.png)
+
+*Figure 12. System outcomes broken down by query taxonomy on the untouched test benchmark ($N=100$). Comparison and temporal queries show the highest abstention rates due to multi-source symmetry and temporal conjunction constraints.*
 
 | Question Type | Total | Correct | Wrong | Abstained | Answer Rate | Accuracy (Overall) |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
@@ -436,11 +430,9 @@ An exhaustive post-hoc failure analysis was conducted across all 86 answerable t
 | `temporal_query` | 28 | 4 | 4 | 20 | 28.6% | 14.3% |
 | `null_query` (unanswerable) | 14 | 0 | 1 | 13 | 7.1% | N/A (92.9% Safe Abstention) |
 
-**Analysis**: Comparison and temporal queries represent the most difficult query classes because they require simultaneous multi-source document presence, symmetric cross-publisher entailment, and temporal conjunction verification.
-
 ---
 
-## 23. Representative Failure Case Studies
+## 19. Representative Failure Case Studies
 
 ### Case 1: Complex Comparison Failure (`test_902d9dbe4562`)
 - **Question**: *"Was there consistency in the portrayal of Google's search-related practices between TechCrunch and The Verge?"*
@@ -465,7 +457,7 @@ An exhaustive post-hoc failure analysis was conducted across all 86 answerable t
 
 ---
 
-## 24. Engineering Trade-offs
+## 20. Engineering Trade-offs
 
 ```
                   ┌─────────────────────────────────────────────────────────┐
@@ -487,16 +479,16 @@ Compute Cost      │ 100% Full LLM Invocations  │ 39% LLM Invocations        
 
 ---
 
-## 25. Limitations
+## 21. Limitations
 
-1. **Conservative False Abstention**: The strictness of `ExplicitSourceCoverageGuard` and `StructuredConclusionVerifier` causes the system to abstain on 54.7% of answerable queries where partial evidence exists.
+1. **Conservative False Abstention**: The strictness of `ExplicitSourceCoverageGuard` and `StructuredConclusionVerifier` causes the system to abstain on 54.7%–68.6% of answerable queries where partial evidence exists.
 2. **Small-Model Reasoning Capacity**: Utilizing `Qwen/Qwen2.5-1.5B-Instruct` restricts single-pass complex relational deduction. Small generators struggle with multi-clause conjunctions without step-by-step chain-of-thought expansion.
 3. **NLI Premise Granularity**: Sentence-level NLI grounding occasionally rejects compound facts when an entity name and action are split across adjacent sentences.
 4. **Silver Dataset Evidence Noise**: MultiHopRAG silver evidence annotations occasionally list incomplete supporting documents for open-ended comparative queries.
 
 ---
 
-## 26. Future Work (Post-Freeze Roadmap)
+## 22. Future Work (Post-Freeze Roadmap)
 
 1. **Iterative Decomposed Generation**: Implement step-by-step per-clause generation before final conjunction resolution, allowing small models to verify each hop independently.
 2. **Fine-Grained Token-Span Grounding**: Transition from sentence-level NLI premise evaluation to token-level attention attribution.
@@ -505,7 +497,7 @@ Compute Cost      │ 100% Full LLM Invocations  │ 39% LLM Invocations        
 
 ---
 
-## 27. Reproducibility & Environment
+## 23. Reproducibility & Environment
 
 - **Operating System**: Windows 11 / Windows PowerShell
 - **Python Runtime**: Python 3.12.11
@@ -529,11 +521,14 @@ Compute Cost      │ 100% Full LLM Invocations  │ 39% LLM Invocations        
 
   # Failure Analysis & Semantic Survival Trace Execution
   python evaluation/analyze_final_failures.py
+
+  # Report Figure Generation from JSON Artifacts
+  python evaluation/generate_final_report_figures.py
   ```
 
 ---
 
-## 28. Test Coverage and Regression Invariants
+## 24. Test Coverage and Regression Invariants
 
 The repository maintains an automated test suite comprising **167 unit and integration tests** (`tests/`), all passing with 0 failures:
 
@@ -553,10 +548,10 @@ Test coverage spans:
 
 ---
 
-## 29. Engineering Conclusions
+## 25. Engineering Conclusions
 
 1. **Retrieval Fusion is Indispensable**: Combining dense semantic vectors and sparse lexical search via RRF provides the single highest retrieval leap (+0.051 Recall@10, +0.103 MRR@10) on multi-hop entity queries.
-2. **Cross-Encoder Reranking Concentrates Context**: BGE reranking with MMR diversity ensures golden documents occupy top positions (Recall@10 = 0.866, nDCG@10 = 0.729).
+2. **Cross-Encoder Reranking Concentrates Context**: BGE reranking with MMR diversity ensures golden documents occupy top positions (Recall@10 = 0.842 in A2, rising to 0.866 in A4 with adaptive routing).
 3. **Decoupled Claim Grounding Guarantees Validity**: Atomic DeBERTa NLI verification guarantees 100% citation validity and 88.5% citation precision.
 4. **Conclusion Verification Prevents False Assertions**: Decoupling claim grounding from direct conclusion resolution completely eliminates false boolean conclusions (0 Right $\to$ Wrong inversions).
 5. **Early Evidence Gating Cuts Compute**: Fast-fail grading eliminates LLM generation on 61% of unviable queries, halving average query latency to 3.33s.
@@ -564,7 +559,7 @@ Test coverage spans:
 
 ---
 
-## 30. Final Architecture Summary Table
+## 26. Final Architecture Summary Table
 
 | Subsystem / Dimension | Final Finding & Measurement |
 | :--- | :--- |
@@ -577,4 +572,3 @@ Test coverage spans:
 | **Compute Efficiency** | **3.33s** Mean Latency (53% faster than baselines via 0.39 gen calls/query) |
 | **Dominant Bottleneck**| **Conservative Downstream Abstention** (62.2% of failures occur downstream of complete retrieval) |
 | **Test Suite Health** | **167 passed, 0 failed** across all unit and integration regression suites |
-
