@@ -148,7 +148,7 @@ def percentile(values: list[float], p: float) -> float | None:
 
 
 # ============================================================
-# Ablation Runners
+# Ablation Configuration Runners
 # ============================================================
 
 def run_a0_dense(nodes: RAGNodes, example: dict) -> dict[str, Any]:
@@ -162,6 +162,13 @@ def run_a0_dense(nodes: RAGNodes, example: dict) -> dict[str, Any]:
     if isinstance(retrieved_items, dict):
         retrieved_items = retrieved_items.get("results", [])
     retrieval_sec = time.perf_counter() - retrieval_start
+
+    retrieval_metrics = {
+        f"recall@{k}": compute_retrieval_metrics_at_k(retrieved_items, gold_doc_ids, k)["recall"]
+        for k in [5, 10, 20]
+    }
+    mrr_10 = compute_retrieval_metrics_at_k(retrieved_items, gold_doc_ids, 10)["mrr"]
+    ndcg_10 = compute_retrieval_metrics_at_k(retrieved_items, gold_doc_ids, 10)["ndcg"]
 
     context = nodes.context_builder.build(retrieved_items)
 
@@ -190,7 +197,9 @@ def run_a0_dense(nodes: RAGNodes, example: dict) -> dict[str, Any]:
         "id": example["id"],
         "question_type": example["question_type"],
         "is_answerable": example["is_answerable"],
-        "retrieved_items": retrieved_items,
+        "retrieval_metrics": retrieval_metrics,
+        "mrr@10": mrr_10,
+        "ndcg@10": ndcg_10,
         "direct_answer": direct_ans,
         "abstained": abstained,
         "answer_correct": is_correct,
@@ -216,6 +225,13 @@ def run_a1_hybrid(nodes: RAGNodes, example: dict) -> dict[str, Any]:
         retrieved_items = retrieved_items.get("results", [])
     retrieval_sec = time.perf_counter() - retrieval_start
 
+    retrieval_metrics = {
+        f"recall@{k}": compute_retrieval_metrics_at_k(retrieved_items, gold_doc_ids, k)["recall"]
+        for k in [5, 10, 20]
+    }
+    mrr_10 = compute_retrieval_metrics_at_k(retrieved_items, gold_doc_ids, 10)["mrr"]
+    ndcg_10 = compute_retrieval_metrics_at_k(retrieved_items, gold_doc_ids, 10)["ndcg"]
+
     context = nodes.context_builder.build(retrieved_items)
 
     gen_start = time.perf_counter()
@@ -243,7 +259,9 @@ def run_a1_hybrid(nodes: RAGNodes, example: dict) -> dict[str, Any]:
         "id": example["id"],
         "question_type": example["question_type"],
         "is_answerable": example["is_answerable"],
-        "retrieved_items": retrieved_items,
+        "retrieval_metrics": retrieval_metrics,
+        "mrr@10": mrr_10,
+        "ndcg@10": ndcg_10,
         "direct_answer": direct_ans,
         "abstained": abstained,
         "answer_correct": is_correct,
@@ -269,6 +287,13 @@ def run_a2_hybrid_reranker(nodes: RAGNodes, example: dict) -> dict[str, Any]:
         retrieved_items = retrieved_items.get("results", [])
     retrieval_sec = time.perf_counter() - retrieval_start
 
+    retrieval_metrics = {
+        f"recall@{k}": compute_retrieval_metrics_at_k(retrieved_items, gold_doc_ids, k)["recall"]
+        for k in [5, 10, 20]
+    }
+    mrr_10 = compute_retrieval_metrics_at_k(retrieved_items, gold_doc_ids, 10)["mrr"]
+    ndcg_10 = compute_retrieval_metrics_at_k(retrieved_items, gold_doc_ids, 10)["ndcg"]
+
     context = nodes.context_builder.build(retrieved_items)
 
     gen_start = time.perf_counter()
@@ -296,7 +321,9 @@ def run_a2_hybrid_reranker(nodes: RAGNodes, example: dict) -> dict[str, Any]:
         "id": example["id"],
         "question_type": example["question_type"],
         "is_answerable": example["is_answerable"],
-        "retrieved_items": retrieved_items,
+        "retrieval_metrics": retrieval_metrics,
+        "mrr@10": mrr_10,
+        "ndcg@10": ndcg_10,
         "direct_answer": direct_ans,
         "abstained": abstained,
         "answer_correct": is_correct,
@@ -322,6 +349,13 @@ def run_a3_evidence_controlled(nodes: RAGNodes, example: dict) -> dict[str, Any]
         retrieved_items = retrieved_items.get("results", [])
     retrieval_sec = time.perf_counter() - retrieval_start
 
+    retrieval_metrics = {
+        f"recall@{k}": compute_retrieval_metrics_at_k(retrieved_items, gold_doc_ids, k)["recall"]
+        for k in [5, 10, 20]
+    }
+    mrr_10 = compute_retrieval_metrics_at_k(retrieved_items, gold_doc_ids, 10)["mrr"]
+    ndcg_10 = compute_retrieval_metrics_at_k(retrieved_items, gold_doc_ids, 10)["ndcg"]
+
     context = nodes.context_builder.build(retrieved_items, query=question)
     routed = nodes.route_query({"current_query": question})
     
@@ -341,7 +375,9 @@ def run_a3_evidence_controlled(nodes: RAGNodes, example: dict) -> dict[str, Any]
             "id": example["id"],
             "question_type": example["question_type"],
             "is_answerable": example["is_answerable"],
-            "retrieved_items": retrieved_items,
+            "retrieval_metrics": retrieval_metrics,
+            "mrr@10": mrr_10,
+            "ndcg@10": ndcg_10,
             "direct_answer": "UNKNOWN",
             "abstained": True,
             "answer_correct": False,
@@ -379,7 +415,9 @@ def run_a3_evidence_controlled(nodes: RAGNodes, example: dict) -> dict[str, Any]
         "id": example["id"],
         "question_type": example["question_type"],
         "is_answerable": example["is_answerable"],
-        "retrieved_items": retrieved_items,
+        "retrieval_metrics": retrieval_metrics,
+        "mrr@10": mrr_10,
+        "ndcg@10": ndcg_10,
         "direct_answer": direct_ans,
         "abstained": abstained,
         "answer_correct": is_correct,
@@ -456,8 +494,15 @@ def run_a4_a5_a6_pipeline(nodes: RAGNodes, example: dict) -> dict[str, Any]:
 
     t_total_sec = time.perf_counter() - t_start
 
-    # Metrics
+    # Retrieval Metrics
     retrieved_items = state.get("retrieved_results", [])
+    retrieval_metrics = {
+        f"recall@{k}": compute_retrieval_metrics_at_k(retrieved_items, gold_doc_ids, k)["recall"]
+        for k in [5, 10, 20]
+    }
+    mrr_10 = compute_retrieval_metrics_at_k(retrieved_items, gold_doc_ids, 10)["mrr"]
+    ndcg_10 = compute_retrieval_metrics_at_k(retrieved_items, gold_doc_ids, 10)["ndcg"]
+
     context_items = state["context"].items if state.get("context") else []
     citation_to_doc = {it.citation_id: it.document_id for it in context_items}
     cited_docs = [citation_to_doc.get(cid) for cid in gen_result.cited_ids if citation_to_doc.get(cid)]
@@ -486,7 +531,9 @@ def run_a4_a5_a6_pipeline(nodes: RAGNodes, example: dict) -> dict[str, Any]:
         "question_type": example["question_type"],
         "is_answerable": example["is_answerable"],
         "retrieval_strategy": state.get("retrieval_strategy"),
-        "retrieved_items": retrieved_items,
+        "retrieval_metrics": retrieval_metrics,
+        "mrr@10": mrr_10,
+        "ndcg@10": ndcg_10,
         "initial_evidence_sufficient": state.get("evidence_sufficient"),
         "initial_route": initial_route,
         "rewrite_attempted": rewrite_attempted,
@@ -881,7 +928,7 @@ def main():
 
 
 def render_ablation_markdown_report(aggregated: dict[str, Any], transitions: dict[str, int]):
-    report = f"""# Final Ablation Study Report
+    report = rf"""# Final Ablation Study Report
 
 - **Evaluation Dataset**: `evaluation/datasets/final_untouched_test.json` (100 multi-hop queries)
 - **Status**: **FROZEN PRODUCTION ARCHITECTURE ABLATION**
