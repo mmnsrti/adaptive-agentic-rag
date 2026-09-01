@@ -34,6 +34,11 @@ from adaptive_agentic_rag.generation.relation_aware_answer_resolver import (
     RelationResolution,
 )
 
+from adaptive_agentic_rag.generation.structured_conclusion_verifier import (
+    StructuredConclusionVerifier,
+    StructuredVerificationResult,
+)
+
 
 DEFAULT_MODEL = (
     "Qwen/Qwen2.5-1.5B-Instruct"
@@ -214,6 +219,13 @@ class GroundedGenerator:
 
         self.relation_resolver = (
             RelationAwareAnswerResolver()
+        )
+
+        self.structured_verifier = (
+            StructuredConclusionVerifier(
+                relation_resolver=
+                    self.relation_resolver,
+            )
         )
 
 
@@ -907,10 +919,18 @@ class GroundedGenerator:
         query: str,
         draft_direct_answer: str,
         relevant_claims,
+        context: BuiltContext | None = None,
     ) -> tuple[
         str,
         RelationResolution,
+        RelationResolution | StructuredVerificationResult,
     ]:
+
+        verifier = getattr(
+            self,
+            "structured_verifier",
+            None,
+        )
 
         resolver = getattr(
             self,
@@ -935,6 +955,16 @@ class GroundedGenerator:
                 resolver
             )
 
+        if verifier is None:
+            verifier = (
+                StructuredConclusionVerifier(
+                    relation_resolver=
+                        resolver,
+                )
+            )
+            self.structured_verifier = (
+                verifier
+            )
 
         facts = [
             claim.claim
@@ -943,33 +973,71 @@ class GroundedGenerator:
             in relevant_claims
         ]
 
+        covered_sources = []
+        all_context_sources = []
+        if context is not None and getattr(context, "items", None):
+            citation_to_source = {
+                item.citation_id: item.source
+                for item
+                in context.items
+                if getattr(item, "source", None)
+            }
+            seen = set()
+            for claim in relevant_claims:
+                src = citation_to_source.get(
+                    getattr(claim, "citation_id", None)
+                )
+                if src and src not in seen:
+                    seen.add(src)
+                    covered_sources.append(src)
 
         resolution = (
             resolver.resolve(
+            seen_ctx = set()
+            for item in context.items:
+                src = getattr(item, "source", None)
+                if src and src not in seen_ctx:
+                    seen_ctx.add(src)
+                    all_context_sources.append(src)
+
+        verification = (
+            verifier.verify(
                 query=
                     query,
 
                 facts=
+                draft_direct_answer=
+                    draft_direct_answer,
+                grounded_facts=
                     facts,
+                covered_sources=
+                    covered_sources,
+                all_context_sources=
+                    all_context_sources,
             )
         )
 
 
         if (
             resolution.applied
+            verification.applied
             and
             resolution.resolved_answer
+            verification.resolved_answer
         ):
 
             return (
                 resolution.resolved_answer,
                 resolution,
+                verification.resolved_answer,
+                verification,
             )
 
 
         return (
             draft_direct_answer,
             resolution,
+            verification,
         )
 
 
@@ -1456,6 +1524,9 @@ class GroundedGenerator:
 
                 grounded_claims=
                     grounded_claims,
+
+                context=
+                    context,
             )
         )
 
@@ -1602,6 +1673,9 @@ class GroundedGenerator:
                     relevance_result
                     .relevant_claims
                 ),
+
+                context=
+                    context,
             )
         )
 
@@ -1614,18 +1688,46 @@ class GroundedGenerator:
         print(
             "Applied:",
             relation_resolution.applied,
+            getattr(
+                relation_resolution,
+                "applied",
+                False,
+            ),
         )
 
 
         print(
             "Relation type:",
             relation_resolution.relation_type,
+            "Relation / Mechanism:",
+            getattr(
+                relation_resolution,
+                "applied_mechanism",
+                getattr(
+                    relation_resolution,
+                    "relation_type",
+                    "none",
+                ),
+            ),
         )
 
 
         print(
             "Requested polarity:",
             relation_resolution.requested_polarity,
+            getattr(
+                relation_resolution,
+                "requested_polarity",
+                getattr(
+                    getattr(
+                        relation_resolution,
+                        "relation_resolution",
+                        None,
+                    ),
+                    "requested_polarity",
+                    None,
+                ),
+            ),
         )
 
 
@@ -1644,6 +1746,11 @@ class GroundedGenerator:
         print(
             "Reason:",
             relation_resolution.reason,
+            getattr(
+                relation_resolution,
+                "reason",
+                "",
+            ),
         )
 
 
