@@ -1,8 +1,9 @@
-# Adaptive Agentic RAG — Public Release Checklist
+# Adaptive Agentic RAG — v1.0.0 Release Checklist
 
 - **Release Target**: `v1.0.0`
 - **Canonical Architecture**: `V2-A (Frozen Canonical)`
 - **Verification Date**: 2026-09-02
+- **Status**: Published
 
 ---
 
@@ -21,16 +22,13 @@
 - [x] **Technical Report Protected**: `docs/final_technical_report.md` has 0 lines modified.
 - [x] **License Present**: MIT License file populated and declared in `README.md`.
 - [x] **Pyproject / Lockfile Synchronized**: `pyproject.toml` dependencies match `uv.lock` (`uv lock --check` passed).
-- [x] **Release Notes Reviewed**: `docs/release_notes_draft.md` drafted and aligned with empirical metrics.
+- [x] **Release Notes Reviewed**: `docs/release_notes_v1.0.0.md` finalized and aligned with empirical metrics.
 
 ---
 
 ## Final Authorization & Execution Checklist
 
-*(To be executed by project owner upon explicit release authorization)*
-
-- [ ] **Commit(s) Created**: Working tree release changes committed with conventional commit format.
-- [ ] **Tag Created**: Git annotated tag `v1.0.0` created on release commit.
-- [ ] **Pushed**: Branch `master` and tag `v1.0.0` pushed to remote `origin`.
-- [ ] **GitHub Release Published**: GitHub release published with `docs/release_notes_draft.md` content and hero screenshot.
-
+- [x] **Commit(s) Created**: Working tree release changes committed with conventional commit format.
+- [x] **Tag Created**: Git annotated tag `v1.0.0` created on release commit (`21e9393`).
+- [x] **Pushed**: Branch `master` and tag `v1.0.0` pushed to remote `origin`.
+- [x] **GitHub Release Published**: GitHub release published with `docs/release_notes_v1.0.0.md` content.

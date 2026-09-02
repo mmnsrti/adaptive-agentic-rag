@@ -426,6 +426,8 @@ For deep-dive technical analysis, complete mathematical formulations, and exhaus
 - 📊 **[Final Evaluation Report](evaluation/results/final_evaluation_report.md)** — Comparative system benchmark results and metrics analysis.
 - 🔬 **[Final Ablation Report](evaluation/results/final_ablation_report.md)** — Step-by-step ablation study isolating each architectural contribution.
 - 🛠️ **[Final Failure Analysis](evaluation/results/final_failure_analysis.md)** — Taxonomy and root-cause breakdown of all remaining failure modes.
+- 🤝 **[Contributing Guidelines](CONTRIBUTING.md)** — Development workflows, architecture integrity rules, and PR guidelines.
+- 🛡️ **[Security Policy](SECURITY.md)** — Vulnerability disclosure procedure and security evaluation scope.
 
 ---
 
