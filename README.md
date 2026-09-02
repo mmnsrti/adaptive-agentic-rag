@@ -19,7 +19,7 @@ Standard Retrieval-Augmented Generation (RAG) pipelines break down on multi-hop 
 1. **Hybrid Retrieval + Cross-Encoder Reranking**: Combines dense semantic vectors (Qwen-0.6B) and sparse lexical signals (BM25) via Reciprocal Rank Fusion (RRF), followed by BGE cross-attention reranking and MMR diversity filtering.
 2. **Evidence Gating & Adaptive Recovery**: Enforces entity anchor coverage and multi-source publisher constraints before calling the LLM; triggers targeted query rewriting and semantic rescue only when structural misses are recoverable.
 3. **NLI Claim Grounding & Fail-Closed Semantic Verification**: Deconstructs draft answers into atomic propositions, verifies premise entailment via DeBERTa-v3 NLI, and conservatively suppresses unsupported or asymmetric direct answers to `UNKNOWN`.
-4. **Production FastAPI Service**: Delivers non-blocking inference, GPU concurrency serialization, full citation provenance, and structured observability traces.
+4. **Production-Oriented FastAPI Service**: Delivers non-blocking asynchronous inference, concurrency serialization, full citation provenance, and structured observability traces.
 
 ---
 
@@ -31,7 +31,7 @@ Evaluated on the **$N=100$ disjoint final untouched test set** from [`yixuantt/M
 | :--- | :--- | :---: | :--- |
 | **Retrieval Quality** | **Recall@10** | **0.866** (86.6%) | Highest candidate coverage across heterogeneous publishers (+13.6% over Dense). |
 | **Retrieval Ranking** | **nDCG@10** | **0.729** | Precise ordering of multi-source supporting documents. |
-| **Attribution Safety** | **Inline Citation Validity** | **100.0%** | Zero fabricated or ungrounded inline citation markers. |
+| **Attribution Safety** | **Inline Citation Validity** | **100.0%** | All asserted inline citation markers map to valid retrieved corpus passages. |
 | **Evidence Precision** | **Dataset Evidence Citation Precision** | **87.0% – 88.5%** | High proportion of cited chunks match gold evidence. |
 | **Null-Query Safety** | **Null Abstention Rate** | **92.9%** (13/14) | Safe fail-closed rejection of unanswerable queries (vs 64.3% in Dense). |
 | **Answer Quality** | **Answered Accuracy** | **44.4%** (12/27) | High precision on asserted answers through strict semantic gating. |
@@ -127,13 +127,13 @@ flowchart TD
 | **Rank Fusion** | Reciprocal Rank Fusion ($k=60$) | `HybridRetriever` | Merges dense and sparse ranks without score calibration. |
 | **Reranker** | `BAAI/bge-reranker-base` | Cross-attention over `(query, document)` | High-precision candidate reranking. |
 | **Diversity Filter** | MMR ($\lambda=0.7$) | `mmr_select(top_k=5)` | Reduces redundant chunks from the same source. |
-| **Evidence Gating** | `EvidenceGrader V2` + `ExplicitSourceCoverageGuard` | Regex anchor & publisher presence verification | Prevents hallucination by gating generation on evidence sufficiency. |
+| **Evidence Gating** | `EvidenceGrader V2` + `ExplicitSourceCoverageGuard` | Regex anchor & publisher presence verification | Reduces unsupported generation by gating synthesis on evidence sufficiency. |
 | **Adaptive Recovery** | `AdaptiveRetryPolicy` + `QueryRewriter` | Constraint-targeted keyword reformulation | Recovers missing sources only when present in corpus. |
 | **LLM Generator** | `Qwen/Qwen2.5-1.5B-Instruct` | Single-pass ChatML structured generation | Outputs `DIRECT_ANSWER` proposition and supporting `FACTS`. |
 | **NLI Claim Grounder**| `cross-encoder/nli-deberta-v3-small` | Premise-hypothesis entailment ($P \ge 0.70$) | Grounds each asserted fact to specific cited chunks. |
 | **Relevance Filter** | `RelevanceFilter V2` | Global top-2 query-relevant grounded claims | Eliminates distracting off-target grounded facts. |
 | **Semantic Verifier** | `StructuredConclusionVerifier` | Fail-closed relational consistency check | Converts ungrounded or asymmetric conclusions to `UNKNOWN`. |
-| **HTTP API** | FastAPI + Uvicorn + Pydantic v2 | `RAGService` with GPU semaphore guard | Production asynchronous HTTP inference service. |
+| **HTTP API** | FastAPI + Uvicorn + Pydantic v2 | `RAGService` with worker serialization guard | Production-oriented asynchronous HTTP inference service. |
 
 ---
 
@@ -178,7 +178,7 @@ The pipeline was benchmarked against four competitive baselines across 100 test 
 
 ### 2. Safety vs. Coverage Trade-off
 ![Answer Quality vs Coverage](docs/assets/figures/answer_quality_vs_coverage.png)
-*Figure 2: Answer outcomes across systems. Adaptive Agentic RAG trades aggressive coverage (31.4% answered) for extreme safety, eliminating hallucinations and achieving 92.9% null-query abstention.*
+*Figure 2: Answer outcomes across systems. Adaptive Agentic RAG trades aggressive coverage (31.4% answered) for conservative safety, significantly reducing unsupported generation and achieving 92.9% null-query abstention.*
 
 ### 3. Progressive Ablation Study (A0 – A6)
 ![Progressive Retrieval Ablation](docs/assets/figures/progressive_retrieval_ablation.png)
@@ -222,7 +222,7 @@ A comprehensive root-cause analysis over all 74 answerable failure cases reveals
 
 ---
 
-## Production FastAPI Service
+## Production-Oriented FastAPI Service
 
 The system includes an asynchronous HTTP inference API implemented with FastAPI and Pydantic v2 under [`src/adaptive_agentic_rag/api/`](src/adaptive_agentic_rag/api/):
 
@@ -331,13 +331,11 @@ See the complete showcase guide in [**docs/demo.md**](docs/demo.md).
 
 ### 5. Running the Test Suite
 ```powershell
-# Run the complete local test suite across unit, graph, and API layers (179 tests)
+# Run the complete local test regression suite across unit, graph, and API layers (179 tests)
 python -m pytest -q
-
-# Run the lightweight CI-safe unit & integration test suite (121 tests)
-pytest tests/test_adaptive_retry_policy.py tests/test_explicit_source_coverage.py tests/test_structured_conclusion_verifier.py tests/test_api_query.py -q
 ```
-*Note*: The GitHub Actions CI pipeline automatically runs the portable, deterministic 121-test subset on every push, while the complete 179-test regression validates GPU-accelerated transformer backbones in the local environment.
+
+> **CI Test Suite**: GitHub Actions runs the portable CPU-safe test subset defined in [`.github/workflows/ci.yml`](.github/workflows/ci.yml) (121 tests) on every push and pull request without requiring GPU acceleration or external services.
 
 ---
 
@@ -404,14 +402,14 @@ adaptive-agentic-rag/
 
 - **Why Hybrid RRF over Dense-Only?** Sparse BM25 matches exact product names, dates, and entity identifiers that dense embeddings dilute, improving candidate recall from 0.731 to 0.782.
 - **Why Cross-Encoder Reranking?** Full cross-attention between query and passage captures nuanced relationships that dual-encoder cosine similarity misses, boosting Recall@10 to 0.842.
-- **Why Single-Pass Generation with NLI Grounding?** Multi-turn LLM reflection loops compound latency and introduce self-hallucination. Single-pass generation coupled with an external cross-encoder NLI verifier provides faster, deterministic verification.
+- **Why Single-Pass Generation with NLI Grounding?** Multi-turn LLM reflection loops compound latency and risk compounding errors. Single-pass generation coupled with an external cross-encoder NLI verifier provides faster, deterministic claim verification.
 - **Why Fail-Closed Semantic Verification?** For enterprise and critical workflows, outputting `UNKNOWN` when facts are unsupported is strictly superior to asserting false claims with confident, misleading citations.
 
 ---
 
 ## Known Limitations
 
-- **Conservative False Abstention Rate (68.6%)**: In pursuit of zero hallucination, the semantic verifier currently abstains on complex sentences where gold evidence is distributed across subtle linguistic clauses.
+- **Conservative False Abstention Rate (68.6%)**: To prioritize grounded answers and prevent unsupported assertions, the semantic verifier currently abstains on complex sentences where gold evidence is distributed across subtle linguistic clauses.
 - **Abstract Cross-Domain Comparison**: The pipeline performs best on factual news events; abstract cross-domain analogies sometimes trigger false evidence rejection.
 - **Entity Alias & Coreference Gaps**: Variations in entity naming across distinct publishers (e.g. "OpenAI's founder" vs "Sam Altman") occasionally prevent the strict source coverage guard from approving first-pass retrieval.
 
