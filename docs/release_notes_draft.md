@@ -1,118 +1,138 @@
-# Adaptive Agentic RAG v1.0.0 — Release Notes Draft
+# Adaptive Agentic RAG v1.0.0 — Release Notes
 
-> **Canonical V2-A Production Release**: Multi-Hop Agentic RAG with Hybrid Retrieval, Cross-Encoder Reranking, Evidence-Aware Recovery, Grounded Generation, Semantic Safety Verification, and Production FastAPI Service.
+> **Canonical V2-A Baseline Release**: A production-oriented reference implementation of multi-hop agentic RAG featuring hybrid retrieval, cross-encoder reranking, evidence-aware retry/recovery, single-pass grounded generation, fail-closed semantic safety verification, and an interactive visual showcase.
 
 ---
 
 ## Release Highlights
 
-- **Canonical V2-A Architecture**: Full frozen multi-stage pipeline combining dense semantic vectors (Qwen-0.6B) and sparse lexical signals (BM25Okapi) via Reciprocal Rank Fusion ($k=60$), cross-attention reranking (BGE-reranker-base), and Maximal Marginal Relevance diversity filtering ($\lambda=0.7$, top 5).
-- **Evidence Gating & Adaptive Recovery**: Enforces strict entity anchor and publisher coverage guards prior to LLM synthesis; triggers targeted query rewriting and semantic rescue only when structural misses are recoverable.
-- **NLI Claim Grounding & Fail-Closed Semantic Verification**: Deconstructs draft answers into atomic propositions, verifies premise entailment via DeBERTa-v3 NLI ($P \ge 0.70$), and conservatively suppresses unsupported or asymmetric direct answers to `UNKNOWN`.
-- **Production FastAPI Service**: Delivers non-blocking asynchronous inference, concurrency serialization, verified citation binding, and structured observability traces.
-- **Interactive Visual Showcase**: Pure HTML/CSS/JS dark-themed engineering dashboard (`demo/`) visualizing the 7-node LangGraph execution flow with live latency telemetry and citation inspection.
-- **Automated CI Workflow**: GitHub Actions pipeline running 121 portable unit and integration tests under Python 3.12 without external GPU or database dependencies.
-- **100% Test Regression**: Complete suite of 179 tests passing with 0 failures.
+- **Canonical V2-A Pipeline**: Frozen multi-stage architecture integrating dense semantic embeddings (Qwen-0.6B) and sparse lexical signals (BM25Okapi) via Reciprocal Rank Fusion ($k=60$), cross-attention reranking (BGE-reranker-base), and Maximal Marginal Relevance diversity filtering ($\lambda=0.7$, top 5).
+- **Evidence Gating & Adaptive Recovery**: Structural entity anchor and publisher availability checks prevent unwarranted generation; source-targeted query rewriting and semantic rescue recover multi-hop document links.
+- **NLI Claim Grounding & Fail-Closed Semantic Safety**: Atomic proposition extraction with DeBERTa-v3 NLI verification ($P \ge 0.70$) and strict conclusion verification, trading answer coverage to suppress ungrounded or speculative assertions to `UNKNOWN`.
+- **Production-Oriented FastAPI Service**: Non-blocking asynchronous query processing, serial inference execution, verified citation resolution, and structured trace telemetry.
+- **Visual Web Showcase**: Standalone dark-themed engineering dashboard (`demo/`) demonstrating the 7-node LangGraph execution flow with live latency metrics and citation cards.
+- **Portable CI & Regression Suite**: GitHub Actions workflow running 121 portable unit/integration tests under Python 3.12 without GPU/database dependencies; full local suite passing with 179/179 tests.
 
 ---
 
-## Architecture Specification
-
-The system implements the **V2-A (Frozen Canonical)** architecture:
+## Architecture Specification (Canonical V2-A)
 
 ```text
 Query
   │
-  ├──► Query Router (Simple vs. Complex Classification)
+  ├──► 1. Query Router (Simple vs. Complex Route Selection)
   │
-  ├──► Hybrid Retrieval (Dense Qwen3-0.6B + Sparse BM25Okapi, RRF k=60)
+  ├──► 2. Hybrid Retrieval (Dense Qwen3-0.6B + Sparse BM25Okapi, RRF k=60)
   │
-  ├──► Cross-Encoder Reranking (BAAI/bge-reranker-base + MMR λ=0.7, top-5)
+  ├──► 3. Cross-Encoder Reranking (BAAI/bge-reranker-base + MMR λ=0.7, top-5)
   │
-  ├──► Evidence Gating & Adaptive Recovery
+  ├──► 4. Evidence Gating & Adaptive Recovery
   │      ├── Explicit Source Coverage Guard
   │      ├── Corpus Source Availability Check
-  │      └── Source-Targeted Rewrite & Semantic Rescue (Max 1 attempt)
+  │      └── Source-Targeted Rewrite & Semantic Rescue (Max 1 retry)
   │
-  ├──► Single-Pass Structured Generation (Qwen2.5-1.5B-Instruct ChatML)
+  ├──► 5. Single-Pass Structured Generation (Qwen2.5-1.5B-Instruct ChatML)
   │
-  ├──► Propositional Claim Grounding (DeBERTa-v3-small NLI, P ≥ 0.70)
+  ├──► 6. Propositional Claim Grounding (DeBERTa-v3-small NLI, P ≥ 0.70)
   │
-  ├──► Semantic Safety Verification (StructuredConclusionVerifier)
-  │      ├── Supported: Verified Direct Answer + Grounded Citations
-  │      └── Unsupported: Fail-Closed Safe Abstention (UNKNOWN)
+  └──► 7. Semantic Safety Verifier (StructuredConclusionVerifier)
+         ├── Supported: Verified Direct Answer + Grounded Citations
+         └── Unsupported: Fail-Closed Safe Abstention (UNKNOWN)
 ```
 
 ---
 
-## Key Performance & Evaluation Metrics
+## Authoritative Final Benchmark Evaluation
 
-Evaluated on the isolated `final_untouched_test.json` benchmark (100 multi-hop questions):
+Evaluated against the isolated, untouched `final_untouched_test.json` benchmark (100 multi-hop queries: 86 answerable multi-hop questions, 14 unanswerable null questions):
 
-| Metric | Measured Value | Scope / Definition |
-| :--- | :---: | :--- |
-| **Recall@10** | **0.8870** | Gold context retrieval across multi-hop queries |
-| **nDCG@10** | **0.8421** | Ranking quality of top-10 candidate chunks |
-| **Null / Unanswerable Abstention** | **100.0%** | Zero hallucinations on out-of-corpus queries |
-| **Citation Validity** | **100.0%** | All asserted claims backed by entailed source passages ($P \ge 0.70$) |
-| **Answer Coverage** | **68.0%** | Percentage of queries where evidence was sufficient to answer |
-| **Answered Accuracy** | **83.8%** | Direct answer precision on answered subset |
-| **Overall Dataset Accuracy** | **57.0%** | Strict global accuracy under fail-closed safety gating |
+### Canonical Full-System Metrics (A6)
 
----
-
-## FastAPI Production Service
-
-- **GET `/health`**: Liveness probe returning HTTP 200 `{"status": "ok"}`.
-- **GET `/ready`**: Readiness probe confirming pre-warmed transformer backbones and Qdrant collection `multihop_chunks_v2`.
-- **GET `/v1/system`**: System architecture metadata, corpus chunk count (8,173), and device diagnostics.
-- **POST `/v1/query`**: Core inference endpoint accepting `{ "query": str, "include_trace": bool }` and returning direct propositions, formatted text, grounded citations, latency profiles, and stage trace telemetry.
+| Metric Category | Metric Name | Canonical A6 Value | Scope / Definition |
+| :--- | :--- | :---: | :--- |
+| **Retrieval Quality** | **Recall@10** | **0.866** (86.6%) | Multi-hop gold passage retrieval in top 10 candidates |
+| | **MRR@10** | **0.757** | Mean Reciprocal Rank of first relevant passage |
+| | **nDCG@10** | **0.729** | Normalized Discounted Cumulative Gain at rank 10 |
+| **Safety & Abstention** | **Null Abstention Rate** | **92.9%** (13 / 14) | Safe abstention on unanswerable / out-of-corpus queries |
+| | **Citation Validity** | **100.0%** | Zero ungrounded or fabricated citations on answered queries |
+| | **Post-Verifier Citation Precision** | **87.0%** (20 / 23) | Cited passages matching ground-truth gold evidence post-verification |
+| | **Pre-Verifier Citation Precision** | **88.5%** (23 / 26) | Evidence alignment on pre-verifier generated answer scope |
+| **Answer Performance** | **Answer Coverage** | **31.4%** (27 / 86) | Percentage of answerable queries where pipeline committed to an answer |
+| | **False Abstention Rate** | **68.6%** (59 / 86) | Conservative abstention on answerable queries with partial evidence |
+| | **Answered Accuracy** | **44.4%** (12 / 27) | Exact proposition accuracy on answered queries |
+| | **Overall Answerable Accuracy** | **14.0%** (12 / 86) | Global proposition accuracy across all 86 answerable queries |
+| **Latency Profile** | **Mean Pipeline Latency** | **3.00s – 3.33s** | End-to-end CPU inference runtime (A6 ablation: 3.00s, Final Eval: 3.33s) |
 
 ---
 
-## CI & Automated Testing
+## Baseline Progression Highlights
 
-- **Portable CI Suite**: 121 unit & integration tests running on GitHub Actions (`ubuntu-latest`, Python 3.12, `uv sync --frozen`).
-- **Full Local Regression**: 179 unit, integration, and transformer pipeline tests passing locally (`python -m pytest -q`).
+Empirical progression across frozen architectures on the final benchmark (`evaluation/results/final_metrics.json`):
 
----
+| Pipeline Stage | Recall@10 | nDCG@10 | Null Abstention | Answered Accuracy | Overall Accuracy |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| **Naive Dense RAG** | 0.731 | 0.620 | 64.3% | 48.3% (28/58) | 32.6% (28/86) |
+| **BM25 RAG** | 0.743 | 0.673 | 78.6% | 40.4% (23/57) | 26.7% (23/86) |
+| **Hybrid RAG (Dense + BM25)** | 0.782 | 0.692 | 71.4% | 43.9% (29/66) | 33.7% (29/86) |
+| **Hybrid + Cross-Encoder Reranker** | 0.842 | 0.711 | 78.6% | 51.8% (29/56) | 33.7% (29/86) |
+| **Adaptive Agentic RAG (Canonical A6)** | **0.866** | **0.729** | **92.9%** | **44.4% (12/27)** | **14.0% (12/86)** |
 
-## Documentation Suite
-
-1. [`README.md`](../README.md): Recruiter-grade overview, quickstart, system comparison, and visual showcase.
-2. [`docs/final_technical_report.md`](final_technical_report.md): 30-section research-grade engineering report with formal ablation studies and failure taxonomy.
-3. [`docs/system_implementation_guide.md`](system_implementation_guide.md): Module-by-module implementation reference with architectural dataflow diagrams.
-4. [`docs/api.md`](api.md): REST API reference with OpenAPI schemas and request/response payloads.
-5. [`docs/demo.md`](demo.md): Visual UI and terminal CLI showcase walkthrough.
-6. [`docs/canonical_architecture_manifest.md`](canonical_architecture_manifest.md): Formal frozen invariant specification.
-7. [`docs/canonical_architecture_audit.md`](canonical_architecture_audit.md): Provenance and audit verification report.
+> **Architectural Insight**: Hybrid retrieval and cross-encoder reranking provide strong retrieval gains (Recall@10 improving from 0.731 to 0.842, and to 0.866 with adaptive recovery). Downstream evidence gating and semantic safety verification prioritize precision and safe abstention (Null Abstention: 92.9%, Citation Validity: 100%) over raw answer coverage.
 
 ---
 
-## Known Limitations & Architectural Trade-offs
+## Production-Oriented FastAPI Service & Web Showcase
 
-1. **Conservative Abstention Floor**: The fail-closed semantic verifier prioritizes zero hallucination over answer coverage ($68.0\%$ coverage on multi-hop benchmarks), safely abstaining to `UNKNOWN` when cross-source entity linkages are incomplete.
-2. **Compositional Reasoning Depth**: Highly asymmetric multi-hop queries requiring $>3$ distinct document hops may experience partial entity drop if intermediate bridging passages receive lower reranking scores.
-3. **Single Domain Scope**: Canonical evaluations are calibrated on multi-source news synthesis (MultiHopRAG); domain adaptation to biomedical or legal corpora requires regenerating BM25 and vector indices.
+- **REST Endpoints**:
+  - `GET /health`: Fast liveness check (`{"status": "ok"}`).
+  - `GET /ready`: Pre-flight readiness check verifying model weights and Qdrant collection status.
+  - `GET /v1/system`: System configuration metadata, chunk counts (8,173), and architecture version.
+  - `POST /v1/query`: Core query interface supporting direct answers, formatted text, grounded citations, and optional execution trace telemetry (`include_trace=true`).
+- **Web Showcase (`demo/`)**: Pure HTML/CSS/JS interface providing live interactive queries, curated multi-hop presets, and visual tracking across all 7 pipeline stages.
 
 ---
 
-## Reproducibility Guide
+## CI & Automated Test Coverage
+
+- **Portable GitHub Actions CI**: Runs 121 unit and integration tests under Python 3.12 with `uv sync --frozen` on every push/PR without requiring GPU or local Qdrant services.
+- **Full Local Test Regression**: 179 passed / 0 failed across vector store, hybrid retrieval, reranker, evidence gate, claim grounder, generator, and API layers.
+
+---
+
+## Known Limitations & Design Trade-offs
+
+1. **Conservative Abstention Floor**: The fail-closed semantic verifier converts uncertain propositions to `UNKNOWN`, achieving high safety (92.9% null abstention) at the cost of answer coverage (31.4% on complex multi-hop questions).
+2. **Multi-Hop Compositional Reasoning**: Multi-hop queries requiring synthesis across $>2$ disjoint publisher domains can fail evidence gating if bridging context receives low cross-attention reranking scores.
+3. **Domain Scope**: Index calibrations and prompt representations are tuned for multi-source news synthesis (MultiHopRAG); specialized domains (biomedical, legal) require domain-specific indexing and re-calibration.
+
+---
+
+## Documentation Index
+
+- [`README.md`](../README.md): Project overview, quickstart guide, and architectural diagrams.
+- [`docs/final_technical_report.md`](final_technical_report.md): Formal research report detailing mathematical formulations, ablation metrics, and failure taxonomy.
+- [`docs/system_implementation_guide.md`](system_implementation_guide.md): Module-by-module technical architecture and design guide.
+- [`docs/api.md`](api.md): REST API specification and request/response contracts.
+- [`docs/demo.md`](demo.md): Visual web showcase and CLI testing guide.
+- [`docs/canonical_architecture_manifest.md`](canonical_architecture_manifest.md): Invariant specification of the frozen V2-A architecture.
+
+---
+
+## Reproducibility & Getting Started
 
 ```powershell
 # 1. Clone repository
 git clone https://github.com/mmnsrti/adaptive-agentic-rag.git
 cd adaptive-agentic-rag
 
-# 2. Setup virtual environment
+# 2. Setup virtual environment with uv
 uv venv .venv --python 3.12
 .venv\Scripts\activate
 uv sync --frozen
 
-# 3. Launch FastAPI server
+# 3. Start the FastAPI service
 uvicorn adaptive_agentic_rag.api.app:create_app --factory --host 127.0.0.1 --port 8000
 
 # 4. Run automated test suite
 python -m pytest -q
 ```
-
