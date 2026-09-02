@@ -54,7 +54,7 @@ Evaluated against the isolated, untouched `final_untouched_test.json` benchmark 
 | | **MRR@10** | **0.757** | Mean Reciprocal Rank of first relevant passage |
 | | **nDCG@10** | **0.729** | Normalized Discounted Cumulative Gain at rank 10 |
 | **Safety & Abstention** | **Null Abstention Rate** | **92.9%** (13 / 14) | Safe abstention on unanswerable / out-of-corpus queries |
-| | **Citation Validity** | **100.0%** | Zero ungrounded or fabricated citations on answered queries |
+| | **Citation Validity** | **100.0%** | All generated citations map to valid retrieved corpus passages |
 | | **Post-Verifier Citation Precision** | **87.0%** (20 / 23) | Cited passages matching ground-truth gold evidence post-verification |
 | | **Pre-Verifier Citation Precision** | **88.5%** (23 / 26) | Evidence alignment on pre-verifier generated answer scope |
 | **Answer Performance** | **Answer Coverage** | **31.4%** (27 / 86) | Percentage of answerable queries where pipeline committed to an answer |
